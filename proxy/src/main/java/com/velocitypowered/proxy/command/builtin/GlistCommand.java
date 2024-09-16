@@ -141,17 +141,17 @@ public class GlistCommand {
     }
 
     onServer.stream()
-            .map(Player::getUsername)
-            .reduce((a, b) -> a + ", " + b)
-            .ifPresent(playerList -> {
-              final TranslatableComponent.Builder builder = Component.translatable()
-                      .key("velocity.command.glist-server")
-                      .arguments(
-                              Component.text(server.getServerInfo().getName()),
-                              Component.text(onServer.size()),
-                              Component.text(playerList)
-                      );
-              target.sendMessage(builder.build());
-            });
+        .map(Player::getUsername)
+        .reduce((a, b) -> a + ", " + b)
+        .ifPresent(playerList -> {
+          final TranslatableComponent.Builder builder = Component.translatable()
+              .key("velocity.command.glist-server")
+              .arguments(
+                  Component.text(server.getServerInfo().getName()),
+                  Component.text(onServer.size()),
+                  Component.text(playerList)
+              );
+          target.sendMessage(builder.build());
+        });
   }
 }
