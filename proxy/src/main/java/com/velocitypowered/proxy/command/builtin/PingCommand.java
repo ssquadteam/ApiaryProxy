@@ -26,6 +26,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
 import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -93,7 +94,13 @@ public class PingCommand {
           }
         });
 
-    server.getCommandManager().register(new BrigadierCommand(node.build()));
+    final BrigadierCommand command = new BrigadierCommand(node);
+    server.getCommandManager().register(
+        server.getCommandManager().metaBuilder(command)
+            .plugin(VelocityVirtualPlugin.INSTANCE)
+            .build(),
+        command
+    );
   }
 
   private int getPing(CommandContext<CommandSource> context, Player player) {

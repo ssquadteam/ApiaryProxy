@@ -25,7 +25,11 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
-@SuppressWarnings("checkstyle:MissingJavadocType")
+/**
+ * Represents a legacy disconnect packet that contains a reason for disconnection.
+ * This class is used to convert modern server ping responses into the legacy format,
+ * which is compatible with older Minecraft versions.
+ */
 public record LegacyDisconnect(String reason) {
 
   private static final ServerPing.Players FAKE_PLAYERS = new ServerPing.Players(0, 0,

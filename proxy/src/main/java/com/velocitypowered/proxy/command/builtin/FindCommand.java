@@ -29,6 +29,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
+import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
 import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -73,7 +74,13 @@ public class FindCommand {
         })
         .executes(this::find);
     rootNode.then(playerNode);
-    server.getCommandManager().register(new BrigadierCommand(rootNode.build()));
+    final BrigadierCommand command = new BrigadierCommand(rootNode);
+    server.getCommandManager().register(
+        server.getCommandManager().metaBuilder(command)
+            .plugin(VelocityVirtualPlugin.INSTANCE)
+            .build(),
+        command
+    );
   }
 
   private int usage(final CommandContext<CommandSource> context) {

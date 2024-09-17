@@ -512,7 +512,7 @@ public class VelocityEventManager implements EventManager {
     final HandlerRegistration registration = handlersCache.handlers[0];
     if (registration.asyncType == AsyncType.ALWAYS) {
       registration.plugin.getExecutorService().execute(
-              () -> fire(future, event, 0, true, handlersCache.handlers));
+          () -> fire(future, event, 0, true, handlersCache.handlers));
     } else {
       fire(future, event, 0, false, handlersCache.handlers);
     }

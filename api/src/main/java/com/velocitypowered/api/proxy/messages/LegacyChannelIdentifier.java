@@ -15,7 +15,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * Represents a legacy channel identifier (for Minecraft 1.12 and below). For modern 1.13 plugin
  * messages, please see {@link MinecraftChannelIdentifier}. This class is immutable and safe for
- * multi-threaded use.
+ * multithreaded use.
  */
 public final class LegacyChannelIdentifier implements ChannelIdentifier {
 

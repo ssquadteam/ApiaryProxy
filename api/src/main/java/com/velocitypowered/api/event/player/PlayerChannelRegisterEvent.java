@@ -37,8 +37,8 @@ public final class PlayerChannelRegisterEvent {
   @Override
   public String toString() {
     return "PlayerChannelRegisterEvent{"
-            + "player=" + player
-            + ", channels=" + channels
-            + '}';
+      + "player=" + player
+      + ", channels=" + channels
+      + '}';
   }
 }
