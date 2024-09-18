@@ -1044,7 +1044,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.logCommandExecutions = config.getOrElse("log-command-executions", false);
         this.acceptTransfers = config.getOrElse("accepts-transfers", false);
         this.allowIllegalCharactersInChat = config.getOrElse("allow-illegal-characters-in-chat", false);
-        this.serverBrand = config.getOrElse("server-brand", "{0} ({1})");
+        this.serverBrand = config.getOrElse("server-brand", "Apiary Proxy");
         this.outdatedVersionPing = config.getOrElse("outdated-version-ping", "{proxy-brand} {protocol-min}-{protocol-max}");
         this.fallbackVersionPing = config.getOrElse("fallback-version-ping", "{protocol-min}-{protocol-max} ({proxy-brand})");
       }

@@ -208,7 +208,7 @@ accepts-transfers = false
 allow-illegal-characters-in-chat = false
 
 # Modifies the server brand that displays in your debug menu.
-server-brand = "{0} ({1})"
+server-brand = "Apiary Proxy"
 
 # Modifies the server version that displays in some server status pinging sites.
 outdated-version-ping = "{proxy-brand} {protocol-min}-{protocol-max}"
