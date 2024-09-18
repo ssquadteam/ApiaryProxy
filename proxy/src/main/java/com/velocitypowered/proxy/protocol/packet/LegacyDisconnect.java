@@ -44,8 +44,8 @@ public record LegacyDisconnect(String reason) {
    * @param version  the requesting clients' version
    * @return the disconnect packet
    */
-  public static LegacyDisconnect fromServerPing(ServerPing response,
-      LegacyMinecraftPingVersion version) {
+  public static LegacyDisconnect fromServerPing(final ServerPing response,
+      final LegacyMinecraftPingVersion version) {
     final Players players = response.getPlayers().orElse(FAKE_PLAYERS);
 
     return switch (version) {
@@ -73,11 +73,11 @@ public record LegacyDisconnect(String reason) {
     };
   }
 
-  private static String cleanSectionSymbol(String string) {
+  private static String cleanSectionSymbol(final String string) {
     return string.replaceAll(LEGACY_COLOR_CODE, "");
   }
 
-  private static String getFirstLine(String legacyMotd) {
+  private static String getFirstLine(final String legacyMotd) {
     final int newline = legacyMotd.indexOf('\n');
     return newline == -1 ? legacyMotd : legacyMotd.substring(0, newline);
   }
@@ -88,7 +88,7 @@ public record LegacyDisconnect(String reason) {
    * @param component the component to convert
    * @return the disconnect packet
    */
-  public static LegacyDisconnect from(TextComponent component) {
+  public static LegacyDisconnect from(final TextComponent component) {
     // We intentionally use the legacy serializers, because the old clients can't understand JSON.
     final String serialized = LegacyComponentSerializer.legacySection().serialize(component);
     return new LegacyDisconnect(serialized);

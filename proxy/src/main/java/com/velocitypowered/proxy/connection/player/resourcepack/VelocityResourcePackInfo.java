@@ -41,8 +41,8 @@ public final class VelocityResourcePackInfo implements ResourcePackInfo {
   private final Origin origin;
   private Origin originalOrigin;
 
-  private VelocityResourcePackInfo(UUID id, String url, byte @Nullable [] hash, boolean shouldForce,
-                                   @Nullable Component prompt, Origin origin) {
+  private VelocityResourcePackInfo(final UUID id, final String url, final byte @Nullable [] hash, final boolean shouldForce,
+                                   @Nullable final Component prompt, final Origin origin) {
     this.id = id;
     this.url = url;
     this.hash = hash;
@@ -82,7 +82,7 @@ public final class VelocityResourcePackInfo implements ResourcePackInfo {
     return origin;
   }
 
-  public void setOriginalOrigin(Origin originalOrigin) {
+  public void setOriginalOrigin(final Origin originalOrigin) {
     this.originalOrigin = originalOrigin;
   }
 
@@ -101,7 +101,7 @@ public final class VelocityResourcePackInfo implements ResourcePackInfo {
   }
 
   @Override
-  public Builder asBuilder(String newUrl) {
+  public Builder asBuilder(final String newUrl) {
     return new BuilderImpl(newUrl)
         .setId(id)
         .setShouldForce(shouldForce)
@@ -147,19 +147,19 @@ public final class VelocityResourcePackInfo implements ResourcePackInfo {
     private @Nullable Component prompt;
     private Origin origin = Origin.PLUGIN_ON_PROXY;
 
-    public BuilderImpl(String url) {
+    public BuilderImpl(final String url) {
       this.url = Preconditions.checkNotNull(url, "url");
       this.id = UUID.nameUUIDFromBytes(url.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
-    public BuilderImpl setId(UUID id) {
+    public BuilderImpl setId(final UUID id) {
       this.id = id;
       return this;
     }
 
     @Override
-    public BuilderImpl setShouldForce(boolean shouldForce) {
+    public BuilderImpl setShouldForce(final boolean shouldForce) {
       this.shouldForce = shouldForce;
       return this;
     }
@@ -176,7 +176,7 @@ public final class VelocityResourcePackInfo implements ResourcePackInfo {
     }
 
     @Override
-    public BuilderImpl setPrompt(@Nullable Component prompt) {
+    public BuilderImpl setPrompt(@Nullable final Component prompt) {
       this.prompt = prompt;
       return this;
     }
@@ -186,7 +186,7 @@ public final class VelocityResourcePackInfo implements ResourcePackInfo {
       return new VelocityResourcePackInfo(id, url, hash, shouldForce, prompt, origin);
     }
 
-    public BuilderImpl setOrigin(Origin origin) {
+    public BuilderImpl setOrigin(final Origin origin) {
       this.origin = origin;
       return this;
     }

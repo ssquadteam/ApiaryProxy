@@ -21,7 +21,7 @@ public final class ConnectionHandshakeEvent {
   private final InboundConnection connection;
   private final HandshakeIntent intent;
 
-  public ConnectionHandshakeEvent(InboundConnection connection, HandshakeIntent intent) {
+  public ConnectionHandshakeEvent(final InboundConnection connection, final HandshakeIntent intent) {
     this.connection = Preconditions.checkNotNull(connection, "connection");
     this.intent = Preconditions.checkNotNull(intent, "intent");
   }
@@ -34,7 +34,7 @@ public final class ConnectionHandshakeEvent {
    * @deprecated use {@link #ConnectionHandshakeEvent(InboundConnection, HandshakeIntent)}
    */
   @Deprecated(forRemoval = true)
-  public ConnectionHandshakeEvent(InboundConnection connection) {
+  public ConnectionHandshakeEvent(final InboundConnection connection) {
     this.connection = Preconditions.checkNotNull(connection, "connection");
     this.intent = HandshakeIntent.LOGIN;
   }

@@ -19,7 +19,7 @@ public final class ListenerCloseEvent {
   private final InetSocketAddress address;
   private final ListenerType listenerType;
 
-  public ListenerCloseEvent(InetSocketAddress address, ListenerType listenerType) {
+  public ListenerCloseEvent(final InetSocketAddress address, final ListenerType listenerType) {
     this.address = Preconditions.checkNotNull(address, "address");
     this.listenerType = Preconditions.checkNotNull(listenerType, "listenerType");
   }

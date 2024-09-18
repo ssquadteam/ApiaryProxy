@@ -43,9 +43,9 @@ public class VelocityTabListEntry implements TabListEntry {
   /**
    * Constructs the instance.
    */
-  public VelocityTabListEntry(VelocityTabList tabList, GameProfile profile, Component displayName,
-                              int latency,
-                              int gameMode, @Nullable ChatSession session, boolean listed) {
+  public VelocityTabListEntry(final VelocityTabList tabList, final GameProfile profile, final Component displayName,
+                              final int latency,
+                              final int gameMode, @Nullable final ChatSession session, final boolean listed) {
     this.tabList = tabList;
     this.profile = profile;
     this.displayName = displayName;
@@ -76,7 +76,7 @@ public class VelocityTabListEntry implements TabListEntry {
   }
 
   @Override
-  public TabListEntry setDisplayName(@Nullable Component displayName) {
+  public TabListEntry setDisplayName(@Nullable final Component displayName) {
     this.displayName = displayName;
     UpsertPlayerInfoPacket.Entry upsertEntry = this.tabList.createRawEntry(this);
     upsertEntry.setDisplayName(
@@ -89,7 +89,7 @@ public class VelocityTabListEntry implements TabListEntry {
     return this;
   }
 
-  void setDisplayNameWithoutUpdate(@Nullable Component displayName) {
+  void setDisplayNameWithoutUpdate(@Nullable final Component displayName) {
     this.displayName = displayName;
   }
 
@@ -99,7 +99,7 @@ public class VelocityTabListEntry implements TabListEntry {
   }
 
   @Override
-  public TabListEntry setLatency(int latency) {
+  public TabListEntry setLatency(final int latency) {
     this.latency = latency;
     UpsertPlayerInfoPacket.Entry upsertEntry = this.tabList.createRawEntry(this);
     upsertEntry.setLatency(latency);
@@ -107,7 +107,7 @@ public class VelocityTabListEntry implements TabListEntry {
     return this;
   }
 
-  void setLatencyWithoutUpdate(int latency) {
+  void setLatencyWithoutUpdate(final int latency) {
     this.latency = latency;
   }
 
@@ -117,7 +117,7 @@ public class VelocityTabListEntry implements TabListEntry {
   }
 
   @Override
-  public TabListEntry setGameMode(int gameMode) {
+  public TabListEntry setGameMode(final int gameMode) {
     this.gameMode = gameMode;
     UpsertPlayerInfoPacket.Entry upsertEntry = this.tabList.createRawEntry(this);
     upsertEntry.setGameMode(gameMode);
@@ -125,11 +125,11 @@ public class VelocityTabListEntry implements TabListEntry {
     return this;
   }
 
-  void setGameModeWithoutUpdate(int gameMode) {
+  void setGameModeWithoutUpdate(final int gameMode) {
     this.gameMode = gameMode;
   }
 
-  protected void setChatSession(@Nullable ChatSession session) {
+  protected void setChatSession(@Nullable final ChatSession session) {
     this.session = session;
   }
 
@@ -139,7 +139,7 @@ public class VelocityTabListEntry implements TabListEntry {
   }
 
   @Override
-  public VelocityTabListEntry setListed(boolean listed) {
+  public VelocityTabListEntry setListed(final boolean listed) {
     this.listed = listed;
     UpsertPlayerInfoPacket.Entry upsertEntry = this.tabList.createRawEntry(this);
     upsertEntry.setListed(listed);
@@ -147,7 +147,7 @@ public class VelocityTabListEntry implements TabListEntry {
     return this;
   }
 
-  void setListedWithoutUpdate(boolean listed) {
+  void setListedWithoutUpdate(final boolean listed) {
     this.listed = listed;
   }
 }

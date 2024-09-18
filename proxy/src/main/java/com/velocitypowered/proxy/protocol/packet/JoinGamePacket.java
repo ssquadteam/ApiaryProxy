@@ -63,7 +63,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return entityId;
   }
 
-  public void setEntityId(int entityId) {
+  public void setEntityId(final int entityId) {
     this.entityId = entityId;
   }
 
@@ -71,7 +71,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return gamemode;
   }
 
-  public void setGamemode(short gamemode) {
+  public void setGamemode(final short gamemode) {
     this.gamemode = gamemode;
   }
 
@@ -79,7 +79,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return dimension;
   }
 
-  public void setDimension(int dimension) {
+  public void setDimension(final int dimension) {
     this.dimension = dimension;
   }
 
@@ -91,7 +91,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return difficulty;
   }
 
-  public void setDifficulty(short difficulty) {
+  public void setDifficulty(final short difficulty) {
     this.difficulty = difficulty;
   }
 
@@ -99,7 +99,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return maxPlayers;
   }
 
-  public void setMaxPlayers(int maxPlayers) {
+  public void setMaxPlayers(final int maxPlayers) {
     this.maxPlayers = maxPlayers;
   }
 
@@ -107,7 +107,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return levelType;
   }
 
-  public void setLevelType(@Nullable String levelType) {
+  public void setLevelType(@Nullable final String levelType) {
     this.levelType = levelType;
   }
 
@@ -115,7 +115,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return viewDistance;
   }
 
-  public void setViewDistance(int viewDistance) {
+  public void setViewDistance(final int viewDistance) {
     this.viewDistance = viewDistance;
   }
 
@@ -123,7 +123,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return reducedDebugInfo;
   }
 
-  public void setReducedDebugInfo(boolean reducedDebugInfo) {
+  public void setReducedDebugInfo(final boolean reducedDebugInfo) {
     this.reducedDebugInfo = reducedDebugInfo;
   }
 
@@ -131,7 +131,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return dimensionInfo;
   }
 
-  public void setDimensionInfo(DimensionInfo dimensionInfo) {
+  public void setDimensionInfo(final DimensionInfo dimensionInfo) {
     this.dimensionInfo = dimensionInfo;
   }
 
@@ -139,7 +139,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return previousGamemode;
   }
 
-  public void setPreviousGamemode(short previousGamemode) {
+  public void setPreviousGamemode(final short previousGamemode) {
     this.previousGamemode = previousGamemode;
   }
 
@@ -147,7 +147,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return isHardcore;
   }
 
-  public void setIsHardcore(boolean isHardcore) {
+  public void setIsHardcore(final boolean isHardcore) {
     this.isHardcore = isHardcore;
   }
 
@@ -155,7 +155,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return doLimitedCrafting;
   }
 
-  public void setDoLimitedCrafting(boolean doLimitedCrafting) {
+  public void setDoLimitedCrafting(final boolean doLimitedCrafting) {
     this.doLimitedCrafting = doLimitedCrafting;
   }
 
@@ -167,7 +167,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return simulationDistance;
   }
 
-  public void setSimulationDistance(int simulationDistance) {
+  public void setSimulationDistance(final int simulationDistance) {
     this.simulationDistance = simulationDistance;
   }
 
@@ -175,7 +175,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return lastDeathPosition;
   }
 
-  public void setLastDeathPosition(@Nullable Pair<String, Long> lastDeathPosition) {
+  public void setLastDeathPosition(@Nullable final Pair<String, Long> lastDeathPosition) {
     this.lastDeathPosition = lastDeathPosition;
   }
 
@@ -183,7 +183,7 @@ public class JoinGamePacket implements MinecraftPacket {
     return portalCooldown;
   }
 
-  public void setPortalCooldown(int portalCooldown) {
+  public void setPortalCooldown(final int portalCooldown) {
     this.portalCooldown = portalCooldown;
   }
 
@@ -214,7 +214,7 @@ public class JoinGamePacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_20_2)) {
       // haha funny, they made 1.20.2 more complicated
       this.decode1202Up(buf, version);
@@ -227,7 +227,7 @@ public class JoinGamePacket implements MinecraftPacket {
     }
   }
 
-  private void decodeLegacy(ByteBuf buf, ProtocolVersion version) {
+  private void decodeLegacy(final ByteBuf buf, final ProtocolVersion version) {
     this.entityId = buf.readInt();
     this.gamemode = buf.readByte();
     this.isHardcore = (this.gamemode & 0x08) != 0;
@@ -257,7 +257,7 @@ public class JoinGamePacket implements MinecraftPacket {
     }
   }
 
-  private void decode116Up(ByteBuf buf, ProtocolVersion version) {
+  private void decode116Up(final ByteBuf buf, final ProtocolVersion version) {
     this.entityId = buf.readInt();
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_16_2)) {
       this.isHardcore = buf.readBoolean();
@@ -312,7 +312,7 @@ public class JoinGamePacket implements MinecraftPacket {
   }
 
   @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
-  private void decode1202Up(ByteBuf buf, ProtocolVersion version) {
+  private void decode1202Up(final ByteBuf buf, final ProtocolVersion version) {
     this.entityId = buf.readInt();
     this.isHardcore = buf.readBoolean();
 
@@ -355,7 +355,7 @@ public class JoinGamePacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_20_2)) {
       // haha funny, they made 1.20.2 more complicated
       this.encode1202Up(buf, version);
@@ -368,7 +368,7 @@ public class JoinGamePacket implements MinecraftPacket {
     }
   }
 
-  private void encodeLegacy(ByteBuf buf, ProtocolVersion version) {
+  private void encodeLegacy(final ByteBuf buf, final ProtocolVersion version) {
     buf.writeInt(entityId);
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_16_2)) {
       buf.writeBoolean(isHardcore);
@@ -403,7 +403,7 @@ public class JoinGamePacket implements MinecraftPacket {
     }
   }
 
-  private void encode116Up(ByteBuf buf, ProtocolVersion version) {
+  private void encode116Up(final ByteBuf buf, final ProtocolVersion version) {
     buf.writeInt(entityId);
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_16_2)) {
       buf.writeBoolean(isHardcore);
@@ -457,7 +457,7 @@ public class JoinGamePacket implements MinecraftPacket {
     }
   }
 
-  private void encode1202Up(ByteBuf buf, ProtocolVersion version) {
+  private void encode1202Up(final ByteBuf buf, final ProtocolVersion version) {
     buf.writeInt(entityId);
     buf.writeBoolean(isHardcore);
 
@@ -503,7 +503,7 @@ public class JoinGamePacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

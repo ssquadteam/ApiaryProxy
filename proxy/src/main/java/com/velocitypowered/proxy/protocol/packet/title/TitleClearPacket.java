@@ -38,7 +38,7 @@ public class TitleClearPacket extends GenericTitlePacket {
   }
 
   @Override
-  public void setAction(ActionType action) {
+  public void setAction(final ActionType action) {
     if (action != ActionType.HIDE && action != ActionType.RESET) {
       throw new IllegalArgumentException("TitleClearPacket only accepts CLEAR and RESET actions");
     }
@@ -46,7 +46,7 @@ public class TitleClearPacket extends GenericTitlePacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     buf.writeBoolean(getAction() == ActionType.RESET);
   }
 
@@ -58,7 +58,7 @@ public class TitleClearPacket extends GenericTitlePacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

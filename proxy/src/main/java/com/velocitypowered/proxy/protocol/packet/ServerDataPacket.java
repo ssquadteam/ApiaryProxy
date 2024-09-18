@@ -48,16 +48,16 @@ public class ServerDataPacket implements MinecraftPacket {
    * @param favicon the server favicon (may be null)
    * @param secureChatEnforced whether secure chat is enforced (for versions 1.19.1 to 1.20.5)
    */
-  public ServerDataPacket(@Nullable ComponentHolder description, @Nullable Favicon favicon,
-                          boolean secureChatEnforced) {
+  public ServerDataPacket(@Nullable final ComponentHolder description, @Nullable final Favicon favicon,
+                          final boolean secureChatEnforced) {
     this.description = description;
     this.favicon = favicon;
     this.secureChatEnforced = secureChatEnforced;
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_19_4) || buf.readBoolean()) {
       this.description = ComponentHolder.read(buf, protocolVersion);
     }
@@ -81,8 +81,8 @@ public class ServerDataPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     boolean hasDescription = this.description != null;
     if (protocolVersion.lessThan(ProtocolVersion.MINECRAFT_1_19_4)) {
       buf.writeBoolean(hasDescription);
@@ -113,7 +113,7 @@ public class ServerDataPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
@@ -129,7 +129,7 @@ public class ServerDataPacket implements MinecraftPacket {
     return secureChatEnforced;
   }
 
-  public void setSecureChatEnforced(boolean secureChatEnforced) {
+  public void setSecureChatEnforced(final boolean secureChatEnforced) {
     this.secureChatEnforced = secureChatEnforced;
   }
 }

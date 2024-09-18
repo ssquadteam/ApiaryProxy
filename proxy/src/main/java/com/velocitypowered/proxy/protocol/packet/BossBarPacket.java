@@ -191,7 +191,7 @@ public class BossBarPacket implements MinecraftPacket {
     return uuid;
   }
 
-  public void setUuid(@Nullable UUID uuid) {
+  public void setUuid(@Nullable final UUID uuid) {
     this.uuid = uuid;
   }
 
@@ -199,7 +199,7 @@ public class BossBarPacket implements MinecraftPacket {
     return action;
   }
 
-  public void setAction(int action) {
+  public void setAction(final int action) {
     this.action = action;
   }
 
@@ -207,7 +207,7 @@ public class BossBarPacket implements MinecraftPacket {
     return name;
   }
 
-  public void setName(@Nullable ComponentHolder name) {
+  public void setName(@Nullable final ComponentHolder name) {
     this.name = name;
   }
 
@@ -215,7 +215,7 @@ public class BossBarPacket implements MinecraftPacket {
     return percent;
   }
 
-  public void setPercent(float percent) {
+  public void setPercent(final float percent) {
     this.percent = percent;
   }
 
@@ -223,7 +223,7 @@ public class BossBarPacket implements MinecraftPacket {
     return color;
   }
 
-  public void setColor(int color) {
+  public void setColor(final int color) {
     this.color = color;
   }
 
@@ -231,7 +231,7 @@ public class BossBarPacket implements MinecraftPacket {
     return overlay;
   }
 
-  public void setOverlay(int overlay) {
+  public void setOverlay(final int overlay) {
     this.overlay = overlay;
   }
 
@@ -239,7 +239,7 @@ public class BossBarPacket implements MinecraftPacket {
     return flags;
   }
 
-  public void setFlags(short flags) {
+  public void setFlags(final short flags) {
     this.flags = flags;
   }
 
@@ -257,7 +257,7 @@ public class BossBarPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     this.uuid = ProtocolUtils.readUuid(buf);
     this.action = ProtocolUtils.readVarInt(buf);
     switch (action) {
@@ -289,7 +289,7 @@ public class BossBarPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (uuid == null) {
       throw new IllegalStateException("No boss bar UUID specified");
     }
@@ -329,7 +329,7 @@ public class BossBarPacket implements MinecraftPacket {
     }
   }
 
-  private static byte serializeFlags(Set<BossBar.Flag> flags) {
+  private static byte serializeFlags(final Set<BossBar.Flag> flags) {
     byte val = 0x0;
     for (BossBar.Flag flag : flags) {
       val |= (byte) FLAG_BITS_TO_PROTOCOL.get(flag);
@@ -338,7 +338,7 @@ public class BossBarPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

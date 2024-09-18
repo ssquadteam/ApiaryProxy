@@ -79,9 +79,9 @@ public class VelocityServerConnection implements MinecraftConnectionAssociation,
    * @param proxyPlayer      the player connecting to the server
    * @param server           the Velocity proxy instance
    */
-  public VelocityServerConnection(VelocityRegisteredServer registeredServer,
-      @Nullable VelocityRegisteredServer previousServer,
-      ConnectedPlayer proxyPlayer, VelocityServer server) {
+  public VelocityServerConnection(final VelocityRegisteredServer registeredServer,
+      @Nullable final VelocityRegisteredServer previousServer,
+      final ConnectedPlayer proxyPlayer, final VelocityServer server) {
     this.registeredServer = registeredServer;
     this.previousServer = previousServer;
     this.proxyPlayer = proxyPlayer;
@@ -148,7 +148,7 @@ public class VelocityServerConnection implements MinecraftConnectionAssociation,
     );
   }
 
-  private String createBungeeGuardForwardingAddress(byte[] forwardingSecret) {
+  private String createBungeeGuardForwardingAddress(final byte[] forwardingSecret) {
     return PlayerDataForwarding.createBungeeGuardForwardingAddress(
       proxyPlayer.getVirtualHost().orElseGet(() ->
         registeredServer.getServerInfo().getAddress()).getHostString(),
@@ -289,7 +289,7 @@ public class VelocityServerConnection implements MinecraftConnectionAssociation,
    * @param data       the data
    * @return whether the message was sent
    */
-  public boolean sendPluginMessage(ChannelIdentifier identifier, ByteBuf data) {
+  public boolean sendPluginMessage(final ChannelIdentifier identifier, final ByteBuf data) {
     Preconditions.checkNotNull(identifier, "identifier");
     Preconditions.checkNotNull(data, "data");
 
@@ -350,7 +350,7 @@ public class VelocityServerConnection implements MinecraftConnectionAssociation,
    *
    * @param connectionPhase The {@link BackendConnectionPhase}
    */
-  public void setConnectionPhase(BackendConnectionPhase connectionPhase) {
+  public void setConnectionPhase(final BackendConnectionPhase connectionPhase) {
     this.connectionPhase = connectionPhase;
   }
 

@@ -44,8 +44,8 @@ public class ServerLoginPluginMessageEvent implements ResultedEvent<ResponseResu
    * @param sequenceId the ID of the message
    */
   public ServerLoginPluginMessageEvent(
-      ServerConnection connection, ChannelIdentifier identifier,
-      byte[] contents, int sequenceId) {
+      final ServerConnection connection, final ChannelIdentifier identifier,
+      final byte[] contents, final int sequenceId) {
     this.connection = checkNotNull(connection, "connection");
     this.identifier = checkNotNull(identifier, "identifier");
     this.contents = checkNotNull(contents, "contents");
@@ -59,7 +59,7 @@ public class ServerLoginPluginMessageEvent implements ResultedEvent<ResponseResu
   }
 
   @Override
-  public void setResult(ResponseResult result) {
+  public void setResult(final ResponseResult result) {
     this.result = checkNotNull(result, "result");
   }
 
@@ -118,13 +118,13 @@ public class ServerLoginPluginMessageEvent implements ResultedEvent<ResponseResu
   /**
    * The result class, containing a response to the login plugin message sent by the server.
    */
-  public static class ResponseResult implements ResultedEvent.Result {
+  public static final class ResponseResult implements ResultedEvent.Result {
 
     private static final ResponseResult UNKNOWN = new ResponseResult(null);
 
     private final byte@Nullable [] response;
 
-    private ResponseResult(byte @Nullable [] response) {
+    private ResponseResult(final byte @Nullable [] response) {
       this.response = response;
     }
 
@@ -150,13 +150,13 @@ public class ServerLoginPluginMessageEvent implements ResultedEvent<ResponseResu
       return UNKNOWN;
     }
 
-    public static ResponseResult reply(byte[] response) {
+    public static ResponseResult reply(final byte[] response) {
       checkNotNull(response, "response");
       return new ResponseResult(response);
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }

@@ -37,7 +37,7 @@ public class ByteBufDataInput implements ByteArrayDataInput {
    *
    * @param buf the buffer to read from
    */
-  public ByteBufDataInput(ByteBuf buf) {
+  public ByteBufDataInput(final ByteBuf buf) {
     this.in = buf;
   }
 
@@ -46,17 +46,17 @@ public class ByteBufDataInput implements ByteArrayDataInput {
   }
 
   @Override
-  public void readFully(byte @NotNull [] b) {
+  public void readFully(final byte @NotNull [] b) {
     in.readBytes(b);
   }
 
   @Override
-  public void readFully(byte @NotNull [] b, int off, int len) {
+  public void readFully(final byte @NotNull [] b, final int off, final int len) {
     in.readBytes(b, off, len);
   }
 
   @Override
-  public int skipBytes(int n) {
+  public int skipBytes(final int n) {
     in.skipBytes(n);
     return n;
   }

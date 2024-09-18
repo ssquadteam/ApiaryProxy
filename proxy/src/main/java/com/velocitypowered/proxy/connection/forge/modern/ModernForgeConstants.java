@@ -20,6 +20,6 @@ package com.velocitypowered.proxy.connection.forge.modern;
 /**
  * Constants for use with Modern Forge systems.
  */
-public class ModernForgeConstants {
+public final class ModernForgeConstants {
   public static final String MODERN_FORGE_TOKEN = "FORGE";
 }

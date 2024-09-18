@@ -48,7 +48,7 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
    *
    * @param direction the direction from which we decode from
    */
-  public MinecraftDecoder(ProtocolUtils.Direction direction) {
+  public MinecraftDecoder(final ProtocolUtils.Direction direction) {
     this.direction = Preconditions.checkNotNull(direction, "direction");
     this.registry = StateRegistry.HANDSHAKE.getProtocolRegistry(
         direction, ProtocolVersion.MINIMUM_VERSION);
@@ -56,7 +56,7 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
   }
 
   @Override
-  public void channelRead(@NotNull ChannelHandlerContext ctx, @NotNull Object msg) throws Exception {
+  public void channelRead(@NotNull final ChannelHandlerContext ctx, @NotNull final Object msg) throws Exception {
     if (msg instanceof ByteBuf buf) {
       tryDecode(ctx, buf);
     } else {
@@ -64,7 +64,7 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
     }
   }
 
-  private void tryDecode(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
+  private void tryDecode(final ChannelHandlerContext ctx, final ByteBuf buf) throws Exception {
     if (!ctx.channel().isActive() || !buf.isReadable()) {
       buf.release();
       return;
@@ -96,7 +96,7 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
     }
   }
 
-  private void doLengthSanityChecks(ByteBuf buf, MinecraftPacket packet) throws Exception {
+  private void doLengthSanityChecks(final ByteBuf buf, final MinecraftPacket packet) throws Exception {
     int expectedMinLen = packet.expectedMinLength(buf, direction, registry.version);
     int expectedMaxLen = packet.expectedMaxLength(buf, direction, registry.version);
     if (expectedMaxLen != -1 && buf.readableBytes() > expectedMaxLen) {
@@ -107,7 +107,7 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
     }
   }
 
-  private Exception handleOverflow(MinecraftPacket packet, int expected, int actual) {
+  private Exception handleOverflow(final MinecraftPacket packet, final int expected, final int actual) {
     if (DEBUG) {
       return new CorruptedFrameException("Packet sent for " + packet.getClass() + " was too "
           + "big (expected " + expected + " bytes, got " + actual + " bytes)");
@@ -116,7 +116,7 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
     }
   }
 
-  private Exception handleUnderflow(MinecraftPacket packet, int expected, int actual) {
+  private Exception handleUnderflow(final MinecraftPacket packet, final int expected, final int actual) {
     if (DEBUG) {
       return new CorruptedFrameException("Packet sent for " + packet.getClass() + " was too "
           + "small (expected " + expected + " bytes, got " + actual + " bytes)");
@@ -125,7 +125,7 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
     }
   }
 
-  private Exception handleDecodeFailure(Exception cause, MinecraftPacket packet, int packetId) {
+  private Exception handleDecodeFailure(final Exception cause, final MinecraftPacket packet, final int packetId) {
     if (DEBUG) {
       return new CorruptedFrameException(
           "Error decoding " + packet.getClass() + " " + getExtraConnectionDetail(packetId), cause);
@@ -134,16 +134,16 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
     }
   }
 
-  private String getExtraConnectionDetail(int packetId) {
+  private String getExtraConnectionDetail(final int packetId) {
     return "Direction " + direction + " Protocol " + registry.version + " State " + state
         + " ID " + Integer.toHexString(packetId);
   }
 
-  public void setProtocolVersion(ProtocolVersion protocolVersion) {
+  public void setProtocolVersion(final ProtocolVersion protocolVersion) {
     this.registry = state.getProtocolRegistry(direction, protocolVersion);
   }
 
-  public void setState(StateRegistry state) {
+  public void setState(final StateRegistry state) {
     this.state = state;
     this.setProtocolVersion(registry.version);
   }

@@ -21,9 +21,9 @@ import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NotNull;
 
-class ModArgumentPropertySerializer implements ArgumentPropertySerializer<ModArgumentProperty> {
+final class ModArgumentPropertySerializer implements ArgumentPropertySerializer<ModArgumentProperty> {
 
   static final ModArgumentPropertySerializer MOD = new ModArgumentPropertySerializer();
 
@@ -32,7 +32,7 @@ class ModArgumentPropertySerializer implements ArgumentPropertySerializer<ModArg
   }
 
   @Override
-  public @Nullable ModArgumentProperty deserialize(ByteBuf buf, ProtocolVersion version) {
+  public @NotNull ModArgumentProperty deserialize(final ByteBuf buf, final ProtocolVersion version) {
     ArgumentIdentifier identifier;
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_19)) {
       int idx = ProtocolUtils.readVarInt(buf);
@@ -47,7 +47,7 @@ class ModArgumentPropertySerializer implements ArgumentPropertySerializer<ModArg
   }
 
   @Override
-  public void serialize(ModArgumentProperty object, ByteBuf buf, ProtocolVersion version) {
+  public void serialize(final ModArgumentProperty object, final ByteBuf buf, final ProtocolVersion version) {
     // This is special-cased by ArgumentPropertyRegistry
     throw new UnsupportedOperationException();
   }

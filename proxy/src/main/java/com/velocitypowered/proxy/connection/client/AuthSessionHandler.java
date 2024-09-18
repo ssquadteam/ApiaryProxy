@@ -74,8 +74,8 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
   private State loginState = State.START; // 1.20.2+
   private final String minimumVersion;
 
-  AuthSessionHandler(VelocityServer server, LoginInboundConnection inbound,
-      GameProfile profile, boolean onlineMode) {
+  AuthSessionHandler(final VelocityServer server, final LoginInboundConnection inbound,
+      final GameProfile profile, final boolean onlineMode) {
     this.server = Preconditions.checkNotNull(server, "server");
     this.inbound = Preconditions.checkNotNull(inbound, "inbound");
     this.profile = Preconditions.checkNotNull(profile, "profile");
@@ -155,7 +155,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
     });
   }
 
-  private boolean versionCheck(MinecraftConnection connection) {
+  private boolean versionCheck(final MinecraftConnection connection) {
     final ProtocolVersion minimumProtocolVersion = ProtocolVersion.getVersionByName(minimumVersion);
     final ProtocolVersion maximumProtocolVersion = ProtocolVersion.MAXIMUM_VERSION;
     final String clientProtocolVersion = connection.getProtocolVersion().getVersionIntroducedIn();
@@ -172,7 +172,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
     return true;
   }
 
-  private void startLoginCompletion(ConnectedPlayer player) {
+  private void startLoginCompletion(final ConnectedPlayer player) {
     int threshold = server.getConfiguration().getCompressionThreshold();
     if (threshold >= 0 && mcConnection.getProtocolVersion().noLessThan(MINECRAFT_1_8)) {
       mcConnection.write(new SetCompressionPacket(threshold));
@@ -214,7 +214,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(LoginAcknowledgedPacket packet) {
+  public boolean handle(final LoginAcknowledgedPacket packet) {
     if (loginState != State.SUCCESS_SENT) {
       inbound.disconnect(Component.translatable("multiplayer.disconnect.invalid_player_data"));
     } else {
@@ -233,7 +233,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ServerboundCookieResponsePacket packet) {
+  public boolean handle(final ServerboundCookieResponsePacket packet) {
     server.getEventManager()
         .fire(new CookieReceiveEvent(connectedPlayer, packet.getKey(), packet.getPayload()))
         .thenAcceptAsync(event -> {
@@ -250,7 +250,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
     return true;
   }
 
-  private void completeLoginProtocolPhaseAndInitialize(ConnectedPlayer player) {
+  private void completeLoginProtocolPhaseAndInitialize(final ConnectedPlayer player) {
     mcConnection.setAssociation(player);
 
     server.getEventManager().fire(new LoginEvent(player)).thenAcceptAsync(event -> {
@@ -292,7 +292,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
     });
   }
 
-  private CompletableFuture<Void> connectToInitialServer(ConnectedPlayer player) {
+  private CompletableFuture<Void> connectToInitialServer(final ConnectedPlayer player) {
     Optional<RegisteredServer> initialFromConfig = player.getNextServerToTry();
     PlayerChooseInitialServerEvent event =
         new PlayerChooseInitialServerEvent(player, initialFromConfig.orElse(null));
@@ -310,7 +310,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void handleUnknown(ByteBuf buf) {
+  public void handleUnknown(final ByteBuf buf) {
     mcConnection.close(true);
   }
 

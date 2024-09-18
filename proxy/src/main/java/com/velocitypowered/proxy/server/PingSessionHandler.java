@@ -44,8 +44,8 @@ public class PingSessionHandler implements MinecraftSessionHandler {
   private final ProtocolVersion version;
   private boolean completed = false;
 
-  PingSessionHandler(CompletableFuture<ServerPing> result, RegisteredServer server,
-      MinecraftConnection connection, ProtocolVersion version) {
+  PingSessionHandler(final CompletableFuture<ServerPing> result, final RegisteredServer server,
+      final MinecraftConnection connection, final ProtocolVersion version) {
     this.result = result;
     this.server = server;
     this.connection = connection;
@@ -69,7 +69,7 @@ public class PingSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(StatusResponsePacket packet) {
+  public boolean handle(final StatusResponsePacket packet) {
     // All good!
     completed = true;
     connection.close(true);
@@ -88,7 +88,7 @@ public class PingSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void exception(Throwable throwable) {
+  public void exception(final Throwable throwable) {
     completed = true;
     result.completeExceptionally(throwable);
   }

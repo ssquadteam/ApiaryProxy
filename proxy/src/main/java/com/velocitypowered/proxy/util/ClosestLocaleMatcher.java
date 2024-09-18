@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Matches a player's locale to the "closest" Velocity locale, for message localization.
  */
-public class ClosestLocaleMatcher {
+public final class ClosestLocaleMatcher {
 
   public static final ClosestLocaleMatcher INSTANCE = new ClosestLocaleMatcher();
 

@@ -37,14 +37,14 @@ public class AlertRawCommand {
 
   private final ProxyServer server;
 
-  public AlertRawCommand(ProxyServer server) {
+  public AlertRawCommand(final ProxyServer server) {
     this.server = server;
   }
 
   /**
    * Registers or unregisters the command based on the configuration value.
    */
-  public void register(boolean isAlertRawEnabled) {
+  public void register(final boolean isAlertRawEnabled) {
     if (!isAlertRawEnabled) {
       return;
     }

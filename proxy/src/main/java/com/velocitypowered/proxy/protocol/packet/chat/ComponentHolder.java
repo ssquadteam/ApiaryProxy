@@ -67,17 +67,17 @@ public class ComponentHolder {
   private @MonotonicNonNull String json;
   private @MonotonicNonNull BinaryTag binaryTag;
 
-  public ComponentHolder(ProtocolVersion version, Component component) {
+  public ComponentHolder(final ProtocolVersion version, final Component component) {
     this.version = version;
     this.component = component;
   }
 
-  public ComponentHolder(ProtocolVersion version, String json) {
+  public ComponentHolder(final ProtocolVersion version, final String json) {
     this.version = version;
     this.json = json;
   }
 
-  public ComponentHolder(ProtocolVersion version, BinaryTag binaryTag) {
+  public ComponentHolder(final ProtocolVersion version, final BinaryTag binaryTag) {
     this.version = version;
     this.binaryTag = binaryTag;
   }
@@ -148,7 +148,7 @@ public class ComponentHolder {
    * @return the {@link BinaryTag} representing the serialized JSON element
    * @throws IllegalArgumentException if the JSON element is of an unsupported or unknown type
    */
-  public static BinaryTag serialize(JsonElement json) {
+  public static BinaryTag serialize(final JsonElement json) {
     if (json instanceof JsonPrimitive jsonPrimitive) {
 
       if (jsonPrimitive.isNumber()) {
@@ -252,7 +252,7 @@ public class ComponentHolder {
    * @return the {@link JsonElement} representing the deserialized NBT data
    * @throws IllegalArgumentException if the NBT tag type is unsupported or unknown
    */
-  public static JsonElement deserialize(BinaryTag tag) {
+  public static JsonElement deserialize(final BinaryTag tag) {
     switch (tag.type().id()) {
       case 1: // BinaryTagTypes.BYTE:
         return new JsonPrimitive(((ByteBinaryTag) tag).value());
@@ -336,7 +336,7 @@ public class ComponentHolder {
    * @param version the {@link ProtocolVersion} indicating how the component should be deserialized
    * @return a {@link ComponentHolder} containing the deserialized component
    */
-  public static ComponentHolder read(ByteBuf buf, ProtocolVersion version) {
+  public static ComponentHolder read(final ByteBuf buf, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_20_3)) {
       return new ComponentHolder(version,
           ProtocolUtils.readBinaryTag(buf, version, BinaryTagIO.reader()));
@@ -356,7 +356,7 @@ public class ComponentHolder {
    *
    * @param buf the {@link ByteBuf} where the component data will be written
    */
-  public void write(ByteBuf buf) {
+  public void write(final ByteBuf buf) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_20_3)) {
       ProtocolUtils.writeBinaryTag(buf, version, getBinaryTag());
     } else {

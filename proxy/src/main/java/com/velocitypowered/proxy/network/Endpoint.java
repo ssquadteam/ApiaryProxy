@@ -26,7 +26,7 @@ import io.netty.channel.Channel;
  */
 public record Endpoint(Channel channel, ListenerType type) {
 
-  public Endpoint(Channel channel, ListenerType type) {
+  public Endpoint(final Channel channel, final ListenerType type) {
     this.channel = Preconditions.checkNotNull(channel, "channel");
     this.type = Preconditions.checkNotNull(type, "type");
   }

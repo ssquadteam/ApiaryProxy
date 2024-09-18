@@ -41,14 +41,14 @@ public class ShowAllCommand {
 
   private final ProxyServer server;
 
-  public ShowAllCommand(ProxyServer server) {
+  public ShowAllCommand(final ProxyServer server) {
     this.server = server;
   }
 
   /**
    * Registers or unregisters the command based on the configuration value.
    */
-  public void register(boolean isShowAllEnabled) {
+  public void register(final boolean isShowAllEnabled) {
     if (!isShowAllEnabled) {
       return;
     }

@@ -80,13 +80,13 @@ public abstract sealed class ResourcePackHandler
    */
   public abstract void clearAppliedResourcePacks();
 
-  public abstract boolean remove(final UUID id);
+  public abstract boolean remove(UUID id);
 
   /**
    * Queues a resource-pack for sending to the player and sends it immediately if the queue is
    * empty.
    */
-  public abstract void queueResourcePack(final @NotNull ResourcePackInfo info);
+  public abstract void queueResourcePack(@NotNull ResourcePackInfo info);
 
   /**
    * Queues a resource-request for sending to the player and sends it immediately if the queue is
@@ -143,7 +143,7 @@ public abstract sealed class ResourcePackHandler
    * @param bundle the resource pack response bundle
    */
   public abstract boolean onResourcePackResponse(
-          final @NotNull ResourcePackResponseBundle bundle);
+          @NotNull ResourcePackResponseBundle bundle);
 
   protected boolean handleResponseResult(
           final @Nullable ResourcePackInfo queued,
@@ -169,7 +169,7 @@ public abstract sealed class ResourcePackHandler
    *
    * @param hash the resource pack hash
    */
-  public abstract boolean hasPackAppliedByHash(final byte[] hash);
+  public abstract boolean hasPackAppliedByHash(byte[] hash);
 
   @SuppressWarnings("checkstyle:MissingJavadocMethod")
   public void checkAlreadyAppliedPack(final byte[] hash) {

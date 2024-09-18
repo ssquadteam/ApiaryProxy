@@ -38,14 +38,14 @@ public class PingCommand {
 
   private final ProxyServer server;
 
-  public PingCommand(ProxyServer server) {
+  public PingCommand(final ProxyServer server) {
     this.server = server;
   }
 
   /**
    * Registers or unregisters the command based on the configuration value.
    */
-  public void register(boolean isPingEnabled) {
+  public void register(final boolean isPingEnabled) {
     if (!isPingEnabled) {
       return;
     }
@@ -103,7 +103,7 @@ public class PingCommand {
     );
   }
 
-  private int getPing(CommandContext<CommandSource> context, Player player) {
+  private int getPing(final CommandContext<CommandSource> context, final Player player) {
     long ping = player.getPing();
 
     if (ping == -1L) {

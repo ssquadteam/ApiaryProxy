@@ -44,7 +44,7 @@ public final class VelocityCommandMeta implements CommandMeta {
     private final ImmutableList.Builder<CommandNode<CommandSource>> hints;
     private @MonotonicNonNull Object plugin;
 
-    public Builder(final String alias) {
+    Builder(final String alias) {
       Preconditions.checkNotNull(alias, "alias");
       this.aliases = ImmutableSet.<String>builder()
           .add(alias.toLowerCase(Locale.ENGLISH));
@@ -77,7 +77,7 @@ public final class VelocityCommandMeta implements CommandMeta {
     }
 
     @Override
-    public CommandMeta.Builder plugin(Object plugin) {
+    public CommandMeta.Builder plugin(final Object plugin) {
       Preconditions.checkNotNull(plugin, "plugin");
       this.plugin = plugin;
       return this;

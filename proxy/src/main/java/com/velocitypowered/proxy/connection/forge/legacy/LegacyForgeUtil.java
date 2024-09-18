@@ -30,7 +30,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.List;
 
-class LegacyForgeUtil {
+final class LegacyForgeUtil {
 
   private LegacyForgeUtil() {
     throw new AssertionError();
@@ -42,7 +42,7 @@ class LegacyForgeUtil {
    * @param message The message to analyse
    * @return The discriminator
    */
-  static byte getHandshakePacketDiscriminator(PluginMessagePacket message) {
+  static byte getHandshakePacketDiscriminator(final PluginMessagePacket message) {
     Preconditions.checkArgument(message.getChannel().equals(FORGE_LEGACY_HANDSHAKE_CHANNEL));
     Preconditions.checkArgument(message.content().isReadable());
     return message.content().getByte(0);
@@ -54,7 +54,7 @@ class LegacyForgeUtil {
    * @param message The message
    * @return The list of mods. May be empty.
    */
-  static List<ModInfo.Mod> readModList(PluginMessagePacket message) {
+  static List<ModInfo.Mod> readModList(final PluginMessagePacket message) {
     Preconditions.checkNotNull(message, "message");
     Preconditions.checkArgument(message.getChannel().equals(FORGE_LEGACY_HANDSHAKE_CHANNEL),
         "message is not a FML HS plugin message");

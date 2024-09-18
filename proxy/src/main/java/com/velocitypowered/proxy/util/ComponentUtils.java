@@ -100,7 +100,7 @@ public final class ComponentUtils {
    * @param component the component to serialize
    * @return the serialized component
    */
-  public static @NotNull String serializeComponent(Component component) {
+  public static @NotNull String serializeComponent(final Component component) {
     return MINI.serialize(component);
   }
 
@@ -110,7 +110,7 @@ public final class ComponentUtils {
    * @param input the string to parse
    * @return the parsed component
    */
-  public static @NotNull Component parseComponent(String input) {
+  public static @NotNull Component parseComponent(final String input) {
     return MINI.deserialize(colorifyLegacy(input));
   }
 
@@ -120,7 +120,7 @@ public final class ComponentUtils {
    * @param input the string to colorify into a component
    * @return the colorized component
    */
-  public static @NotNull Component colorify(String input) {
+  public static @NotNull Component colorify(final String input) {
     if (input == null) {
       return Component.empty();
     }
@@ -140,7 +140,7 @@ public final class ComponentUtils {
    * @param input the string to colorify into a component
    * @return the colorized component
    */
-  public static String colorifyLegacy(String input) {
+  public static String colorifyLegacy(final String input) {
     String parsedStr = input;
 
     for (Map.Entry<String, String> entry : COLOR_MAP.entrySet()) {
@@ -162,7 +162,7 @@ public final class ComponentUtils {
     return input;
   }
 
-  private static @NotNull String colorMatcher(@NotNull String literal, @NotNull Pattern pattern, boolean unboxed) {
+  private static @NotNull String colorMatcher(@NotNull String literal, @NotNull final Pattern pattern, final boolean unboxed) {
     final Matcher matcher = pattern.matcher(literal);
 
     while (matcher.find()) {
@@ -207,7 +207,7 @@ public final class ComponentUtils {
    * @param hex the hex pattern to normalize
    * @return the normalized hex pattern
    */
-  private static @NotNull String normalizeHex(@NotNull String hex) {
+  private static @NotNull String normalizeHex(@NotNull final String hex) {
     if (hex.startsWith("<") || hex.startsWith("{")) {
       return hex.substring(1, hex.length() - 1);
     } else if (hex.startsWith("&")) {

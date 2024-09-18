@@ -30,7 +30,7 @@ public final class DisconnectEvent {
   private final Player player;
   private final LoginStatus loginStatus;
 
-  public DisconnectEvent(Player player, LoginStatus loginStatus) {
+  public DisconnectEvent(final Player player, final LoginStatus loginStatus) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.loginStatus = Preconditions.checkNotNull(loginStatus, "loginStatus");
   }

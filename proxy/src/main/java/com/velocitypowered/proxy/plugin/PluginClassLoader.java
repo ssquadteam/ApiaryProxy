@@ -37,7 +37,7 @@ public class PluginClassLoader extends URLClassLoader {
     ClassLoader.registerAsParallelCapable();
   }
 
-  public PluginClassLoader(URL[] urls) {
+  public PluginClassLoader(final URL[] urls) {
     super(urls, Velocity.class.getClassLoader());
   }
 
@@ -45,7 +45,7 @@ public class PluginClassLoader extends URLClassLoader {
     loaders.add(this);
   }
 
-  void addPath(Path path) {
+  void addPath(final Path path) {
     try {
       addURL(path.toUri().toURL());
     } catch (MalformedURLException e) {
@@ -60,11 +60,11 @@ public class PluginClassLoader extends URLClassLoader {
   }
 
   @Override
-  protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+  protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
     return loadClass0(name, resolve, true);
   }
 
-  private Class<?> loadClass0(String name, boolean resolve, boolean checkOther)
+  private Class<?> loadClass0(final String name, final boolean resolve, final boolean checkOther)
       throws ClassNotFoundException {
     try {
       return super.loadClass(name, resolve);

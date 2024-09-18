@@ -47,12 +47,12 @@ public class UpsertPlayerInfoPacket implements MinecraftPacket {
     this.entries = new ArrayList<>();
   }
 
-  public UpsertPlayerInfoPacket(Action action) {
+  public UpsertPlayerInfoPacket(final Action action) {
     this.actions = EnumSet.of(action);
     this.entries = new ArrayList<>();
   }
 
-  public UpsertPlayerInfoPacket(EnumSet<Action> actions, List<Entry> entries) {
+  public UpsertPlayerInfoPacket(final EnumSet<Action> actions, final List<Entry> entries) {
     this.actions = actions;
     this.entries = entries;
   }
@@ -65,29 +65,29 @@ public class UpsertPlayerInfoPacket implements MinecraftPacket {
     return actions;
   }
 
-  public boolean containsAction(Action action) {
+  public boolean containsAction(final Action action) {
     return this.actions.contains(action);
   }
 
-  public void addAction(Action action) {
+  public void addAction(final Action action) {
     this.actions.add(action);
   }
 
-  public void addAllActions(Collection<? extends Action> actions) {
+  public void addAllActions(final Collection<? extends Action> actions) {
     this.actions.addAll(actions);
   }
 
-  public void addEntry(Entry entry) {
+  public void addEntry(final Entry entry) {
     this.entries.add(entry);
   }
 
-  public void addAllEntries(Collection<? extends Entry> entries) {
+  public void addAllEntries(final Collection<? extends Entry> entries) {
     this.entries.addAll(entries);
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     Action[] actions = Action.class.getEnumConstants();
     byte[] bytes = new byte[-Math.floorDiv(-actions.length, 8)];
     buf.readBytes(bytes);
@@ -110,8 +110,8 @@ public class UpsertPlayerInfoPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     Action[] actions = Action.class.getEnumConstants();
     BitSet set = new BitSet(actions.length);
     for (int idx = 0; idx < actions.length; idx++) {
@@ -132,7 +132,7 @@ public class UpsertPlayerInfoPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
@@ -143,7 +143,7 @@ public class UpsertPlayerInfoPacket implements MinecraftPacket {
    * @param param0 the size of the bit set
    * @return the bit set read from the buffer
    */
-  public BitSet readFixedBitSet(ByteBuf buf, int param0) {
+  public BitSet readFixedBitSet(final ByteBuf buf, final int param0) {
     byte[] var0 = new byte[-Math.floorDiv(-param0, 8)];
     buf.readBytes(var0);
     return BitSet.valueOf(var0);
@@ -206,7 +206,7 @@ public class UpsertPlayerInfoPacket implements MinecraftPacket {
     private final Read read;
     private final Write write;
 
-    Action(Read read, Write write) {
+    Action(final Read read, final Write write) {
       this.read = read;
       this.write = write;
     }
@@ -237,7 +237,7 @@ public class UpsertPlayerInfoPacket implements MinecraftPacket {
     @Nullable
     private RemoteChatSession chatSession;
 
-    public Entry(UUID uuid) {
+    public Entry(final UUID uuid) {
       this.profileId = uuid;
     }
 
@@ -271,27 +271,27 @@ public class UpsertPlayerInfoPacket implements MinecraftPacket {
       return chatSession;
     }
 
-    public void setProfile(GameProfile profile) {
+    public void setProfile(final GameProfile profile) {
       this.profile = profile;
     }
 
-    public void setListed(boolean listed) {
+    public void setListed(final boolean listed) {
       this.listed = listed;
     }
 
-    public void setLatency(int latency) {
+    public void setLatency(final int latency) {
       this.latency = latency;
     }
 
-    public void setGameMode(int gameMode) {
+    public void setGameMode(final int gameMode) {
       this.gameMode = gameMode;
     }
 
-    public void setDisplayName(@Nullable ComponentHolder displayName) {
+    public void setDisplayName(@Nullable final ComponentHolder displayName) {
       this.displayName = displayName;
     }
 
-    public void setChatSession(@Nullable RemoteChatSession chatSession) {
+    public void setChatSession(@Nullable final RemoteChatSession chatSession) {
       this.chatSession = chatSession;
     }
 

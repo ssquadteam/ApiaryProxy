@@ -39,7 +39,7 @@ public class ServerMap {
   private final @Nullable VelocityServer server;
   private final Map<String, RegisteredServer> servers = new ConcurrentHashMap<>();
 
-  public ServerMap(@Nullable VelocityServer server) {
+  public ServerMap(@Nullable final VelocityServer server) {
     this.server = server;
   }
 
@@ -49,7 +49,7 @@ public class ServerMap {
    * @param name the name to look up
    * @return the server, if it exists
    */
-  public Optional<RegisteredServer> getServer(String name) {
+  public Optional<RegisteredServer> getServer(final String name) {
     Preconditions.checkNotNull(name, "server");
     String lowerName = name.toLowerCase(Locale.US);
     return Optional.ofNullable(servers.get(lowerName));
@@ -66,7 +66,7 @@ public class ServerMap {
    * @param serverInfo the server to create a registered server with
    * @return the {@link RegisteredServer} built from the {@link ServerInfo}
    */
-  public RegisteredServer createRawRegisteredServer(ServerInfo serverInfo) {
+  public RegisteredServer createRawRegisteredServer(final ServerInfo serverInfo) {
     return new VelocityRegisteredServer(server, serverInfo);
   }
 
@@ -76,7 +76,7 @@ public class ServerMap {
    * @param serverInfo the server to register
    * @return the registered server
    */
-  public RegisteredServer register(ServerInfo serverInfo) {
+  public RegisteredServer register(final ServerInfo serverInfo) {
     Preconditions.checkNotNull(serverInfo, "serverInfo");
     String lowerName = serverInfo.getName().toLowerCase(Locale.US);
     RegisteredServer rs = createRawRegisteredServer(serverInfo);
@@ -101,7 +101,7 @@ public class ServerMap {
    *
    * @param serverInfo the server to unregister
    */
-  public void unregister(ServerInfo serverInfo) {
+  public void unregister(final ServerInfo serverInfo) {
     Preconditions.checkNotNull(serverInfo, "serverInfo");
     String lowerName = serverInfo.getName().toLowerCase(Locale.US);
     RegisteredServer rs = servers.get(lowerName);

@@ -41,7 +41,7 @@ public final class AddressUtil {
    * @param ip the IP to parse
    * @return the parsed address
    */
-  public static InetSocketAddress parseAddress(String ip) {
+  public static InetSocketAddress parseAddress(final String ip) {
     Preconditions.checkNotNull(ip, "ip");
     URI uri = URI.create("tcp://" + ip);
     if (uri.getHost() == null) {
@@ -64,7 +64,7 @@ public final class AddressUtil {
    * @param ip the IP to parse
    * @return the parsed address
    */
-  public static InetSocketAddress parseAndResolveAddress(String ip) {
+  public static InetSocketAddress parseAndResolveAddress(final String ip) {
     Preconditions.checkNotNull(ip, "ip");
     URI uri = URI.create("tcp://" + ip);
     if (uri.getHost() == null) {

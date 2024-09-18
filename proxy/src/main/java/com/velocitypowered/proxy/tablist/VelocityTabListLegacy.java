@@ -45,7 +45,7 @@ public class VelocityTabListLegacy extends KeyedVelocityTabList {
 
   @Deprecated
   @Override
-  public void setHeaderAndFooter(Component header, Component footer) {
+  public void setHeaderAndFooter(final Component header, final Component footer) {
   }
 
   @Override
@@ -53,13 +53,13 @@ public class VelocityTabListLegacy extends KeyedVelocityTabList {
   }
 
   @Override
-  public void addEntry(TabListEntry entry) {
+  public void addEntry(final TabListEntry entry) {
     super.addEntry(entry);
     nameMapping.put(entry.getProfile().getName(), entry.getProfile().getId());
   }
 
   @Override
-  public Optional<TabListEntry> removeEntry(UUID uuid) {
+  public Optional<TabListEntry> removeEntry(final UUID uuid) {
     Optional<TabListEntry> entry = super.removeEntry(uuid);
     entry.map(TabListEntry::getProfile).map(GameProfile::getName).ifPresent(nameMapping::remove);
     return entry;
@@ -82,7 +82,7 @@ public class VelocityTabListLegacy extends KeyedVelocityTabList {
   }
 
   @Override
-  public void processLegacy(LegacyPlayerListItemPacket packet) {
+  public void processLegacy(final LegacyPlayerListItemPacket packet) {
     Item item = packet.getItems().get(0); // Only one item per packet in 1.7
 
     switch (packet.getAction()) {
@@ -115,7 +115,7 @@ public class VelocityTabListLegacy extends KeyedVelocityTabList {
   }
 
   @Override
-  void updateEntry(int action, TabListEntry entry) {
+  void updateEntry(final int action, final TabListEntry entry) {
     if (entries.containsKey(entry.getProfile().getId())) {
       switch (action) {
         case LegacyPlayerListItemPacket.UPDATE_LATENCY:
@@ -134,8 +134,8 @@ public class VelocityTabListLegacy extends KeyedVelocityTabList {
   }
 
   @Override
-  public TabListEntry buildEntry(GameProfile profile, @Nullable Component displayName, int latency,
-      int gameMode) {
+  public TabListEntry buildEntry(final GameProfile profile, @Nullable final Component displayName, final int latency,
+      final int gameMode) {
     return new VelocityTabListEntryLegacy(this, profile, displayName, latency, gameMode);
   }
 }

@@ -33,7 +33,7 @@ import io.netty.buffer.ByteBuf;
  * <p>Its specific use depends on the version and context of the update,
  * typically handled in the Minecraft networking layer.</p>
  */
-public class StartUpdatePacket implements MinecraftPacket {
+public final class StartUpdatePacket implements MinecraftPacket {
 
   public static final StartUpdatePacket INSTANCE = new StartUpdatePacket();
 
@@ -41,23 +41,23 @@ public class StartUpdatePacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-                     ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+                     final ProtocolVersion protocolVersion) {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction,
-                     ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+                     final ProtocolVersion protocolVersion) {
   }
 
   @Override
-  public int expectedMaxLength(ByteBuf buf, ProtocolUtils.Direction direction,
-                               ProtocolVersion version) {
+  public int expectedMaxLength(final ByteBuf buf, final ProtocolUtils.Direction direction,
+                               final ProtocolVersion version) {
     return 0;
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

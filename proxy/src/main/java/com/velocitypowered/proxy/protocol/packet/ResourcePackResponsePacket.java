@@ -47,7 +47,7 @@ public class ResourcePackResponsePacket implements MinecraftPacket {
    * @param hash the hash of the resource pack
    * @param status the status of the resource pack
    */
-  public ResourcePackResponsePacket(UUID id, String hash, @MonotonicNonNull Status status) {
+  public ResourcePackResponsePacket(final UUID id, final String hash, @MonotonicNonNull final Status status) {
     this.id = id;
     this.hash = hash;
     this.status = status;
@@ -75,7 +75,7 @@ public class ResourcePackResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final Direction direction, final ProtocolVersion protocolVersion) {
     if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_20_3)) {
       this.id = ProtocolUtils.readUuid(buf);
     }
@@ -86,7 +86,7 @@ public class ResourcePackResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final Direction direction, final ProtocolVersion protocolVersion) {
     if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_20_3)) {
       ProtocolUtils.writeUuid(buf, id);
     }
@@ -97,7 +97,7 @@ public class ResourcePackResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 

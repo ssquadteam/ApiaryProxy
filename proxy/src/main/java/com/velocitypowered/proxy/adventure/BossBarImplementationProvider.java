@@ -22,8 +22,16 @@ import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.bossbar.BossBarImplementation;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Provides an implementation of {@link BossBarImplementation.Provider} for Velocity.
+ * This class is responsible for creating instances of {@link BossBarImplementation}
+ * that are associated with {@link BossBar} objects in the Velocity proxy.
+ *
+ * <p>The {@link VelocityBossBarImplementation} listens to the boss bar's state and
+ * updates the proxy-side boss bar accordingly.</p>
+ */
 @AutoService(BossBarImplementation.Provider.class)
-@SuppressWarnings("MissingJavadocType")
+@SuppressWarnings("UnstableApiUsage")
 public class BossBarImplementationProvider implements BossBarImplementation.Provider {
   @Override
   public @NotNull BossBarImplementation create(final @NotNull BossBar bar) {

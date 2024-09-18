@@ -380,7 +380,7 @@ final class SuggestionsProvider<S> {
    *
    * @param announceProxyCommands whether alias suggestions can be returned
    */
-  public void setAnnounceProxyCommands(boolean announceProxyCommands) {
+  public void setAnnounceProxyCommands(final boolean announceProxyCommands) {
     this.announceProxyCommands = announceProxyCommands;
   }
 }

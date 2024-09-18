@@ -26,12 +26,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * Wraps a Brigadier command to allow us to track the registrant.
  */
-public class VelocityBrigadierCommandWrapper implements Command<CommandSource> {
+public final class VelocityBrigadierCommandWrapper implements Command<CommandSource> {
 
   private final Command<CommandSource> delegate;
   private final Object registrant;
 
-  private VelocityBrigadierCommandWrapper(Command<CommandSource> delegate, Object registrant) {
+  private VelocityBrigadierCommandWrapper(final Command<CommandSource> delegate, final Object registrant) {
     this.delegate = delegate;
     this.registrant = registrant;
   }
@@ -44,7 +44,7 @@ public class VelocityBrigadierCommandWrapper implements Command<CommandSource> {
    * @param registrant the registrant of the command
    * @return the wrapped command, if necessary
    */
-  public static Command<CommandSource> wrap(Command<CommandSource> delegate, @Nullable Object registrant) {
+  public static Command<CommandSource> wrap(final Command<CommandSource> delegate, @Nullable final Object registrant) {
     if (registrant == null) {
       // nothing to wrap
       return delegate;
@@ -57,7 +57,7 @@ public class VelocityBrigadierCommandWrapper implements Command<CommandSource> {
   }
 
   @Override
-  public int run(CommandContext<CommandSource> context) throws CommandSyntaxException {
+  public int run(final CommandContext<CommandSource> context) throws CommandSyntaxException {
     return delegate.run(context);
   }
 

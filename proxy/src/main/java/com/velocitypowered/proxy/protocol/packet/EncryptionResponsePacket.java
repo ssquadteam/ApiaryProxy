@@ -79,7 +79,7 @@ public class EncryptionResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
       this.sharedSecret = ProtocolUtils.readByteArray(buf, 128);
 
@@ -98,7 +98,7 @@ public class EncryptionResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
       ProtocolUtils.writeByteArray(buf, sharedSecret);
       if (version.noLessThan(ProtocolVersion.MINECRAFT_1_19)
@@ -118,12 +118,12 @@ public class EncryptionResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
   @Override
-  public int expectedMaxLength(ByteBuf buf, Direction direction, ProtocolVersion version) {
+  public int expectedMaxLength(final ByteBuf buf, final Direction direction, final ProtocolVersion version) {
     // It turns out these come out to the same length, whether we're talking >=1.8 or not.
     // The length prefix always winds up being 2 bytes.
     int base = 256 + 2 + 2;
@@ -139,7 +139,7 @@ public class EncryptionResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public int expectedMinLength(ByteBuf buf, Direction direction, ProtocolVersion version) {
+  public int expectedMinLength(final ByteBuf buf, final Direction direction, final ProtocolVersion version) {
     int base = expectedMaxLength(buf, direction, version);
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_19)) {
       // These are "optional"

@@ -25,7 +25,7 @@ import io.netty.handler.codec.DecoderException;
  */
 public class QuietDecoderException extends DecoderException {
 
-  public QuietDecoderException(String message) {
+  public QuietDecoderException(final String message) {
     super(message);
   }
 

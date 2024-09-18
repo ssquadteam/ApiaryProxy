@@ -68,20 +68,20 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
   private final CompletableFuture<Impl> resultFuture;
   private boolean informationForwarded;
 
-  LoginSessionHandler(VelocityServer server, VelocityServerConnection serverConn,
-      CompletableFuture<Impl> resultFuture) {
+  LoginSessionHandler(final VelocityServer server, final VelocityServerConnection serverConn,
+      final CompletableFuture<Impl> resultFuture) {
     this.server = server;
     this.serverConn = serverConn;
     this.resultFuture = resultFuture;
   }
 
   @Override
-  public boolean handle(EncryptionRequestPacket packet) {
+  public boolean handle(final EncryptionRequestPacket packet) {
     throw new IllegalStateException("Backend server is online-mode!");
   }
 
   @Override
-  public boolean handle(LoginPluginMessagePacket packet) {
+  public boolean handle(final LoginPluginMessagePacket packet) {
     MinecraftConnection mc = serverConn.ensureConnected();
     VelocityConfiguration configuration = server.getConfiguration();
     if (configuration.getServerForwardingMode(serverConn.getServerInfo().getName()) == PlayerInfoForwarding.MODERN
@@ -130,20 +130,20 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(DisconnectPacket packet) {
+  public boolean handle(final DisconnectPacket packet) {
     resultFuture.complete(ConnectionRequestResults.forDisconnect(packet, serverConn.getServer()));
     serverConn.disconnect();
     return true;
   }
 
   @Override
-  public boolean handle(SetCompressionPacket packet) {
+  public boolean handle(final SetCompressionPacket packet) {
     serverConn.ensureConnected().setCompressionThreshold(packet.getThreshold());
     return true;
   }
 
   @Override
-  public boolean handle(ServerLoginSuccessPacket packet) {
+  public boolean handle(final ServerLoginSuccessPacket packet) {
     if (server.getConfiguration().getServerForwardingMode(serverConn.getServerInfo().getName()) == PlayerInfoForwarding.MODERN
         && !informationForwarded) {
       resultFuture.complete(ConnectionRequestResults.forDisconnect(MODERN_IP_FORWARDING_FAILURE, serverConn.getServer()));
@@ -178,12 +178,12 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ClientboundStoreCookiePacket packet) {
+  public boolean handle(final ClientboundStoreCookiePacket packet) {
     throw new IllegalStateException("Can only store cookie in CONFIGURATION or PLAY protocol");
   }
 
   @Override
-  public boolean handle(ClientboundCookieRequestPacket packet) {
+  public boolean handle(final ClientboundCookieRequestPacket packet) {
     server.getEventManager().fire(new CookieRequestEvent(serverConn.getPlayer(), packet.getKey()))
         .thenAcceptAsync(event -> {
           if (event.getResult().isAllowed()) {
@@ -198,7 +198,7 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void exception(Throwable throwable) {
+  public void exception(final Throwable throwable) {
     resultFuture.completeExceptionally(throwable);
   }
 

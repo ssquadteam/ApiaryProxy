@@ -39,9 +39,9 @@ public final class QueryResponse {
   private final ImmutableCollection<PluginInformation> plugins;
 
   @VisibleForTesting
-  QueryResponse(String hostname, String gameVersion, String map, int currentPlayers,
-      int maxPlayers, String proxyHost, int proxyPort, ImmutableCollection<String> players,
-      String proxyVersion, ImmutableCollection<PluginInformation> plugins) {
+  QueryResponse(final String hostname, final String gameVersion, final String map, final int currentPlayers,
+      final int maxPlayers, final String proxyHost, final int proxyPort, final ImmutableCollection<String> players,
+      final String proxyVersion, final ImmutableCollection<PluginInformation> plugins) {
     this.hostname = hostname;
     this.gameVersion = gameVersion;
     this.map = map;
@@ -180,7 +180,7 @@ public final class QueryResponse {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -249,7 +249,7 @@ public final class QueryResponse {
      * @param hostname the hostname to set
      * @return this builder, for chaining
      */
-    public Builder hostname(String hostname) {
+    public Builder hostname(final String hostname) {
       this.hostname = Preconditions.checkNotNull(hostname, "hostname");
       return this;
     }
@@ -260,7 +260,7 @@ public final class QueryResponse {
      * @param gameVersion the game version to set
      * @return this builder, for chaining
      */
-    public Builder gameVersion(String gameVersion) {
+    public Builder gameVersion(final String gameVersion) {
       this.gameVersion = Preconditions.checkNotNull(gameVersion, "gameVersion");
       return this;
     }
@@ -271,7 +271,7 @@ public final class QueryResponse {
      * @param map the map to set
      * @return this builder, for chaining
      */
-    public Builder map(String map) {
+    public Builder map(final String map) {
       this.map = Preconditions.checkNotNull(map, "map");
       return this;
     }
@@ -282,7 +282,7 @@ public final class QueryResponse {
      * @param currentPlayers a non-negative number representing all players online
      * @return this builder, for chaining
      */
-    public Builder currentPlayers(int currentPlayers) {
+    public Builder currentPlayers(final int currentPlayers) {
       Preconditions.checkArgument(currentPlayers >= 0, "currentPlayers cannot be negative");
       this.currentPlayers = currentPlayers;
       return this;
@@ -294,7 +294,7 @@ public final class QueryResponse {
      * @param maxPlayers a non-negative number representing the maximum number of builders
      * @return this builder, for chaining
      */
-    public Builder maxPlayers(int maxPlayers) {
+    public Builder maxPlayers(final int maxPlayers) {
       Preconditions.checkArgument(maxPlayers >= 0, "maxPlayers cannot be negative");
       this.maxPlayers = maxPlayers;
       return this;
@@ -306,7 +306,7 @@ public final class QueryResponse {
      * @param proxyHost the host where the proxy is running
      * @return this instance, for chaining
      */
-    public Builder proxyHost(String proxyHost) {
+    public Builder proxyHost(final String proxyHost) {
       this.proxyHost = Preconditions.checkNotNull(proxyHost, "proxyHost");
       return this;
     }
@@ -317,7 +317,7 @@ public final class QueryResponse {
      * @param proxyPort the port where the proxy is running
      * @return this instance, for chaining
      */
-    public Builder proxyPort(int proxyPort) {
+    public Builder proxyPort(final int proxyPort) {
       Preconditions
           .checkArgument(proxyPort >= 1 && proxyPort <= 65535, "proxyPort must be between 1-65535");
       this.proxyPort = proxyPort;
@@ -330,7 +330,7 @@ public final class QueryResponse {
      * @param players the players to add
      * @return this builder, for chaining
      */
-    public Builder players(Collection<String> players) {
+    public Builder players(final Collection<String> players) {
       this.players.addAll(Preconditions.checkNotNull(players, "players"));
       return this;
     }
@@ -341,7 +341,7 @@ public final class QueryResponse {
      * @param players the players to add
      * @return this builder, for chaining
      */
-    public Builder players(String... players) {
+    public Builder players(final String... players) {
       this.players.addAll(Arrays.asList(Preconditions.checkNotNull(players, "players")));
       return this;
     }
@@ -362,7 +362,7 @@ public final class QueryResponse {
      * @param proxyVersion the proxy version to set
      * @return this builder, for chaining
      */
-    public Builder proxyVersion(String proxyVersion) {
+    public Builder proxyVersion(final String proxyVersion) {
       this.proxyVersion = Preconditions.checkNotNull(proxyVersion, "proxyVersion");
       return this;
     }
@@ -373,7 +373,7 @@ public final class QueryResponse {
      * @param plugins the plugins to add
      * @return this builder, for chaining
      */
-    public Builder plugins(Collection<PluginInformation> plugins) {
+    public Builder plugins(final Collection<PluginInformation> plugins) {
       this.plugins.addAll(Preconditions.checkNotNull(plugins, "plugins"));
       return this;
     }
@@ -384,7 +384,7 @@ public final class QueryResponse {
      * @param plugins the plugins to add
      * @return this builder, for chaining
      */
-    public Builder plugins(PluginInformation... plugins) {
+    public Builder plugins(final PluginInformation... plugins) {
       this.plugins.addAll(Arrays.asList(plugins));
       return this;
     }
@@ -429,7 +429,7 @@ public final class QueryResponse {
     private final String name;
     private final @Nullable String version;
 
-    PluginInformation(String name, @Nullable String version) {
+    PluginInformation(final String name, @Nullable final String version) {
       this.name = Preconditions.checkNotNull(name, "name");
       this.version = version;
     }
@@ -442,7 +442,7 @@ public final class QueryResponse {
       return Optional.ofNullable(version);
     }
 
-    public static PluginInformation of(String name, @Nullable String version) {
+    public static PluginInformation of(final String name, @Nullable final String version) {
       return new PluginInformation(name, version);
     }
 
@@ -455,7 +455,7 @@ public final class QueryResponse {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }

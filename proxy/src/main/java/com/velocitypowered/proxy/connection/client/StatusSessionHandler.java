@@ -46,7 +46,7 @@ public class StatusSessionHandler implements MinecraftSessionHandler {
   private final VelocityInboundConnection inbound;
   private boolean pingReceived = false;
 
-  StatusSessionHandler(VelocityServer server, VelocityInboundConnection inbound) {
+  StatusSessionHandler(final VelocityServer server, final VelocityInboundConnection inbound) {
     this.server = server;
     this.connection = inbound.getConnection();
     this.inbound = inbound;
@@ -61,7 +61,7 @@ public class StatusSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(LegacyPingPacket packet) {
+  public boolean handle(final LegacyPingPacket packet) {
     if (this.pingReceived) {
       throw EXPECTED_AWAITING_REQUEST;
     }
@@ -83,13 +83,13 @@ public class StatusSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(StatusPingPacket packet) {
+  public boolean handle(final StatusPingPacket packet) {
     connection.closeWith(packet);
     return true;
   }
 
   @Override
-  public boolean handle(StatusRequestPacket packet) {
+  public boolean handle(final StatusRequestPacket packet) {
     if (this.pingReceived) {
       throw EXPECTED_AWAITING_REQUEST;
     }
@@ -117,7 +117,7 @@ public class StatusSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void handleUnknown(ByteBuf buf) {
+  public void handleUnknown(final ByteBuf buf) {
     // what even is going on?
     connection.close(true);
   }

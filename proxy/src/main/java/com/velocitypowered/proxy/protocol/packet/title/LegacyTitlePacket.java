@@ -42,7 +42,7 @@ public class LegacyTitlePacket extends GenericTitlePacket {
   private int fadeOut;
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.lessThan(ProtocolVersion.MINECRAFT_1_11)
         && getAction() == ActionType.SET_ACTION_BAR) {
       throw new IllegalStateException("Action bars are only supported on 1.11 and newer");
@@ -73,7 +73,7 @@ public class LegacyTitlePacket extends GenericTitlePacket {
   }
 
   @Override
-  public void setAction(ActionType action) {
+  public void setAction(final ActionType action) {
     super.setAction(action);
   }
 
@@ -83,7 +83,7 @@ public class LegacyTitlePacket extends GenericTitlePacket {
   }
 
   @Override
-  public void setComponent(@Nullable ComponentHolder component) {
+  public void setComponent(@Nullable final ComponentHolder component) {
     this.component = component;
   }
 
@@ -93,7 +93,7 @@ public class LegacyTitlePacket extends GenericTitlePacket {
   }
 
   @Override
-  public void setFadeIn(int fadeIn) {
+  public void setFadeIn(final int fadeIn) {
     this.fadeIn = fadeIn;
   }
 
@@ -103,7 +103,7 @@ public class LegacyTitlePacket extends GenericTitlePacket {
   }
 
   @Override
-  public void setStay(int stay) {
+  public void setStay(final int stay) {
     this.stay = stay;
   }
 
@@ -113,7 +113,7 @@ public class LegacyTitlePacket extends GenericTitlePacket {
   }
 
   @Override
-  public void setFadeOut(int fadeOut) {
+  public void setFadeOut(final int fadeOut) {
     this.fadeOut = fadeOut;
   }
 
@@ -129,7 +129,7 @@ public class LegacyTitlePacket extends GenericTitlePacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

@@ -73,7 +73,12 @@ import org.apache.logging.log4j.Logger;
 public final class VelocityCommand {
   private static final String USAGE = "/velocity <%s>";
 
-  @SuppressWarnings("checkstyle:MissingJavadocMethod")
+  /**
+   * Creates a BrigadierCommand for various administrative tasks such as dump, heap, info, plugins, reload, and uptime.
+   *
+   * @param server the VelocityServer instance used for executing the commands.
+   * @return the root BrigadierCommand containing all subcommands.
+   */
   public static BrigadierCommand create(final VelocityServer server) {
     final LiteralCommandNode<CommandSource> dump = BrigadierCommand.literalArgumentBuilder("dump")
         .requires(source -> source.getPermissionValue("velocity.command.dump") == Tristate.TRUE)
@@ -208,7 +213,7 @@ public final class VelocityCommand {
         final TextComponent embellishment = Component.text()
             .append(Component.text()
                 .content("discord.gg/themegahive")
-                .color(NamedTextColor.RED)
+                .color(NamedTextColor.GOLD)
                 .clickEvent(
                     ClickEvent.openUrl("https://discord.gg/themegahive"))
                 .build())

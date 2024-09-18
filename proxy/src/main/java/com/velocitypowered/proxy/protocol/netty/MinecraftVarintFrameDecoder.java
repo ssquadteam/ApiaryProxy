@@ -36,7 +36,7 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
       new QuietDecoderException("VarInt too big");
 
   @Override
-  protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out)
+  protected void decode(final ChannelHandlerContext ctx, final ByteBuf in, final List<Object> out)
       throws Exception {
     if (!ctx.channel().isActive()) {
       in.clear();
@@ -78,7 +78,7 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
    * @return the VarInt decoded, {@code 0} if no varint could be read
    * @throws QuietDecoderException if the VarInt is too big to be decoded
    */
-  private static int readRawVarInt21(ByteBuf buffer) {
+  private static int readRawVarInt21(final ByteBuf buffer) {
     if (buffer.readableBytes() < 4) {
       // we don't have enough that we can read a potentially full varint, so fall back to
       // the slow path.
@@ -112,7 +112,7 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
     return preservedBytes;
   }
 
-  private static int readRawVarintSmallBuf(ByteBuf buffer) {
+  private static int readRawVarintSmallBuf(final ByteBuf buffer) {
     if (!buffer.isReadable()) {
       return 0;
     }

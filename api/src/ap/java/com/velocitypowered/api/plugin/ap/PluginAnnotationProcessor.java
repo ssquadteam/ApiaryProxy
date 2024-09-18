@@ -42,7 +42,7 @@ public class PluginAnnotationProcessor extends AbstractProcessor {
   private boolean warnedAboutMultiplePlugins;
 
   @Override
-  public synchronized void init(ProcessingEnvironment processingEnv) {
+  public synchronized void init(final ProcessingEnvironment processingEnv) {
     this.environment = processingEnv;
   }
 
@@ -52,8 +52,8 @@ public class PluginAnnotationProcessor extends AbstractProcessor {
   }
 
   @Override
-  public synchronized boolean process(Set<? extends TypeElement> annotations,
-      RoundEnvironment roundEnv) {
+  public synchronized boolean process(final Set<? extends TypeElement> annotations,
+      final RoundEnvironment roundEnv) {
     if (roundEnv.processingOver()) {
       return false;
     }

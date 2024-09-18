@@ -17,7 +17,7 @@ public final class SkinParts {
 
   private final byte bitmask;
 
-  public SkinParts(byte skinBitmask) {
+  public SkinParts(final byte skinBitmask) {
     this.bitmask = skinBitmask;
   }
 

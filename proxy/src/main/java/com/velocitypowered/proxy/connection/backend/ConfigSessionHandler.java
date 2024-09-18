@@ -81,8 +81,8 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
    * @param serverConn   the server connection
    * @param resultFuture the result future
    */
-  ConfigSessionHandler(VelocityServer server, VelocityServerConnection serverConn,
-                       CompletableFuture<Impl> resultFuture) {
+  ConfigSessionHandler(final VelocityServer server, final VelocityServerConnection serverConn,
+                       final CompletableFuture<Impl> resultFuture) {
     this.server = server;
     this.serverConn = serverConn;
     this.resultFuture = resultFuture;
@@ -109,31 +109,31 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(StartUpdatePacket packet) {
+  public boolean handle(final StartUpdatePacket packet) {
     serverConn.ensureConnected().write(packet);
     return true;
   }
 
   @Override
-  public boolean handle(TagsUpdatePacket packet) {
+  public boolean handle(final TagsUpdatePacket packet) {
     serverConn.getPlayer().getConnection().write(packet);
     return true;
   }
 
   @Override
-  public boolean handle(ClientboundCustomReportDetailsPacket packet) {
+  public boolean handle(final ClientboundCustomReportDetailsPacket packet) {
     serverConn.getPlayer().getConnection().write(packet);
     return true;
   }
 
   @Override
-  public boolean handle(ClientboundServerLinksPacket packet) {
+  public boolean handle(final ClientboundServerLinksPacket packet) {
     serverConn.getPlayer().getConnection().write(packet);
     return true;
   }
 
   @Override
-  public boolean handle(KeepAlivePacket packet) {
+  public boolean handle(final KeepAlivePacket packet) {
     serverConn.getPendingPings().put(packet.getRandomId(), System.nanoTime());
     serverConn.getPlayer().getConnection().write(packet);
     return true;
@@ -195,7 +195,7 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(RemoveResourcePackPacket packet) {
+  public boolean handle(final RemoveResourcePackPacket packet) {
     final MinecraftConnection playerConnection = this.serverConn.getPlayer().getConnection();
 
     final ServerResourcePackRemoveEvent event = new ServerResourcePackRemoveEvent(
@@ -222,7 +222,7 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(FinishedUpdatePacket packet) {
+  public boolean handle(final FinishedUpdatePacket packet) {
     final MinecraftConnection smc = serverConn.ensureConnected();
     final ConnectedPlayer player = serverConn.getPlayer();
 
@@ -250,14 +250,14 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(DisconnectPacket packet) {
+  public boolean handle(final DisconnectPacket packet) {
     serverConn.disconnect();
     resultFuture.complete(ConnectionRequestResults.forDisconnect(packet, serverConn.getServer()));
     return true;
   }
 
   @Override
-  public boolean handle(PluginMessagePacket packet) {
+  public boolean handle(final PluginMessagePacket packet) {
     if (PluginMessageUtil.isMcBrand(packet)) {
       String serverBrand = server.getConfiguration().getServerBrand();
       serverConn.getPlayer().getConnection().write(
@@ -270,13 +270,13 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(RegistrySyncPacket packet) {
+  public boolean handle(final RegistrySyncPacket packet) {
     serverConn.getPlayer().getConnection().write(packet.retain());
     return true;
   }
 
   @Override
-  public boolean handle(TransferPacket packet) {
+  public boolean handle(final TransferPacket packet) {
     final InetSocketAddress originalAddress = packet.address();
     if (originalAddress == null) {
       logger.error("""
@@ -300,7 +300,7 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ClientboundStoreCookiePacket packet) {
+  public boolean handle(final ClientboundStoreCookiePacket packet) {
     server.getEventManager()
         .fire(new CookieStoreEvent(serverConn.getPlayer(), packet.getKey(), packet.getPayload()))
         .thenAcceptAsync(event -> {
@@ -319,7 +319,7 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ClientboundCookieRequestPacket packet) {
+  public boolean handle(final ClientboundCookieRequestPacket packet) {
     server.getEventManager().fire(new CookieRequestEvent(serverConn.getPlayer(), packet.getKey()))
         .thenAcceptAsync(event -> {
           if (event.getResult().isAllowed()) {
@@ -340,11 +340,11 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void handleGeneric(MinecraftPacket packet) {
+  public void handleGeneric(final MinecraftPacket packet) {
     serverConn.getPlayer().getConnection().write(packet);
   }
 
-  private void switchFailure(Throwable cause) {
+  private void switchFailure(final Throwable cause) {
     logger.error("Unable to switch to new server {} for {}", serverConn.getServerInfo().getName(),
         serverConn.getPlayer().getUsername(), cause);
     serverConn.getPlayer().disconnect(ConnectionMessages.INTERNAL_SERVER_CONNECTION_ERROR);

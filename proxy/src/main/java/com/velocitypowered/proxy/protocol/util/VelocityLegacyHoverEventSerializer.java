@@ -38,7 +38,7 @@ import org.intellij.lang.annotations.Subst;
  * An implementation of {@link LegacyHoverEventSerializer} that implements the interface in the most
  * literal, albeit "incompatible" way possible.
  */
-public class VelocityLegacyHoverEventSerializer implements LegacyHoverEventSerializer {
+public final class VelocityLegacyHoverEventSerializer implements LegacyHoverEventSerializer {
 
   public static final LegacyHoverEventSerializer INSTANCE =
       new VelocityLegacyHoverEventSerializer();
@@ -47,12 +47,12 @@ public class VelocityLegacyHoverEventSerializer implements LegacyHoverEventSeria
 
   }
 
-  private static Key legacyIdToFakeKey(@Subst("") byte id) {
+  private static Key legacyIdToFakeKey(@Subst("") final byte id) {
     return Key.key("velocity", "legacy_hover/id_" + id);
   }
 
   @Override
-  public HoverEvent.@NonNull ShowItem deserializeShowItem(@NonNull Component input)
+  public HoverEvent.@NonNull ShowItem deserializeShowItem(@NonNull final Component input)
       throws IOException {
     String snbt = PlainTextComponentSerializer.plainText().serialize(input);
     @Subst("") CompoundBinaryTag item = TagStringIO.get().asCompound(snbt);
@@ -70,8 +70,8 @@ public class VelocityLegacyHoverEventSerializer implements LegacyHoverEventSeria
   }
 
   @Override
-  public HoverEvent.@NonNull ShowEntity deserializeShowEntity(@NonNull Component input,
-      Decoder<Component, String, ? extends RuntimeException> componentDecoder) throws IOException {
+  public HoverEvent.@NonNull ShowEntity deserializeShowEntity(@NonNull final Component input,
+      final Decoder<Component, String, ? extends RuntimeException> componentDecoder) throws IOException {
     String snbt = PlainTextComponentSerializer.plainText().serialize(input);
     @Subst("") CompoundBinaryTag item = TagStringIO.get().asCompound(snbt);
 
@@ -88,7 +88,7 @@ public class VelocityLegacyHoverEventSerializer implements LegacyHoverEventSeria
   }
 
   @Override
-  public @NonNull Component serializeShowItem(HoverEvent.@NonNull ShowItem input)
+  public @NonNull Component serializeShowItem(final HoverEvent.@NonNull ShowItem input)
       throws IOException {
     final CompoundBinaryTag.Builder builder = CompoundBinaryTag.builder()
         .putByte("Count", (byte) input.count());
@@ -110,8 +110,8 @@ public class VelocityLegacyHoverEventSerializer implements LegacyHoverEventSeria
   }
 
   @Override
-  public @NonNull Component serializeShowEntity(HoverEvent.@NonNull ShowEntity input,
-      Encoder<Component, String, ? extends RuntimeException> componentEncoder) throws IOException {
+  public @NonNull Component serializeShowEntity(final HoverEvent.@NonNull ShowEntity input,
+      final Encoder<Component, String, ? extends RuntimeException> componentEncoder) throws IOException {
     CompoundBinaryTag.Builder tag = CompoundBinaryTag.builder()
         .putString("id", input.id().toString())
         .putString("type", input.type().asString());

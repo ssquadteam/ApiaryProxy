@@ -25,7 +25,7 @@ import com.mojang.brigadier.arguments.LongArgumentType;
 import com.velocitypowered.api.network.ProtocolVersion;
 import io.netty.buffer.ByteBuf;
 
-class LongArgumentPropertySerializer implements ArgumentPropertySerializer<LongArgumentType> {
+final class LongArgumentPropertySerializer implements ArgumentPropertySerializer<LongArgumentType> {
 
   static final LongArgumentPropertySerializer LONG = new LongArgumentPropertySerializer();
 
@@ -34,7 +34,7 @@ class LongArgumentPropertySerializer implements ArgumentPropertySerializer<LongA
   }
 
   @Override
-  public LongArgumentType deserialize(ByteBuf buf, ProtocolVersion protocolVersion) {
+  public LongArgumentType deserialize(final ByteBuf buf, final ProtocolVersion protocolVersion) {
     byte flags = buf.readByte();
     long minimum = (flags & HAS_MINIMUM) != 0 ? buf.readLong() : Long.MIN_VALUE;
     long maximum = (flags & HAS_MAXIMUM) != 0 ? buf.readLong() : Long.MAX_VALUE;
@@ -42,7 +42,7 @@ class LongArgumentPropertySerializer implements ArgumentPropertySerializer<LongA
   }
 
   @Override
-  public void serialize(LongArgumentType object, ByteBuf buf, ProtocolVersion protocolVersion) {
+  public void serialize(final LongArgumentType object, final ByteBuf buf, final ProtocolVersion protocolVersion) {
     boolean hasMinimum = object.getMinimum() != Long.MIN_VALUE;
     boolean hasMaximum = object.getMaximum() != Long.MAX_VALUE;
     byte flag = getFlags(hasMinimum, hasMaximum);

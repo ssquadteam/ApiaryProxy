@@ -20,7 +20,7 @@ package com.velocitypowered.proxy.protocol.packet.brigadier;
 import com.velocitypowered.api.network.ProtocolVersion;
 import io.netty.buffer.ByteBuf;
 
-class ByteArgumentPropertySerializer implements ArgumentPropertySerializer<Byte> {
+final class ByteArgumentPropertySerializer implements ArgumentPropertySerializer<Byte> {
 
   static final ByteArgumentPropertySerializer BYTE = new ByteArgumentPropertySerializer();
 
@@ -29,12 +29,12 @@ class ByteArgumentPropertySerializer implements ArgumentPropertySerializer<Byte>
   }
 
   @Override
-  public Byte deserialize(ByteBuf buf, ProtocolVersion protocolVersion) {
+  public Byte deserialize(final ByteBuf buf, final ProtocolVersion protocolVersion) {
     return buf.readByte();
   }
 
   @Override
-  public void serialize(Byte object, ByteBuf buf, ProtocolVersion protocolVersion) {
+  public void serialize(final Byte object, final ByteBuf buf, final ProtocolVersion protocolVersion) {
     buf.writeByte(object);
   }
 }

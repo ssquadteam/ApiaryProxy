@@ -88,7 +88,7 @@ public final class PlayerDataForwarding {
             ProtocolUtils.writeUuid(forwarded, key.getSignatureHolder());
           } else {
             // Should only not be provided if the player was connected
-            // as offline-mode and the signer UUID was not backfilled
+            // as offline-mode and the signer UUID was not back-filled
             forwarded.writeBoolean(false);
           }
         }

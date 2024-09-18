@@ -88,7 +88,7 @@ public sealed class LegacyResourcePackHandler extends ResourcePackHandler
   }
 
   @Override
-  public void queueResourcePack(@NotNull ResourcePackInfo info) {
+  public void queueResourcePack(@NotNull final ResourcePackInfo info) {
     outstandingResourcePacks.add(info);
     if (outstandingResourcePacks.size() == 1) {
       tickResourcePackQueue();

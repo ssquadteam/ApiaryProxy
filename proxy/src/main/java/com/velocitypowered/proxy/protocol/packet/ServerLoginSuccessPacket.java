@@ -54,7 +54,7 @@ public class ServerLoginSuccessPacket implements MinecraftPacket {
     return uuid;
   }
 
-  public void setUuid(@Nullable UUID uuid) {
+  public void setUuid(@Nullable final UUID uuid) {
     this.uuid = uuid;
   }
 
@@ -71,7 +71,7 @@ public class ServerLoginSuccessPacket implements MinecraftPacket {
     return username;
   }
 
-  public void setUsername(@Nullable String username) {
+  public void setUsername(@Nullable final String username) {
     this.username = username;
   }
 
@@ -79,7 +79,7 @@ public class ServerLoginSuccessPacket implements MinecraftPacket {
     return properties;
   }
 
-  public void setProperties(@Nullable List<GameProfile.Property> properties) {
+  public void setProperties(@Nullable final List<GameProfile.Property> properties) {
     this.properties = properties;
   }
 
@@ -93,7 +93,7 @@ public class ServerLoginSuccessPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_19)) {
       uuid = ProtocolUtils.readUuid(buf);
     } else if (version.noLessThan(ProtocolVersion.MINECRAFT_1_16)) {
@@ -114,7 +114,7 @@ public class ServerLoginSuccessPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (uuid == null) {
       throw new IllegalStateException("No UUID specified!");
     }
@@ -145,7 +145,7 @@ public class ServerLoginSuccessPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

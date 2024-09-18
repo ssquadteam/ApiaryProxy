@@ -30,7 +30,7 @@ import java.util.List;
  * Handler for appending a length for Minecraft packets.
  */
 @ChannelHandler.Sharable
-public class MinecraftVarintLengthEncoder extends MessageToMessageEncoder<ByteBuf> {
+public final class MinecraftVarintLengthEncoder extends MessageToMessageEncoder<ByteBuf> {
 
   public static final MinecraftVarintLengthEncoder INSTANCE = new MinecraftVarintLengthEncoder();
 
@@ -40,8 +40,8 @@ public class MinecraftVarintLengthEncoder extends MessageToMessageEncoder<ByteBu
   }
 
   @Override
-  protected void encode(ChannelHandlerContext ctx, ByteBuf buf,
-      List<Object> list) throws Exception {
+  protected void encode(final ChannelHandlerContext ctx, final ByteBuf buf,
+      final List<Object> list) throws Exception {
     final int length = buf.readableBytes();
     final int varintLength = ProtocolUtils.varIntBytes(length);
 

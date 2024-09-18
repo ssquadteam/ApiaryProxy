@@ -24,12 +24,20 @@ import com.velocitypowered.proxy.protocol.packet.chat.CommandHandler;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * A handler for processing legacy commands, implementing {@link CommandHandler}.
+ * <p>
+ * The {@code LegacyCommandHandler} processes and handles command packets that are sent
+ * using {@link LegacyChatPacket}. It provides the necessary logic to support legacy
+ * command formats and ensure compatibility with older Minecraft versions.
+ * </p>
+ */
 public class LegacyCommandHandler implements CommandHandler<LegacyChatPacket> {
 
   private final ConnectedPlayer player;
   private final VelocityServer server;
 
-  public LegacyCommandHandler(ConnectedPlayer player, VelocityServer server) {
+  public LegacyCommandHandler(final ConnectedPlayer player, final VelocityServer server) {
     this.player = player;
     this.server = server;
   }
@@ -40,7 +48,7 @@ public class LegacyCommandHandler implements CommandHandler<LegacyChatPacket> {
   }
 
   @Override
-  public void handlePlayerCommandInternal(LegacyChatPacket packet) {
+  public void handlePlayerCommandInternal(final LegacyChatPacket packet) {
     String command = packet.getMessage().substring(1);
     queueCommandResult(this.server, this.player, (event, newLastSeenMessages) -> {
       CommandExecuteEvent.CommandResult result = event.getResult();

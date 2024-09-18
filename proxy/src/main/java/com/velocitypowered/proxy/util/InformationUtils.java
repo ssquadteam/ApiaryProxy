@@ -55,7 +55,7 @@ public enum InformationUtils {
    * @param proxy the proxy instance to retrieve from
    * @return {@link JsonArray} containing zero or more {@link JsonObject}
    */
-  public static JsonArray collectPluginInfo(ProxyServer proxy) {
+  public static JsonArray collectPluginInfo(final ProxyServer proxy) {
     List<PluginContainer> allPlugins = ImmutableList.copyOf(
         proxy.getPluginManager().getPlugins());
     JsonArray plugins = new JsonArray();
@@ -125,7 +125,7 @@ public enum InformationUtils {
    *
    * @return {@link JsonArray} containing forced hosts
    */
-  public static JsonObject collectForcedHosts(ProxyConfig config) {
+  public static JsonObject collectForcedHosts(final ProxyConfig config) {
     JsonObject forcedHosts = new JsonObject();
     Map<String, List<String>> allForcedHosts = ImmutableMap.copyOf(
         config.getForcedHosts());
@@ -145,7 +145,7 @@ public enum InformationUtils {
    * @param address The address to redact
    * @return {@link String} address with public parts redacted
    */
-  public static String anonymizeInetAddress(InetAddress address) {
+  public static String anonymizeInetAddress(final InetAddress address) {
     if (address instanceof Inet4Address v4) {
       if (v4.isAnyLocalAddress() || v4.isLoopbackAddress()
           || v4.isLinkLocalAddress()
@@ -169,7 +169,7 @@ public enum InformationUtils {
     }
   }
 
-  private static @NotNull StringBuilder getStringBuilder(Inet6Address v6) {
+  private static @NotNull StringBuilder getStringBuilder(final Inet6Address v6) {
     String[] bits = v6.getHostAddress().split(":");
     StringBuilder ret = new StringBuilder();
     boolean flag = false;
@@ -197,7 +197,7 @@ public enum InformationUtils {
    * @param server the server to evaluate
    * @return {@link JsonObject} containing server and diagnostic info
    */
-  public static JsonObject collectServerInfo(RegisteredServer server) {
+  public static JsonObject collectServerInfo(final RegisteredServer server) {
     JsonObject info = new JsonObject();
     info.addProperty("currentPlayers", server.getPlayersConnected().size());
     InetSocketAddress iaddr = server.getServerInfo().getAddress();
@@ -218,7 +218,7 @@ public enum InformationUtils {
    * @param version the proxy instance to retrieve from
    * @return {@link JsonObject} containing environment info
    */
-  public static JsonObject collectProxyInfo(ProxyVersion version) {
+  public static JsonObject collectProxyInfo(final ProxyVersion version) {
     return (JsonObject) serializeObject(version, false);
   }
 
@@ -229,7 +229,7 @@ public enum InformationUtils {
    * @param config the config instance to retrieve from
    * @return {@link JsonObject} containing select config values
    */
-  public static JsonObject collectProxyConfig(ProxyConfig config) {
+  public static JsonObject collectProxyConfig(final ProxyConfig config) {
     return (JsonObject) serializeObject(config, true);
   }
 
@@ -239,7 +239,7 @@ public enum InformationUtils {
    * @param json the {@link JsonElement} object
    * @return the human-readable String
    */
-  public static String toHumanReadableString(JsonElement json) {
+  public static String toHumanReadableString(final JsonElement json) {
     return GSON_WITHOUT_EXCLUDES.toJson(json);
   }
 
@@ -249,11 +249,11 @@ public enum InformationUtils {
    * @param toParse the String to parse
    * @return {@link JsonObject} object
    */
-  public static JsonObject parseString(String toParse) {
+  public static JsonObject parseString(final String toParse) {
     return GSON_WITHOUT_EXCLUDES.fromJson(toParse, JsonObject.class);
   }
 
-  private static JsonElement serializeObject(Object toSerialize, boolean withExcludes) {
+  private static JsonElement serializeObject(final Object toSerialize, final boolean withExcludes) {
     return JsonParser.parseString(
         withExcludes ? GSON_WITH_EXCLUDES.toJson(toSerialize) :
             GSON_WITHOUT_EXCLUDES.toJson(toSerialize));

@@ -40,8 +40,8 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
     super(null);
   }
 
-  public PluginMessagePacket(@Nullable String channel,
-                             @MonotonicNonNull ByteBuf backing) {
+  public PluginMessagePacket(@Nullable final String channel,
+                             @MonotonicNonNull final ByteBuf backing) {
     super(backing);
     this.channel = channel;
   }
@@ -59,7 +59,7 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
     return channel;
   }
 
-  public void setChannel(@Nullable String channel) {
+  public void setChannel(@Nullable final String channel) {
     this.channel = channel;
   }
 
@@ -72,7 +72,7 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     this.channel = ProtocolUtils.readString(buf);
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_13)) {
       this.channel = transformLegacyToModernChannel(this.channel);
@@ -86,7 +86,7 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (channel == null) {
       throw new IllegalStateException("Channel is not specified.");
     }
@@ -110,7 +110,7 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
@@ -130,7 +130,7 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
   }
 
   @Override
-  public PluginMessagePacket replace(ByteBuf content) {
+  public PluginMessagePacket replace(final ByteBuf content) {
     return (PluginMessagePacket) super.replace(content);
   }
 
@@ -140,7 +140,7 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
   }
 
   @Override
-  public PluginMessagePacket retain(int increment) {
+  public PluginMessagePacket retain(final int increment) {
     return (PluginMessagePacket) super.retain(increment);
   }
 
@@ -150,7 +150,7 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
   }
 
   @Override
-  public PluginMessagePacket touch(Object hint) {
+  public PluginMessagePacket touch(final Object hint) {
     return (PluginMessagePacket) super.touch(hint);
   }
 }

@@ -23,7 +23,7 @@ public final class PostLoginEvent {
 
   private final Player player;
 
-  public PostLoginEvent(Player player) {
+  public PostLoginEvent(final Player player) {
     this.player = Preconditions.checkNotNull(player, "player");
   }
 

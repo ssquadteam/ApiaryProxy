@@ -379,13 +379,13 @@ public class VelocityEventManager implements EventManager {
   }
 
   @Override
-  public <E> void register(Object plugin, Class<E> eventClass, short postOrder,
-      EventHandler<E> handler) {
+  public <E> void register(final Object plugin, final Class<E> eventClass, final short postOrder,
+      final EventHandler<E> handler) {
     register(plugin, eventClass, postOrder, handler, AsyncType.SOMETIMES);
   }
 
-  private  <E> void register(Object plugin, Class<E> eventClass, short postOrder,
-      EventHandler<E> handler, AsyncType asyncType) {
+  private  <E> void register(final Object plugin, final Class<E> eventClass, final short postOrder,
+      final EventHandler<E> handler, final AsyncType asyncType) {
     final PluginContainer pluginContainer = pluginManager.ensurePluginContainer(plugin);
     requireNonNull(eventClass, "eventClass");
     requireNonNull(handler, "handler");

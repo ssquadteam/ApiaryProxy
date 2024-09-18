@@ -23,7 +23,6 @@ import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 
-
 /**
  * The {@code FinishedUpdatePacket} class represents a packet that signals the completion
  * of an update process between the client and server in the Minecraft protocol.
@@ -31,7 +30,7 @@ import io.netty.buffer.ByteBuf;
  * <p>This packet is used to indicate that the client has finished receiving and processing
  * an update, ensuring that further operations can proceed.</p>
  */
-public class FinishedUpdatePacket implements MinecraftPacket {
+public final class FinishedUpdatePacket implements MinecraftPacket {
 
   public static final FinishedUpdatePacket INSTANCE = new FinishedUpdatePacket();
 
@@ -39,23 +38,23 @@ public class FinishedUpdatePacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-                     ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+                     final ProtocolVersion protocolVersion) {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction,
-                     ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+                     final ProtocolVersion protocolVersion) {
   }
 
   @Override
-  public int expectedMaxLength(ByteBuf buf, ProtocolUtils.Direction direction,
-                               ProtocolVersion version) {
+  public int expectedMaxLength(final ByteBuf buf, final ProtocolUtils.Direction direction,
+                               final ProtocolVersion version) {
     return 0;
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

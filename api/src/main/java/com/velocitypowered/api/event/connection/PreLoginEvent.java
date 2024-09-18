@@ -118,8 +118,8 @@ public final class PreLoginEvent implements ResultedEvent<PreLoginEvent.PreLogin
     private final Result result;
     private final net.kyori.adventure.text.Component reason;
 
-    private PreLoginComponentResult(Result result,
-        net.kyori.adventure.text.@Nullable Component reason) {
+    private PreLoginComponentResult(final Result result,
+        final net.kyori.adventure.text.@Nullable Component reason) {
       this.result = result;
       this.reason = reason;
     }
@@ -187,7 +187,7 @@ public final class PreLoginEvent implements ResultedEvent<PreLoginEvent.PreLogin
      * @param reason the reason for disallowing the connection
      * @return a new result
      */
-    public static PreLoginComponentResult denied(net.kyori.adventure.text.Component reason) {
+    public static PreLoginComponentResult denied(final net.kyori.adventure.text.Component reason) {
       Preconditions.checkNotNull(reason, "reason");
       return new PreLoginComponentResult(Result.DISALLOWED, reason);
     }

@@ -49,7 +49,7 @@ public final class UuidUtils {
    * @param username the username to use
    * @return the offline mode UUID
    */
-  public static UUID generateOfflinePlayerUuid(String username) {
+  public static UUID generateOfflinePlayerUuid(final String username) {
     return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
   }
 }

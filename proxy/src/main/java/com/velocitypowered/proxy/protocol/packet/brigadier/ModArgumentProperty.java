@@ -28,9 +28,15 @@ import io.netty.buffer.Unpooled;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Represents a mod-specific argument property.
+ *
+ * @param identifier the identifier for this argument
+ * @param data the serialized data for this argument
+ */
 public record ModArgumentProperty(ArgumentIdentifier identifier, ByteBuf data) implements ArgumentType<ByteBuf> {
 
-  public ModArgumentProperty(ArgumentIdentifier identifier, ByteBuf data) {
+  public ModArgumentProperty(final ArgumentIdentifier identifier, final ByteBuf data) {
     this.identifier = identifier;
     this.data = Unpooled.unreleasableBuffer(data.asReadOnly());
   }
@@ -41,13 +47,13 @@ public record ModArgumentProperty(ArgumentIdentifier identifier, ByteBuf data) i
   }
 
   @Override
-  public ByteBuf parse(StringReader reader) throws CommandSyntaxException {
+  public ByteBuf parse(final StringReader reader) throws CommandSyntaxException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context,
-      SuggestionsBuilder builder) {
+  public <S> CompletableFuture<Suggestions> listSuggestions(final CommandContext<S> context,
+      final SuggestionsBuilder builder) {
     throw new UnsupportedOperationException();
   }
 

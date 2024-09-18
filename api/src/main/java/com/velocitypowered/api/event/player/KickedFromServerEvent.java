@@ -43,9 +43,9 @@ public final class KickedFromServerEvent implements
    * @param duringServerConnect whether the player was kicked during the connection process
    * @param result the initial result
    */
-  public KickedFromServerEvent(Player player, RegisteredServer server,
-      @Nullable Component originalReason,
-      boolean duringServerConnect, ServerKickResult result) {
+  public KickedFromServerEvent(final Player player, final RegisteredServer server,
+      @Nullable final Component originalReason,
+      final boolean duringServerConnect, final ServerKickResult result) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.server = Preconditions.checkNotNull(server, "server");
     this.originalReason = originalReason;
@@ -144,7 +144,7 @@ public final class KickedFromServerEvent implements
      * @param reason the reason to use when disconnecting the player
      * @return the disconnect result
      */
-    public static DisconnectPlayer create(Component reason) {
+    public static DisconnectPlayer create(final Component reason) {
       return new DisconnectPlayer(reason);
     }
 
@@ -221,7 +221,7 @@ public final class KickedFromServerEvent implements
 
     private final Component message;
 
-    private Notify(Component message) {
+    private Notify(final Component message) {
       this.message = Preconditions.checkNotNull(message, "message");
     }
 

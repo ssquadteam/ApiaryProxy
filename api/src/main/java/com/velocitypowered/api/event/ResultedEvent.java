@@ -56,7 +56,7 @@ public interface ResultedEvent<R extends ResultedEvent.Result> {
 
     private final boolean status;
 
-    private GenericResult(boolean b) {
+    private GenericResult(final boolean b) {
       this.status = b;
     }
 
@@ -89,7 +89,7 @@ public interface ResultedEvent<R extends ResultedEvent.Result> {
     private final boolean status;
     private final @Nullable Component reason;
 
-    private ComponentResult(boolean status, @Nullable Component reason) {
+    private ComponentResult(final boolean status, @Nullable final Component reason) {
       this.status = status;
       this.reason = reason;
     }
@@ -118,7 +118,7 @@ public interface ResultedEvent<R extends ResultedEvent.Result> {
       return ALLOWED;
     }
 
-    public static ComponentResult denied(Component reason) {
+    public static ComponentResult denied(final Component reason) {
       Preconditions.checkNotNull(reason, "reason");
       return new ComponentResult(false, reason);
     }

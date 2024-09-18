@@ -42,11 +42,11 @@ public class ServerListPingHandler {
 
   private final VelocityServer server;
 
-  public ServerListPingHandler(VelocityServer server) {
+  public ServerListPingHandler(final VelocityServer server) {
     this.server = server;
   }
 
-  private boolean displayOutdatedPing(ProtocolVersion clientVersion) {
+  private boolean displayOutdatedPing(final ProtocolVersion clientVersion) {
     String minVersion = server.getConfiguration().getMinimumVersion();
     ProtocolVersion minimumVersion = ProtocolVersion.getVersionByName(minVersion);
     return !clientVersion.lessThan(minimumVersion);
@@ -70,7 +70,7 @@ public class ServerListPingHandler {
     );
   }
 
-  private String formatVersionString(String raw, ProtocolVersion version) {
+  private String formatVersionString(final String raw, final ProtocolVersion version) {
     String minVersionIntroducedIn = ProtocolVersion.getVersionByName(server.getConfiguration().getMinimumVersion()).getVersionIntroducedIn();
     return raw.replaceAll("\\{protocol-min}", minVersionIntroducedIn)
         .replaceAll("\\{protocol-max}", ProtocolVersion.MAXIMUM_VERSION.getMostRecentSupportedVersion())
@@ -80,8 +80,8 @@ public class ServerListPingHandler {
         .replaceAll("\\{proxy-vendor}", this.server.getVersion().getVendor());
   }
 
-  private CompletableFuture<ServerPing> attemptPingPassthrough(VelocityInboundConnection connection,
-      PingPassthroughMode mode, List<String> servers, ProtocolVersion responseProtocolVersion) {
+  private CompletableFuture<ServerPing> attemptPingPassthrough(final VelocityInboundConnection connection,
+      final PingPassthroughMode mode, final List<String> servers, final ProtocolVersion responseProtocolVersion) {
     ServerPing fallback = constructLocalPing(connection.getProtocolVersion());
     List<CompletableFuture<ServerPing>> pings = new ArrayList<>();
     for (String s : servers) {
@@ -159,7 +159,7 @@ public class ServerListPingHandler {
    * @param connection the connection
    * @return a future with the initial ping result
    */
-  public CompletableFuture<ServerPing> getInitialPing(VelocityInboundConnection connection) {
+  public CompletableFuture<ServerPing> getInitialPing(final VelocityInboundConnection connection) {
     VelocityConfiguration configuration = server.getConfiguration();
     ProtocolVersion shownVersion = connection.getProtocolVersion().isSupported()
         ? connection.getProtocolVersion() : ProtocolVersion.MAXIMUM_VERSION;

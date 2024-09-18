@@ -20,7 +20,7 @@ package com.velocitypowered.proxy.connection;
 /**
  * Various useful constants.
  */
-public class VelocityConstants {
+public final class VelocityConstants {
 
   private VelocityConstants() {
     throw new AssertionError();

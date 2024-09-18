@@ -34,7 +34,7 @@ public final class PermissionsSetupEvent {
   private final PermissionProvider defaultProvider;
   private PermissionProvider provider;
 
-  public PermissionsSetupEvent(PermissionSubject subject, PermissionProvider provider) {
+  public PermissionsSetupEvent(final PermissionSubject subject, final PermissionProvider provider) {
     this.subject = Preconditions.checkNotNull(subject, "subject");
     this.provider = this.defaultProvider = Preconditions.checkNotNull(provider, "provider");
   }
@@ -49,7 +49,7 @@ public final class PermissionsSetupEvent {
    * @param subject the subject
    * @return the obtained permission function
    */
-  public PermissionFunction createFunction(PermissionSubject subject) {
+  public PermissionFunction createFunction(final PermissionSubject subject) {
     return this.provider.createFunction(subject);
   }
 
@@ -65,7 +65,7 @@ public final class PermissionsSetupEvent {
    *
    * @param provider the provider
    */
-  public void setProvider(@Nullable PermissionProvider provider) {
+  public void setProvider(@Nullable final PermissionProvider provider) {
     this.provider = provider == null ? this.defaultProvider : provider;
   }
 

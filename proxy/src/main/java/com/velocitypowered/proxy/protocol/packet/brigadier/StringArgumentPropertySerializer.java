@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 /**
  * Serializes properties for {@link StringArgumentType}.
  */
-class StringArgumentPropertySerializer implements ArgumentPropertySerializer<StringArgumentType> {
+final class StringArgumentPropertySerializer implements ArgumentPropertySerializer<StringArgumentType> {
 
   public static final ArgumentPropertySerializer<StringArgumentType> STRING =
       new StringArgumentPropertySerializer();
@@ -35,7 +35,7 @@ class StringArgumentPropertySerializer implements ArgumentPropertySerializer<Str
   }
 
   @Override
-  public StringArgumentType deserialize(ByteBuf buf, ProtocolVersion protocolVersion) {
+  public StringArgumentType deserialize(final ByteBuf buf, final ProtocolVersion protocolVersion) {
     int type = ProtocolUtils.readVarInt(buf);
     return switch (type) {
       case 0 -> StringArgumentType.word();
@@ -46,7 +46,7 @@ class StringArgumentPropertySerializer implements ArgumentPropertySerializer<Str
   }
 
   @Override
-  public void serialize(StringArgumentType object, ByteBuf buf, ProtocolVersion protocolVersion) {
+  public void serialize(final StringArgumentType object, final ByteBuf buf, final ProtocolVersion protocolVersion) {
     switch (object.getType()) {
       case SINGLE_WORD:
         ProtocolUtils.writeVarInt(buf, 0);

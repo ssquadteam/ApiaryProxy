@@ -48,7 +48,7 @@ public final class ServerCommand {
   /**
    * Registers or unregisters the command based on the configuration value.
    */
-  public static BrigadierCommand create(final ProxyServer server, boolean isServerEnabled) {
+  public static BrigadierCommand create(final ProxyServer server, final boolean isServerEnabled) {
     if (!isServerEnabled) {
       return null;
     }

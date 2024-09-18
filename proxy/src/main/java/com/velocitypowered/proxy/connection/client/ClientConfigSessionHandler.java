@@ -69,7 +69,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
    * @param server the Velocity server instance
    * @param player the player
    */
-  public ClientConfigSessionHandler(VelocityServer server, ConnectedPlayer player) {
+  public ClientConfigSessionHandler(final VelocityServer server, final ConnectedPlayer player) {
     this.server = server;
     this.player = player;
   }
@@ -91,13 +91,13 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ClientSettingsPacket packet) {
+  public boolean handle(final ClientSettingsPacket packet) {
     player.setClientSettings(packet);
     return true;
   }
 
   @Override
-  public boolean handle(ResourcePackResponsePacket packet) {
+  public boolean handle(final ResourcePackResponsePacket packet) {
     return player.resourcePackHandler().onResourcePackResponse(
         new ResourcePackResponseBundle(packet.getId(),
             packet.getHash(),
@@ -106,7 +106,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(FinishedUpdatePacket packet) {
+  public boolean handle(final FinishedUpdatePacket packet) {
     player.getConnection().setActiveSessionHandler(StateRegistry.PLAY, new ClientPlaySessionHandler(server, player));
 
     configSwitchFuture.complete(null);
@@ -130,7 +130,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(PingIdentifyPacket packet) {
+  public boolean handle(final PingIdentifyPacket packet) {
     if (player.getConnectionInFlight() != null) {
       player.getConnectionInFlight().ensureConnected().write(packet);
       return true;
@@ -140,7 +140,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(KnownPacksPacket packet) {
+  public boolean handle(final KnownPacksPacket packet) {
     callConfigurationEvent().thenRun(() ->
         player.getConnectionInFlightOrConnectedServer()
         .ensureConnected()
@@ -154,7 +154,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ServerboundCookieResponsePacket packet) {
+  public boolean handle(final ServerboundCookieResponsePacket packet) {
     server.getEventManager()
         .fire(new CookieReceiveEvent(player, packet.getKey(), packet.getPayload()))
         .thenAcceptAsync(event -> {
@@ -176,7 +176,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void handleGeneric(MinecraftPacket packet) {
+  public void handleGeneric(final MinecraftPacket packet) {
     VelocityServerConnection serverConnection = player.getConnectedServer();
     if (serverConnection == null) {
       // No server connection yet, probably transitioning.
@@ -193,7 +193,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void handleUnknown(ByteBuf buf) {
+  public void handleUnknown(final ByteBuf buf) {
     final VelocityServerConnection serverConnection = player.getConnectedServer();
     if (serverConnection == null) {
       // No server connection yet, probably transitioning.
@@ -212,7 +212,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void exception(Throwable throwable) {
+  public void exception(final Throwable throwable) {
     player.disconnect(Component.translatable("velocity.error.player-connection-error", NamedTextColor.RED));
   }
 
@@ -240,7 +240,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
    * @param serverConn the server connection
    * @return a future that completes when the config stage is finished
    */
-  public CompletableFuture<Void> handleBackendFinishUpdate(VelocityServerConnection serverConn) {
+  public CompletableFuture<Void> handleBackendFinishUpdate(final VelocityServerConnection serverConn) {
     final MinecraftConnection smc = serverConn.ensureConnected();
 
     final String brand = serverConn.getPlayer().getClientBrand();

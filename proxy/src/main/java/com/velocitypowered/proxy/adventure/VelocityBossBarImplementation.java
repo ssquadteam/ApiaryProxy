@@ -32,9 +32,10 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Implementation of a {@link BossBarImplementation}.
  */
-@SuppressWarnings("MissingJavadocMethod")
+@SuppressWarnings("UnstableApiUsage")
 public final class VelocityBossBarImplementation implements BossBar.Listener,
     BossBarImplementation {
+
   private final Set<ConnectedPlayer> viewers = Collections.newSetFromMap(
       new MapMaker().weakKeys().makeMap());
   private final UUID id = UUID.randomUUID();
@@ -48,6 +49,16 @@ public final class VelocityBossBarImplementation implements BossBar.Listener,
     this.bar = bar;
   }
 
+  /**
+   * Adds a viewer to the boss bar and sends the appropriate packet to the player.
+   *
+   * <p>If the viewer is successfully added, this method constructs a {@link ComponentHolder}
+   * with the player's protocol version and the translated boss bar name. It then sends a
+   * packet to the viewer to display the boss bar.</p>
+   *
+   * @param viewer the {@link ConnectedPlayer} to add as a viewer of the boss bar
+   * @return {@code true} if the viewer was successfully added, {@code false} if the viewer was already added
+   */
   public boolean viewerAdd(final ConnectedPlayer viewer) {
     if (this.viewers.add(viewer)) {
       final ComponentHolder name = new ComponentHolder(
@@ -60,6 +71,15 @@ public final class VelocityBossBarImplementation implements BossBar.Listener,
     return false;
   }
 
+  /**
+   * Removes a viewer from the boss bar and sends a packet to hide the boss bar from the player.
+   *
+   * <p>If the viewer is successfully removed, this method sends a packet to the viewer
+   * to remove the boss bar from their view.</p>
+   *
+   * @param viewer the {@link ConnectedPlayer} to remove as a viewer of the boss bar
+   * @return {@code true} if the viewer was successfully removed, {@code false} if the viewer was not present
+   */
   public boolean viewerRemove(final ConnectedPlayer viewer) {
     if (this.viewers.remove(viewer)) {
       viewer.getConnection().write(BossBarPacket.createRemovePacket(this.id, this.bar));

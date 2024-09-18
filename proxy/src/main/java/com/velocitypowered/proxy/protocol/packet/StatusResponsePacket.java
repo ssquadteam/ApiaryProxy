@@ -34,7 +34,7 @@ public class StatusResponsePacket implements MinecraftPacket {
   public StatusResponsePacket() {
   }
 
-  public StatusResponsePacket(@Nullable CharSequence status) {
+  public StatusResponsePacket(@Nullable final CharSequence status) {
     this.status = status;
   }
 
@@ -59,12 +59,12 @@ public class StatusResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     status = ProtocolUtils.readString(buf, Short.MAX_VALUE);
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (status == null) {
       throw new IllegalStateException("Status is not specified");
     }
@@ -72,7 +72,7 @@ public class StatusResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

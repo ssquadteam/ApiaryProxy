@@ -32,7 +32,7 @@ public final class BundleDelimiterHandler {
   private boolean inBundleSession = false;
   private CompletableFuture<Void> finishedBundleSessionFuture;
 
-  public BundleDelimiterHandler(ConnectedPlayer player) {
+  public BundleDelimiterHandler(final ConnectedPlayer player) {
     this.player = player;
   }
 
@@ -84,7 +84,7 @@ public final class BundleDelimiterHandler {
     return future;
   }
 
-  private void sendPackets(Runnable sendPackets) {
+  private void sendPackets(final Runnable sendPackets) {
     player.getConnection().write(BundleDelimiterPacket.INSTANCE);
     try {
       sendPackets.run();

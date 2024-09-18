@@ -21,7 +21,7 @@ public final class PlayerChannelRegisterEvent {
   private final Player player;
   private final List<ChannelIdentifier> channels;
 
-  public PlayerChannelRegisterEvent(Player player, List<ChannelIdentifier> channels) {
+  public PlayerChannelRegisterEvent(final Player player, final List<ChannelIdentifier> channels) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.channels = Preconditions.checkNotNull(channels, "channels");
   }

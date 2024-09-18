@@ -32,12 +32,12 @@ public class MinecraftCipherDecoder extends MessageToMessageDecoder<ByteBuf> {
 
   private final VelocityCipher cipher;
 
-  public MinecraftCipherDecoder(VelocityCipher cipher) {
+  public MinecraftCipherDecoder(final VelocityCipher cipher) {
     this.cipher = Preconditions.checkNotNull(cipher, "cipher");
   }
 
   @Override
-  protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+  protected void decode(final ChannelHandlerContext ctx, final ByteBuf in, final List<Object> out) throws Exception {
     ByteBuf compatible = MoreByteBufUtils.ensureCompatible(ctx.alloc(), cipher, in).slice();
     try {
       cipher.process(compatible);
@@ -49,7 +49,7 @@ public class MinecraftCipherDecoder extends MessageToMessageDecoder<ByteBuf> {
   }
 
   @Override
-  public void handlerRemoved(ChannelHandlerContext ctx) {
+  public void handlerRemoved(final ChannelHandlerContext ctx) {
     cipher.close();
   }
 }

@@ -47,14 +47,14 @@ public class GlistCommand {
 
   private final ProxyServer server;
 
-  public GlistCommand(ProxyServer server) {
+  public GlistCommand(final ProxyServer server) {
     this.server = server;
   }
 
   /**
    * Registers or unregisters the command based on the configuration value.
    */
-  public void register(boolean isGlistEnabled) {
+  public void register(final boolean isGlistEnabled) {
     if (!isGlistEnabled) {
       return;
     }
@@ -122,7 +122,7 @@ public class GlistCommand {
     return Command.SINGLE_SUCCESS;
   }
 
-  private void sendTotalProxyCount(CommandSource target) {
+  private void sendTotalProxyCount(final CommandSource target) {
     final int online = server.getPlayerCount();
     final TranslatableComponent.Builder msg = Component.translatable()
             .key(online == 1

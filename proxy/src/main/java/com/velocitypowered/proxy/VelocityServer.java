@@ -132,7 +132,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public class VelocityServer implements ProxyServer, ForwardingAudience {
 
-  public static final String VELOCITY_URL = "https://github.com/ssquadteam/ApiaryMC";
+  public static final String VELOCITY_URL = "https://github.com/GemstoneGG/Velocity-CTD";
 
   private static final Logger logger = LogManager.getLogger(VelocityServer.class);
   public static final Gson GENERAL_GSON = new GsonBuilder()
@@ -332,7 +332,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     }
   }
 
-  private void registerTranslations(boolean log) {
+  private void registerTranslations(final boolean log) {
     final String defaultFile = "messages.properties";
     final TranslationRegistry translationRegistry = new VelocityTranslationRegistry(TranslationRegistry.create(this.translationRegistryKey));
     translationRegistry.defaultLocale(Locale.US);
@@ -352,7 +352,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
               try {
                 final Path langFile = langPath.resolve(file.getFileName().toString());
                 if (!Files.exists(langFile)) {
-                  try (final InputStream is = Files.newInputStream(file)) {
+                  try (InputStream is = Files.newInputStream(file)) {
                     Files.copy(is, langFile);
                   }
                 }
@@ -372,11 +372,11 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
             return;
           }
 
-          try (final BufferedReader defaultReader = Files.newBufferedReader(optionalPath.get(), StandardCharsets.UTF_8)) {
+          try (BufferedReader defaultReader = Files.newBufferedReader(optionalPath.get(), StandardCharsets.UTF_8)) {
             final ResourceBundle defaultBundle = new PropertyResourceBundle(defaultReader);
             final Set<String> defaultKeys = defaultBundle.keySet();
 
-            try (final Stream<Path> langFiles = Files.walk(langPath)) {
+            try (Stream<Path> langFiles = Files.walk(langPath)) {
               langFiles.filter(Files::isRegularFile).forEach(file -> {
                 final String filename = com.google.common.io.Files
                     .getNameWithoutExtension(file.getFileName().toString());
@@ -387,7 +387,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
                     ? Locale.US
                     : Locale.forLanguageTag(localeName);
 
-                try (final BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                   final ResourceBundle bundle = new PropertyResourceBundle(reader);
 
                   translationRegistry.registerAll(locale, defaultKeys, (key) -> {
@@ -475,7 +475,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     logger.info("Loaded {} plugins", pluginManager.getPlugins().size());
   }
 
-  public Bootstrap createBootstrap(@Nullable EventLoopGroup group) {
+  public Bootstrap createBootstrap(@Nullable final EventLoopGroup group) {
     return this.cm.createWorker(group);
   }
 
@@ -604,7 +604,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     unregisterCommand("lobby");
   }
 
-  private void unregisterCommand(String command) {
+  private void unregisterCommand(final String command) {
     if (commandManager.getCommandMeta(command) != null
         && Objects.requireNonNull(commandManager.getCommandMeta(command)).getPlugin() instanceof VelocityCommandManager) {
       commandManager.unregister(command);
@@ -652,7 +652,11 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     }
 
     if (configuration.isHubEnabled() && !commandManager.hasCommand("hub")) {
-      commandManager.register("hub", new HubCommand(this).register(configuration.isHubEnabled()), "lobby");
+      commandManager.register(
+          commandManager.metaBuilder("hub")
+              .aliases("lobby")
+              .build(),
+          new HubCommand(this).register(configuration.isHubEnabled()));
     }
   }
 
@@ -684,7 +688,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   /**
    * Loads the server list from the velocity configuration file.
    */
-  private static List<ServerInfo> loadServersFromNewList(VelocityConfiguration config) {
+  private static List<ServerInfo> loadServersFromNewList(final VelocityConfiguration config) {
     List<ServerInfo> serverList = new ArrayList<>();
 
     config.getServers().forEach((serverName, address) -> {
@@ -700,7 +704,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
    * @param explicitExit whether the user explicitly shut down the proxy
    * @param reason       message to kick online players with
    */
-  public void shutdown(boolean explicitExit, Component reason) {
+  public void shutdown(final boolean explicitExit, final Component reason) {
     if (eventManager == null || pluginManager == null || cm == null || scheduler == null) {
       throw new AssertionError();
     }
@@ -775,12 +779,12 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
    *
    * @param explicitExit whether the user explicitly shut down the proxy
    */
-  public void shutdown(boolean explicitExit) {
+  public void shutdown(final boolean explicitExit) {
     shutdown(explicitExit, Component.translatable("velocity.kick.shutdown"));
   }
 
   @Override
-  public void shutdown(Component reason) {
+  public void shutdown(final Component reason) {
     shutdown(true, reason);
   }
 
@@ -808,7 +812,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
    * @param connection the connection to check
    * @return {@code true} if we can register the connection, {@code false} if not
    */
-  public boolean canRegisterConnection(ConnectedPlayer connection) {
+  public boolean canRegisterConnection(final ConnectedPlayer connection) {
     if (configuration.isOnlineMode() && configuration.isOnlineModeKickExistingPlayers()) {
       return true;
     }
@@ -823,7 +827,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
    * @param connection the connection to register
    * @return {@code true} if we registered the connection, {@code false} if not
    */
-  public boolean registerConnection(ConnectedPlayer connection) {
+  public boolean registerConnection(final ConnectedPlayer connection) {
     String lowerName = connection.getUsername().toLowerCase(Locale.US);
 
     if (!this.configuration.isOnlineModeKickExistingPlayers()) {
@@ -852,26 +856,26 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
    *
    * @param connection the connection to unregister
    */
-  public void unregisterConnection(ConnectedPlayer connection) {
+  public void unregisterConnection(final ConnectedPlayer connection) {
     connectionsByName.remove(connection.getUsername().toLowerCase(Locale.US), connection);
     connectionsByUuid.remove(connection.getUniqueId(), connection);
     connection.disconnected();
   }
 
   @Override
-  public Optional<Player> getPlayer(String username) {
+  public Optional<Player> getPlayer(final String username) {
     Preconditions.checkNotNull(username, "username");
     return Optional.ofNullable(connectionsByName.get(username.toLowerCase(Locale.US)));
   }
 
   @Override
-  public Optional<Player> getPlayer(UUID uuid) {
+  public Optional<Player> getPlayer(final UUID uuid) {
     Preconditions.checkNotNull(uuid, "uuid");
     return Optional.ofNullable(connectionsByUuid.get(uuid));
   }
 
   @Override
-  public Collection<Player> matchPlayer(String partialName) {
+  public Collection<Player> matchPlayer(final String partialName) {
     Objects.requireNonNull(partialName);
 
     return getAllPlayers().stream().filter(p -> p.getUsername()
@@ -880,7 +884,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   }
 
   @Override
-  public Collection<RegisteredServer> matchServer(String partialName) {
+  public Collection<RegisteredServer> matchServer(final String partialName) {
     Objects.requireNonNull(partialName);
 
     return getAllServers().stream().filter(s -> s.getServerInfo().getName()
@@ -899,7 +903,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   }
 
   @Override
-  public Optional<RegisteredServer> getServer(String name) {
+  public Optional<RegisteredServer> getServer(final String name) {
     return servers.getServer(name);
   }
 
@@ -909,17 +913,17 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   }
 
   @Override
-  public RegisteredServer createRawRegisteredServer(ServerInfo server) {
+  public RegisteredServer createRawRegisteredServer(final ServerInfo server) {
     return servers.createRawRegisteredServer(server);
   }
 
   @Override
-  public RegisteredServer registerServer(ServerInfo server) {
+  public RegisteredServer registerServer(final ServerInfo server) {
     return servers.register(server);
   }
 
   @Override
-  public void unregisterServer(ServerInfo server) {
+  public void unregisterServer(final ServerInfo server) {
     servers.unregister(server);
   }
 
@@ -971,7 +975,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
    * @param version the protocol version in use
    * @return the Gson instance
    */
-  public static Gson getPingGsonInstance(ProtocolVersion version) {
+  public static Gson getPingGsonInstance(final ProtocolVersion version) {
     if (version == ProtocolVersion.UNKNOWN
         || version.noLessThan(ProtocolVersion.MINECRAFT_1_20_3)) {
       return MODERN_PING_SERIALIZER;
@@ -983,7 +987,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   }
 
   @Override
-  public ResourcePackInfo.Builder createResourcePackBuilder(String url) {
+  public ResourcePackInfo.Builder createResourcePackBuilder(final String url) {
     return new VelocityResourcePackInfo.BuilderImpl(url);
   }
 }

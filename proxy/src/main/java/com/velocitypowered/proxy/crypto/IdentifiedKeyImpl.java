@@ -41,8 +41,8 @@ public class IdentifiedKeyImpl implements IdentifiedKey {
   private @MonotonicNonNull Boolean isSignatureValid;
   private @MonotonicNonNull UUID holder;
 
-  public IdentifiedKeyImpl(Revision revision, byte[] keyBits, long expiry,
-      byte[] signature) {
+  public IdentifiedKeyImpl(final Revision revision, final byte[] keyBits, final long expiry,
+      final byte[] signature) {
     this(revision, EncryptionUtils.parseRsaPublicKey(keyBits),
         Instant.ofEpochMilli(expiry), signature);
   }
@@ -51,7 +51,7 @@ public class IdentifiedKeyImpl implements IdentifiedKey {
    * Creates an Identified key from data.
    */
   public IdentifiedKeyImpl(
-      Revision revision, PublicKey publicKey, Instant expiryTemporal, byte[] signature) {
+      final Revision revision, final PublicKey publicKey, final Instant expiryTemporal, final byte[] signature) {
     this.revision = revision;
     this.publicKey = publicKey;
     this.expiryTemporal = expiryTemporal;
@@ -91,7 +91,7 @@ public class IdentifiedKeyImpl implements IdentifiedKey {
   /**
    * Sets the uuid for this key. Returns false if incorrect.
    */
-  public boolean internalAddHolder(UUID holder) {
+  public boolean internalAddHolder(final UUID holder) {
     if (holder == null) {
       return false;
     }
@@ -115,7 +115,7 @@ public class IdentifiedKeyImpl implements IdentifiedKey {
     return isSignatureValid != null && isSignatureValid;
   }
 
-  private Boolean validateData(@Nullable UUID verify) {
+  private Boolean validateData(@Nullable final UUID verify) {
     if (revision == Revision.GENERIC_V1) {
       String pemKey = EncryptionUtils.pemEncodeRsaKey(publicKey);
       long expires = expiryTemporal.toEpochMilli();
@@ -140,7 +140,7 @@ public class IdentifiedKeyImpl implements IdentifiedKey {
   }
 
   @Override
-  public boolean verifyDataSignature(byte[] signature, byte[]... toVerify) {
+  public boolean verifyDataSignature(final byte[] signature, final byte[]... toVerify) {
     try {
       return EncryptionUtils.verifySignature(EncryptionUtils.SHA256_WITH_RSA, publicKey, signature,
           toVerify);
@@ -162,7 +162,7 @@ public class IdentifiedKeyImpl implements IdentifiedKey {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

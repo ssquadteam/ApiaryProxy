@@ -37,14 +37,14 @@ public class AlertCommand {
 
   private final ProxyServer server;
 
-  public AlertCommand(ProxyServer server) {
+  public AlertCommand(final ProxyServer server) {
     this.server = server;
   }
 
   /**
    * Registers or unregisters the command based on the configuration value.
    */
-  public void register(boolean isAlertEnabled) {
+  public void register(final boolean isAlertEnabled) {
     if (!isAlertEnabled) {
       return;
     }

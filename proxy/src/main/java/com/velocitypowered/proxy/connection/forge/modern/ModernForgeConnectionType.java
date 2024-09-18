@@ -35,7 +35,7 @@ public class ModernForgeConnectionType extends ConnectionTypeImpl {
    *
    * @param hostName address from the client
    */
-  public ModernForgeConnectionType(String hostName) {
+  public ModernForgeConnectionType(final String hostName) {
     super(ClientConnectionPhases.VANILLA,
         BackendConnectionPhases.VANILLA);
     this.hostName = hostName;

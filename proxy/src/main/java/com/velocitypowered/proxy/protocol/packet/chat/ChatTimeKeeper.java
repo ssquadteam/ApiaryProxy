@@ -44,7 +44,7 @@ public class ChatTimeKeeper {
    * @return {@code true} if the timestamp was successfully updated, {@code false}
    *                      if the provided instant is before the current timestamp
    */
-  public boolean update(Instant instant) {
+  public boolean update(final Instant instant) {
     if (instant.isBefore(this.lastTimestamp)) {
       this.lastTimestamp = instant;
       return false;

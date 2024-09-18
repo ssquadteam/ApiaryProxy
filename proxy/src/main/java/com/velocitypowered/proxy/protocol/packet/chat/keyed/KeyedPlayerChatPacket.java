@@ -30,6 +30,14 @@ import java.time.Instant;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * Represents a player chat packet with support for message signing and preview.
+ * <p>
+ * The {@code KeyedPlayerChatPacket} handles player chat messages, supporting signed previews,
+ * message signatures, and previous message validation. It includes fields for tracking message
+ * signatures and handling expired messages.
+ * </p>
+ */
 public class KeyedPlayerChatPacket implements MinecraftPacket {
 
   private String message;
@@ -49,12 +57,12 @@ public class KeyedPlayerChatPacket implements MinecraftPacket {
   public KeyedPlayerChatPacket() {
   }
 
-  public KeyedPlayerChatPacket(String message) {
+  public KeyedPlayerChatPacket(final String message) {
     this.message = message;
     this.unsigned = true;
   }
 
-  public void setExpiry(@Nullable Instant expiry) {
+  public void setExpiry(@Nullable final Instant expiry) {
     this.expiry = expiry;
   }
 
@@ -75,8 +83,8 @@ public class KeyedPlayerChatPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     message = ProtocolUtils.readString(buf, 256);
 
     long expiresAt = buf.readLong();
@@ -120,8 +128,8 @@ public class KeyedPlayerChatPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     ProtocolUtils.writeString(buf, message);
 
     buf.writeLong(unsigned ? Instant.now().toEpochMilli() : Objects.requireNonNull(expiry).toEpochMilli());
@@ -149,7 +157,7 @@ public class KeyedPlayerChatPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

@@ -55,7 +55,7 @@ public final class PreTransferEvent implements ResultedEvent<PreTransferEvent.Tr
   /**
    * Transfer Result of a player to another host.
    */
-  public static class TransferResult implements ResultedEvent.Result {
+  public static final class TransferResult implements ResultedEvent.Result {
     private static final TransferResult ALLOWED = new TransferResult(true, null);
     private static final TransferResult DENIED = new TransferResult(false, null);
 

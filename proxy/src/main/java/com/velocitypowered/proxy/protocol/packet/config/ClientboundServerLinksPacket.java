@@ -37,12 +37,12 @@ public class ClientboundServerLinksPacket implements MinecraftPacket {
   public ClientboundServerLinksPacket() {
   }
 
-  public ClientboundServerLinksPacket(List<ServerLink> serverLinks) {
+  public ClientboundServerLinksPacket(final List<ServerLink> serverLinks) {
     this.serverLinks = serverLinks;
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     int linksCount = ProtocolUtils.readVarInt(buf);
 
     this.serverLinks = new ArrayList<>(linksCount);
@@ -52,7 +52,7 @@ public class ClientboundServerLinksPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion protocolVersion) {
     ProtocolUtils.writeVarInt(buf, serverLinks.size());
 
     for (ServerLink serverLink : serverLinks) {
@@ -61,7 +61,7 @@ public class ClientboundServerLinksPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
@@ -92,13 +92,13 @@ public class ClientboundServerLinksPacket implements MinecraftPacket {
     * @param protocolVersion the version of the protocol being used, which may influence how the
     *                        link is handled or displayed
     */
-    public ServerLink(com.velocitypowered.api.util.ServerLink link, ProtocolVersion protocolVersion) {
+    public ServerLink(final com.velocitypowered.api.util.ServerLink link, final ProtocolVersion protocolVersion) {
       this(link.getBuiltInType().map(Enum::ordinal).orElse(-1),
           link.getCustomLabel().map(c -> new ComponentHolder(protocolVersion, c)).orElse(null),
           link.getUrl().toString());
     }
 
-    private static ServerLink read(ByteBuf buf, ProtocolVersion version) {
+    private static ServerLink read(final ByteBuf buf, final ProtocolVersion version) {
       if (buf.readBoolean()) {
         return new ServerLink(ProtocolUtils.readVarInt(buf), null, ProtocolUtils.readString(buf));
       } else {
@@ -106,7 +106,7 @@ public class ClientboundServerLinksPacket implements MinecraftPacket {
       }
     }
 
-    private void write(ByteBuf buf) {
+    private void write(final ByteBuf buf) {
       if (id >= 0) {
         buf.writeBoolean(true);
         ProtocolUtils.writeVarInt(buf, id);

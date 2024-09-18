@@ -47,8 +47,8 @@ public class ResourceUtils {
    * @param remainingPathComponents Remaining path components
    */
   @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
-  public static boolean visitResources(Class<?> target, Consumer<Path> consumer,
-      String firstPathComponent, String... remainingPathComponents)
+  public static boolean visitResources(final Class<?> target, final Consumer<Path> consumer,
+      final String firstPathComponent, final String... remainingPathComponents)
       throws IOException {
     final URL knownResource = ResourceUtils.class.getClassLoader()
         .getResource("default-velocity.toml");

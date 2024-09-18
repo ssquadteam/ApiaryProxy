@@ -40,8 +40,8 @@ public final class DimensionInfo {
    *                           fog
    * @param isDebugType        if true constrains the world to the very limited debug-type world
    */
-  public DimensionInfo(String registryIdentifier, @Nullable String levelName,
-                       boolean isFlat, boolean isDebugType, ProtocolVersion protocolVersion) {
+  public DimensionInfo(final String registryIdentifier, @Nullable final String levelName,
+                       final boolean isFlat, final boolean isDebugType, final ProtocolVersion protocolVersion) {
     this.registryIdentifier = Preconditions.checkNotNull(registryIdentifier, "registryIdentifier cannot be null");
     if (protocolVersion.lessThan(ProtocolVersion.MINECRAFT_1_20_5)) {
       Preconditions.checkArgument(!registryIdentifier.isEmpty(), "registryIdentifier cannot be empty");

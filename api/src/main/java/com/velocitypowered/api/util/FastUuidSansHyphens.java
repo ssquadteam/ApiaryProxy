@@ -39,7 +39,7 @@ import java.util.UUID;
  * UUIDs. As the native Java 9+ UUID.toString() implementation dashes its UUIDs, we use the FastUUID
  * methods, which ought to be faster than a String.replace().
  */
-class FastUuidSansHyphens {
+final class FastUuidSansHyphens {
 
   private static final int MOJANG_BROKEN_UUID_LENGTH = 32;
 

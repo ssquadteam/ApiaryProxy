@@ -64,7 +64,7 @@ public class VelocityPluginManager implements PluginManager {
   private final Map<Object, PluginContainer> pluginInstances = new IdentityHashMap<>();
   private final VelocityServer server;
 
-  public VelocityPluginManager(VelocityServer server) {
+  public VelocityPluginManager(final VelocityServer server) {
     this.server = checkNotNull(server, "server");
   }
 
@@ -73,7 +73,7 @@ public class VelocityPluginManager implements PluginManager {
    *
    * @param plugin the plugin to register
    */
-  public void registerPlugin(PluginContainer plugin) {
+  public void registerPlugin(final PluginContainer plugin) {
     pluginsById.put(plugin.getDescription().getId(), plugin);
     Optional<?> instance = plugin.getInstance();
     instance.ifPresent(o -> pluginInstances.put(o, plugin));
@@ -87,7 +87,7 @@ public class VelocityPluginManager implements PluginManager {
    */
   @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE",
       justification = "I looked carefully and there's no way SpotBugs is right.")
-  public void loadPlugins(Path directory) throws IOException {
+  public void loadPlugins(final Path directory) throws IOException {
     checkNotNull(directory, "directory");
     checkArgument(directory.toFile().isDirectory(), "provided path isn't a directory");
 
@@ -183,7 +183,7 @@ public class VelocityPluginManager implements PluginManager {
   }
 
   @Override
-  public Optional<PluginContainer> fromInstance(Object instance) {
+  public Optional<PluginContainer> fromInstance(final Object instance) {
     checkNotNull(instance, "instance");
 
     if (instance instanceof PluginContainer) {
@@ -194,7 +194,7 @@ public class VelocityPluginManager implements PluginManager {
   }
 
   @Override
-  public Optional<PluginContainer> getPlugin(String id) {
+  public Optional<PluginContainer> getPlugin(final String id) {
     checkNotNull(id, "id");
     return Optional.ofNullable(pluginsById.get(id));
   }
@@ -205,12 +205,12 @@ public class VelocityPluginManager implements PluginManager {
   }
 
   @Override
-  public boolean isLoaded(String id) {
+  public boolean isLoaded(final String id) {
     return pluginsById.containsKey(id);
   }
 
   @Override
-  public void addToClasspath(Object plugin, Path path) {
+  public void addToClasspath(final Object plugin, final Path path) {
     checkNotNull(plugin, "instance");
     checkNotNull(path, "path");
     Optional<PluginContainer> optContainer = fromInstance(plugin);

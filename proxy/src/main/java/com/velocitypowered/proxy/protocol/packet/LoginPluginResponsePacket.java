@@ -26,7 +26,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-
 /**
  * Represents the response packet to a plugin message sent during the login phase.
  * The packet contains the plugin message ID, a success flag, and any additional data.
@@ -47,7 +46,7 @@ public class LoginPluginResponsePacket extends DeferredByteBufHolder implements 
    * @param success {@code true} if the plugin message was successful, {@code false} otherwise
    * @param buf the data buffer
    */
-  public LoginPluginResponsePacket(int id, boolean success, @MonotonicNonNull ByteBuf buf) {
+  public LoginPluginResponsePacket(final int id, final boolean success, @MonotonicNonNull final ByteBuf buf) {
     super(buf);
     this.id = id;
     this.success = success;
@@ -57,7 +56,7 @@ public class LoginPluginResponsePacket extends DeferredByteBufHolder implements 
     return id;
   }
 
-  public void setId(int id) {
+  public void setId(final int id) {
     this.id = id;
   }
 
@@ -65,7 +64,7 @@ public class LoginPluginResponsePacket extends DeferredByteBufHolder implements 
     return success;
   }
 
-  public void setSuccess(boolean success) {
+  public void setSuccess(final boolean success) {
     this.success = success;
   }
 
@@ -79,7 +78,7 @@ public class LoginPluginResponsePacket extends DeferredByteBufHolder implements 
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     this.id = ProtocolUtils.readVarInt(buf);
     this.success = buf.readBoolean();
     if (buf.isReadable()) {
@@ -90,14 +89,14 @@ public class LoginPluginResponsePacket extends DeferredByteBufHolder implements 
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     ProtocolUtils.writeVarInt(buf, id);
     buf.writeBoolean(success);
     buf.writeBytes(content());
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

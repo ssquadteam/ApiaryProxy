@@ -48,11 +48,11 @@ public abstract class GenericTitlePacket implements MinecraftPacket {
 
     private final int action;
 
-    ActionType(int action) {
+    ActionType(final int action) {
       this.action = action;
     }
 
-    public int getAction(ProtocolVersion version) {
+    public int getAction(final ProtocolVersion version) {
       return version.lessThan(ProtocolVersion.MINECRAFT_1_11)
           ? action > 2 ? action - 1 : action : action;
     }
@@ -61,7 +61,7 @@ public abstract class GenericTitlePacket implements MinecraftPacket {
 
   private ActionType action;
 
-  protected void setAction(ActionType action) {
+  protected void setAction(final ActionType action) {
     this.action = action;
   }
 
@@ -73,7 +73,7 @@ public abstract class GenericTitlePacket implements MinecraftPacket {
     throw new UnsupportedOperationException("Invalid function for this TitlePacket ActionType");
   }
 
-  public void setComponent(ComponentHolder component) {
+  public void setComponent(final ComponentHolder component) {
     throw new UnsupportedOperationException("Invalid function for this TitlePacket ActionType");
   }
 
@@ -81,7 +81,7 @@ public abstract class GenericTitlePacket implements MinecraftPacket {
     throw new UnsupportedOperationException("Invalid function for this TitlePacket ActionType");
   }
 
-  public void setFadeIn(int fadeIn) {
+  public void setFadeIn(final int fadeIn) {
     throw new UnsupportedOperationException("Invalid function for this TitlePacket ActionType");
   }
 
@@ -89,7 +89,7 @@ public abstract class GenericTitlePacket implements MinecraftPacket {
     throw new UnsupportedOperationException("Invalid function for this TitlePacket ActionType");
   }
 
-  public void setStay(int stay) {
+  public void setStay(final int stay) {
     throw new UnsupportedOperationException("Invalid function for this TitlePacket ActionType");
   }
 
@@ -97,14 +97,14 @@ public abstract class GenericTitlePacket implements MinecraftPacket {
     throw new UnsupportedOperationException("Invalid function for this TitlePacket ActionType");
   }
 
-  public void setFadeOut(int fadeOut) {
+  public void setFadeOut(final int fadeOut) {
     throw new UnsupportedOperationException("Invalid function for this TitlePacket ActionType");
   }
 
 
   @Override
-  public final void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion version) {
+  public final void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion version) {
     throw new UnsupportedOperationException(); // encode only
   }
 
@@ -115,7 +115,7 @@ public abstract class GenericTitlePacket implements MinecraftPacket {
    * @param version Protocol version of the target player
    * @return GenericTitlePacket instance that follows the invoker type/version
    */
-  public static GenericTitlePacket constructTitlePacket(ActionType type, ProtocolVersion version) {
+  public static GenericTitlePacket constructTitlePacket(final ActionType type, final ProtocolVersion version) {
     GenericTitlePacket packet;
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_17)) {
       packet = switch (type) {

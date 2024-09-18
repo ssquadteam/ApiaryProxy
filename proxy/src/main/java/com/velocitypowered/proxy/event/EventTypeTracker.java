@@ -28,7 +28,7 @@ class EventTypeTracker {
 
   private final ConcurrentMap<Class<?>, ImmutableSet<Class<?>>> friends;
 
-  public EventTypeTracker() {
+  EventTypeTracker() {
     this.friends = new ConcurrentHashMap<>();
   }
 

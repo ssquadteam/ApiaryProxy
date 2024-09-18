@@ -43,7 +43,7 @@ public final class CookieRequestEvent implements ResultedEvent<CookieRequestEven
   }
 
   @Override
-  public void setResult(ForwardResult result) {
+  public void setResult(final ForwardResult result) {
     this.result = Preconditions.checkNotNull(result, "result");
   }
 

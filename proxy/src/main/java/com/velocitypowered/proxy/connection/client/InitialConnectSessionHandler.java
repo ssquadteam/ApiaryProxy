@@ -41,13 +41,13 @@ public class InitialConnectSessionHandler implements MinecraftSessionHandler {
 
   private final VelocityServer server;
 
-  InitialConnectSessionHandler(ConnectedPlayer player, VelocityServer server) {
+  InitialConnectSessionHandler(final ConnectedPlayer player, final VelocityServer server) {
     this.player = player;
     this.server = server;
   }
 
   @Override
-  public boolean handle(PluginMessagePacket packet) {
+  public boolean handle(final PluginMessagePacket packet) {
     VelocityServerConnection serverConn = player.getConnectionInFlight();
     if (serverConn != null) {
       if (player.getPhase().handle(player, packet, serverConn)) {

@@ -32,7 +32,7 @@ public final class PlayerChatEvent implements ResultedEvent<PlayerChatEvent.Chat
    * @param player the player sending the message
    * @param message the message being sent
    */
-  public PlayerChatEvent(Player player, String message) {
+  public PlayerChatEvent(final Player player, final String message) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.message = Preconditions.checkNotNull(message, "message");
     this.result = ChatResult.allowed();
@@ -52,7 +52,7 @@ public final class PlayerChatEvent implements ResultedEvent<PlayerChatEvent.Chat
   }
 
   @Override
-  public void setResult(ChatResult result) {
+  public void setResult(final ChatResult result) {
     this.result = Preconditions.checkNotNull(result, "result");
   }
 
@@ -76,7 +76,7 @@ public final class PlayerChatEvent implements ResultedEvent<PlayerChatEvent.Chat
     private final @Nullable String message;
     private final boolean status;
 
-    private ChatResult(boolean status, @Nullable String message) {
+    private ChatResult(final boolean status, @Nullable final String message) {
       this.status = status;
       this.message = message;
     }
@@ -119,7 +119,7 @@ public final class PlayerChatEvent implements ResultedEvent<PlayerChatEvent.Chat
      * @param message the message to use instead
      * @return a result with a new message
      */
-    public static ChatResult message(@NonNull String message) {
+    public static ChatResult message(@NonNull final String message) {
       Preconditions.checkNotNull(message, "message");
       return new ChatResult(true, message);
     }

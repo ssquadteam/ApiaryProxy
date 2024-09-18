@@ -19,7 +19,7 @@ public final class ListenerBoundEvent {
   private final InetSocketAddress address;
   private final ListenerType listenerType;
 
-  public ListenerBoundEvent(InetSocketAddress address, ListenerType listenerType) {
+  public ListenerBoundEvent(final InetSocketAddress address, final ListenerType listenerType) {
     this.address = Preconditions.checkNotNull(address, "address");
     this.listenerType = Preconditions.checkNotNull(listenerType, "listenerType");
   }

@@ -149,11 +149,11 @@ public enum ProtocolVersion implements Ordered<ProtocolVersion> {
     SUPPORTED_VERSIONS = Sets.immutableEnumSet(versions);
   }
 
-  ProtocolVersion(int protocol, String... names) {
+  ProtocolVersion(final int protocol, final String... names) {
     this(protocol, -1, names);
   }
 
-  ProtocolVersion(int protocol, int snapshotProtocol, String... names) {
+  ProtocolVersion(final int protocol, final int snapshotProtocol, final String... names) {
     if (snapshotProtocol != -1) {
       this.snapshotProtocol = (1 << SNAPSHOT_BIT) | snapshotProtocol;
     } else {
@@ -229,7 +229,7 @@ public enum ProtocolVersion implements Ordered<ProtocolVersion> {
    * @param protocol the protocol as an int
    * @return if the protocol supported
    */
-  public static boolean isSupported(int protocol) {
+  public static boolean isSupported(final int protocol) {
     return getProtocolVersion(protocol).isSupported();
   }
 
@@ -239,7 +239,7 @@ public enum ProtocolVersion implements Ordered<ProtocolVersion> {
    * @param version the protocol version
    * @return if the protocol supported
    */
-  public static boolean isSupported(ProtocolVersion version) {
+  public static boolean isSupported(final ProtocolVersion version) {
     return version != null && version.isSupported();
   }
 
@@ -249,7 +249,7 @@ public enum ProtocolVersion implements Ordered<ProtocolVersion> {
    * @param protocol the protocol as an int
    * @return the protocol version
    */
-  public static ProtocolVersion getProtocolVersion(int protocol) {
+  public static ProtocolVersion getProtocolVersion(final int protocol) {
     return ID_TO_PROTOCOL_CONSTANT.getOrDefault(protocol, UNKNOWN);
   }
 
@@ -259,7 +259,7 @@ public enum ProtocolVersion implements Ordered<ProtocolVersion> {
    * @param version the protocol as a string version
    * @return the protocol version
    */
-  public static ProtocolVersion getVersionByName(String version) {
+  public static ProtocolVersion getVersionByName(final String version) {
     return Arrays.stream(ProtocolVersion.values())
             .filter(protocolVersion -> Arrays.asList(protocolVersion.names).contains(version))
             .findFirst()

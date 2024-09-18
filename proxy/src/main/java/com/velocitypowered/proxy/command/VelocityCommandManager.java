@@ -85,7 +85,7 @@ public class VelocityCommandManager implements CommandManager {
    * @param eventManager the event manager
    */
   public VelocityCommandManager(final VelocityEventManager eventManager,
-      PluginManager pluginManager) {
+      final PluginManager pluginManager) {
     this.pluginManager = pluginManager;
     this.lock = new ReentrantReadWriteLock();
     this.dispatcher = new CommandDispatcher<>();
@@ -100,7 +100,7 @@ public class VelocityCommandManager implements CommandManager {
     this.commandMetas = new ConcurrentHashMap<>();
   }
 
-  public void setAnnounceProxyCommands(boolean announceProxyCommands) {
+  public void setAnnounceProxyCommands(final boolean announceProxyCommands) {
     this.suggestionsProvider.setAnnounceProxyCommands(announceProxyCommands);
   }
 
@@ -190,7 +190,7 @@ public class VelocityCommandManager implements CommandManager {
   }
 
   @Override
-  public void unregister(CommandMeta meta) {
+  public void unregister(final CommandMeta meta) {
     Preconditions.checkNotNull(meta, "meta");
     lock.writeLock().lock();
     try {
@@ -208,7 +208,7 @@ public class VelocityCommandManager implements CommandManager {
   }
 
   @Override
-  public @Nullable CommandMeta getCommandMeta(String alias) {
+  public @Nullable CommandMeta getCommandMeta(final String alias) {
     Preconditions.checkNotNull(alias, "alias");
     return commandMetas.get(alias);
   }
@@ -367,7 +367,7 @@ public class VelocityCommandManager implements CommandManager {
   }
 
   @Override
-  public boolean hasCommand(String alias, CommandSource source) {
+  public boolean hasCommand(final String alias, final CommandSource source) {
     Preconditions.checkNotNull(source, "source");
     CommandNode<CommandSource> command = getCommand(alias);
     return command != null && command.canUse(source);
@@ -387,7 +387,7 @@ public class VelocityCommandManager implements CommandManager {
     return injector;
   }
 
-  private Executor getAsyncExecutor(ParseResults<CommandSource> parse) {
+  private Executor getAsyncExecutor(final ParseResults<CommandSource> parse) {
     Object registrant;
     if (parse.getContext().getCommand() instanceof VelocityBrigadierCommandWrapper vbcw) {
       registrant = vbcw.registrant() == null ? VelocityVirtualPlugin.INSTANCE : vbcw.registrant();

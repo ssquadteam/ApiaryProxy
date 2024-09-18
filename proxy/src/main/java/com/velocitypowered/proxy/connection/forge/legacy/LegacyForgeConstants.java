@@ -20,7 +20,7 @@ package com.velocitypowered.proxy.connection.forge.legacy;
 /**
  * Constants for use with Legacy Forge systems.
  */
-public class LegacyForgeConstants {
+public final class LegacyForgeConstants {
 
   /**
    * Clients attempting to connect to 1.8-1.12.2 Forge servers will have this token appended to the

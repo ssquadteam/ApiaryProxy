@@ -21,7 +21,7 @@ public final class PlayerModInfoEvent {
   private final Player player;
   private final ModInfo modInfo;
 
-  public PlayerModInfoEvent(Player player, ModInfo modInfo) {
+  public PlayerModInfoEvent(final Player player, final ModInfo modInfo) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.modInfo = Preconditions.checkNotNull(modInfo, "modInfo");
   }

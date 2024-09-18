@@ -24,7 +24,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * An argument property serializer that will serialize and deserialize nothing.
  */
-class EmptyArgumentPropertySerializer implements ArgumentPropertySerializer<Void> {
+final class EmptyArgumentPropertySerializer implements ArgumentPropertySerializer<Void> {
 
   static final ArgumentPropertySerializer<Void> EMPTY =
       new EmptyArgumentPropertySerializer();
@@ -33,12 +33,12 @@ class EmptyArgumentPropertySerializer implements ArgumentPropertySerializer<Void
   }
 
   @Override
-  public @Nullable Void deserialize(ByteBuf buf, ProtocolVersion protocolVersion) {
+  public @Nullable Void deserialize(final ByteBuf buf, final ProtocolVersion protocolVersion) {
     return null;
   }
 
   @Override
-  public void serialize(Void object, ByteBuf buf, ProtocolVersion protocolVersion) {
+  public void serialize(final Void object, final ByteBuf buf, final ProtocolVersion protocolVersion) {
 
   }
 }

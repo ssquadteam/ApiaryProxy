@@ -26,7 +26,6 @@ import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 import java.util.Arrays;
 
-
 /**
  * Represents the encryption request packet in Minecraft, which is sent by the server
  * during the encryption handshake process. This packet is used to initiate secure
@@ -44,7 +43,7 @@ public class EncryptionRequestPacket implements MinecraftPacket {
     return publicKey.clone();
   }
 
-  public void setPublicKey(byte[] publicKey) {
+  public void setPublicKey(final byte[] publicKey) {
     this.publicKey = publicKey.clone();
   }
 
@@ -52,7 +51,7 @@ public class EncryptionRequestPacket implements MinecraftPacket {
     return verifyToken.clone();
   }
 
-  public void setVerifyToken(byte[] verifyToken) {
+  public void setVerifyToken(final byte[] verifyToken) {
     this.verifyToken = verifyToken.clone();
   }
 
@@ -65,7 +64,7 @@ public class EncryptionRequestPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     this.serverId = ProtocolUtils.readString(buf, 20);
 
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
@@ -81,7 +80,7 @@ public class EncryptionRequestPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     ProtocolUtils.writeString(buf, this.serverId);
 
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
@@ -97,7 +96,7 @@ public class EncryptionRequestPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

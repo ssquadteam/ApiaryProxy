@@ -73,7 +73,7 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
   private final ServerInfo serverInfo;
   private final Map<UUID, ConnectedPlayer> players = new ConcurrentHashMap<>();
 
-  public VelocityRegisteredServer(@Nullable VelocityServer server, ServerInfo serverInfo) {
+  public VelocityRegisteredServer(@Nullable final VelocityServer server, final ServerInfo serverInfo) {
     this.server = server;
     this.serverInfo = Preconditions.checkNotNull(serverInfo, "serverInfo");
   }
@@ -88,12 +88,12 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
     return ImmutableList.copyOf(players.values());
   }
 
-  public ConnectedPlayer getPlayer(UUID uuid) {
+  public ConnectedPlayer getPlayer(final UUID uuid) {
     return players.get(uuid);
   }
 
   @Override
-  public CompletableFuture<ServerPing> ping(PingOptions pingOptions) {
+  public CompletableFuture<ServerPing> ping(final PingOptions pingOptions) {
     return ping(null, pingOptions);
   }
 
@@ -110,14 +110,14 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
    * @param pingOptions the options to apply to this ping
    * @return the server list ping response
    */
-  public CompletableFuture<ServerPing> ping(@Nullable EventLoop loop, PingOptions pingOptions) {
+  public CompletableFuture<ServerPing> ping(@Nullable final EventLoop loop, final PingOptions pingOptions) {
     if (server == null) {
       throw new IllegalStateException("No Velocity proxy instance available");
     }
     CompletableFuture<ServerPing> pingFuture = new CompletableFuture<>();
     server.createBootstrap(loop).handler(new ChannelInitializer<>() {
       @Override
-      protected void initChannel(@NotNull Channel ch) {
+      protected void initChannel(@NotNull final Channel ch) {
         ch.pipeline().addLast(FRAME_DECODER, new MinecraftVarintFrameDecoder())
             .addLast(READ_TIMEOUT, new ReadTimeoutHandler(
                 pingOptions.getTimeout() == 0
@@ -142,11 +142,11 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
     return pingFuture;
   }
 
-  public void addPlayer(ConnectedPlayer player) {
+  public void addPlayer(final ConnectedPlayer player) {
     players.put(player.getUniqueId(), player);
   }
 
-  public void removePlayer(ConnectedPlayer player) {
+  public void removePlayer(final ConnectedPlayer player) {
     players.remove(player.getUniqueId(), player);
   }
 
@@ -183,7 +183,7 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
    * @param data       the data
    * @return whether the message was sent
    */
-  public boolean sendPluginMessage(ChannelIdentifier identifier, ByteBuf data) {
+  public boolean sendPluginMessage(final ChannelIdentifier identifier, final ByteBuf data) {
     for (final ConnectedPlayer player : players.values()) {
       final VelocityServerConnection serverConnection = player.getConnectedServer();
       if (serverConnection != null && serverConnection.getConnection() != null

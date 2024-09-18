@@ -28,7 +28,7 @@ public final class Ratelimiters {
     throw new AssertionError();
   }
 
-  public static Ratelimiter createWithMilliseconds(long ms) {
+  public static Ratelimiter createWithMilliseconds(final long ms) {
     return ms <= 0 ? NoopCacheRatelimiter.INSTANCE : new CaffeineCacheRatelimiter(ms,
         TimeUnit.MILLISECONDS);
   }

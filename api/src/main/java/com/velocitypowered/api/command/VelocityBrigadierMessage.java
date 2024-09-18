@@ -20,13 +20,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class VelocityBrigadierMessage implements Message, ComponentLike {
 
-  public static VelocityBrigadierMessage tooltip(Component message) {
+  public static VelocityBrigadierMessage tooltip(final Component message) {
     return new VelocityBrigadierMessage(message);
   }
 
   private final Component message;
 
-  private VelocityBrigadierMessage(Component message) {
+  private VelocityBrigadierMessage(final Component message) {
     this.message = Preconditions.checkNotNull(message, "message");
   }
 

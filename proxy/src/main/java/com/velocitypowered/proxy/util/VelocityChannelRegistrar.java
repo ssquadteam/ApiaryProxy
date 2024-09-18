@@ -38,7 +38,7 @@ public class VelocityChannelRegistrar implements ChannelRegistrar {
   private final Map<String, ChannelIdentifier> identifierMap = new ConcurrentHashMap<>();
 
   @Override
-  public void register(ChannelIdentifier... identifiers) {
+  public void register(final ChannelIdentifier... identifiers) {
     for (ChannelIdentifier identifier : identifiers) {
       Preconditions.checkArgument(identifier instanceof LegacyChannelIdentifier
           || identifier instanceof MinecraftChannelIdentifier, "identifier is unknown");
@@ -56,7 +56,7 @@ public class VelocityChannelRegistrar implements ChannelRegistrar {
   }
 
   @Override
-  public void unregister(ChannelIdentifier... identifiers) {
+  public void unregister(final ChannelIdentifier... identifiers) {
     for (ChannelIdentifier identifier : identifiers) {
       Preconditions.checkArgument(identifier instanceof LegacyChannelIdentifier
               || identifier instanceof MinecraftChannelIdentifier,
@@ -104,7 +104,7 @@ public class VelocityChannelRegistrar implements ChannelRegistrar {
     return ids;
   }
 
-  public @Nullable ChannelIdentifier getFromId(String id) {
+  public @Nullable ChannelIdentifier getFromId(final String id) {
     return identifierMap.get(id);
   }
 
@@ -114,7 +114,7 @@ public class VelocityChannelRegistrar implements ChannelRegistrar {
    * @param protocolVersion the protocol version in use
    * @return the list of channels to register
    */
-  public Collection<String> getChannelsForProtocol(ProtocolVersion protocolVersion) {
+  public Collection<String> getChannelsForProtocol(final ProtocolVersion protocolVersion) {
     if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_13)) {
       return getModernChannelIds();
     }

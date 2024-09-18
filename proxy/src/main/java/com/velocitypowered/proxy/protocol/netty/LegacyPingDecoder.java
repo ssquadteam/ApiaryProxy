@@ -37,7 +37,7 @@ public class LegacyPingDecoder extends ByteToMessageDecoder {
   private static final String MC_1_6_CHANNEL = "MC|PingHost";
 
   @Override
-  protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+  protected void decode(final ChannelHandlerContext ctx, final ByteBuf in, final List<Object> out) throws Exception {
     if (!in.isReadable()) {
       return;
     }
@@ -73,7 +73,7 @@ public class LegacyPingDecoder extends ByteToMessageDecoder {
     }
   }
 
-  private static LegacyPingPacket readExtended16Data(ByteBuf in) {
+  private static LegacyPingPacket readExtended16Data(final ByteBuf in) {
     in.skipBytes(1);
     String channelName = readLegacyString(in);
     if (!channelName.equals(MC_1_6_CHANNEL)) {
@@ -87,7 +87,7 @@ public class LegacyPingDecoder extends ByteToMessageDecoder {
         .createUnresolved(hostname, port));
   }
 
-  private static String readLegacyString(ByteBuf buf) {
+  private static String readLegacyString(final ByteBuf buf) {
     int len = buf.readShort() * Character.BYTES;
     checkFrame(buf.isReadable(len), "String length %s is too large for available bytes %d",
         len, buf.readableBytes());

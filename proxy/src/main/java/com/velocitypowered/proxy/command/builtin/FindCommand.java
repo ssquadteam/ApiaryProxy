@@ -41,14 +41,14 @@ public class FindCommand {
 
   private final ProxyServer server;
 
-  public FindCommand(ProxyServer server) {
+  public FindCommand(final ProxyServer server) {
     this.server = server;
   }
 
   /**
    * Registers or unregisters the command based on the configuration value.
    */
-  public void register(boolean isFindEnabled) {
+  public void register(final boolean isFindEnabled) {
     if (!isFindEnabled) {
       return;
     }

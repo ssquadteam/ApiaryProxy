@@ -49,7 +49,7 @@ public final class VelocityTranslationRegistry implements TranslationRegistry {
   }
 
   @Override
-  public boolean contains(@NotNull String key) {
+  public boolean contains(@NotNull final String key) {
     return backedRegistry.contains(key);
   }
 
@@ -59,14 +59,14 @@ public final class VelocityTranslationRegistry implements TranslationRegistry {
   }
 
   @Override
-  public @Nullable MessageFormat translate(@NotNull String key, @NotNull Locale locale) {
+  public @Nullable MessageFormat translate(@NotNull final String key, @NotNull final Locale locale) {
     return null;
   }
 
   @Override
   public @Nullable Component translate(
-          @NotNull TranslatableComponent component,
-          @NotNull Locale locale
+          @NotNull final TranslatableComponent component,
+          @NotNull final Locale locale
   ) {
     final MessageFormat translationFormat = backedRegistry.translate(component.key(), locale);
 
@@ -93,17 +93,17 @@ public final class VelocityTranslationRegistry implements TranslationRegistry {
   }
 
   @Override
-  public void defaultLocale(@NotNull Locale locale) {
+  public void defaultLocale(@NotNull final Locale locale) {
     backedRegistry.defaultLocale(locale);
   }
 
   @Override
-  public void register(@NotNull String key, @NotNull Locale locale, @NotNull MessageFormat format) {
+  public void register(@NotNull final String key, @NotNull final Locale locale, @NotNull final MessageFormat format) {
     backedRegistry.register(key, locale, format);
   }
 
   @Override
-  public void unregister(@NotNull String key) {
+  public void unregister(@NotNull final String key) {
     backedRegistry.unregister(key);
   }
 

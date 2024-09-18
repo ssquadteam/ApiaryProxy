@@ -38,7 +38,7 @@ public class LastSeenMessages {
     this.acknowledged = new BitSet();
   }
 
-  public LastSeenMessages(int offset, BitSet acknowledged) {
+  public LastSeenMessages(final int offset, final BitSet acknowledged) {
     this.offset = offset;
     this.acknowledged = acknowledged;
   }
@@ -49,7 +49,7 @@ public class LastSeenMessages {
    *
    * @param buf the buffer containing the serialized last seen messages data
    */
-  public LastSeenMessages(ByteBuf buf) {
+  public LastSeenMessages(final ByteBuf buf) {
     this.offset = ProtocolUtils.readVarInt(buf);
 
     byte[] bytes = new byte[DIV_FLOOR];
@@ -57,7 +57,7 @@ public class LastSeenMessages {
     this.acknowledged = BitSet.valueOf(bytes);
   }
 
-  public void encode(ByteBuf buf) {
+  public void encode(final ByteBuf buf) {
     ProtocolUtils.writeVarInt(buf, offset);
     buf.writeBytes(Arrays.copyOf(acknowledged.toByteArray(), DIV_FLOOR));
   }

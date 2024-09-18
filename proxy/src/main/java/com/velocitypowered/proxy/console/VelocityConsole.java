@@ -60,6 +60,8 @@ public final class VelocityConsole extends SimpleTerminalConsole implements Cons
 
   private final VelocityServer server;
   private PermissionFunction permissionFunction = ALWAYS_TRUE;
+
+  @SuppressWarnings("UnstableApiUsage")
   private final @NotNull Pointers pointers = ConsoleCommandSource.super.pointers().toBuilder()
       .withDynamic(PermissionChecker.POINTER, this::getPermissionChecker)
       .withDynamic(Identity.LOCALE, () -> ClosestLocaleMatcher.INSTANCE
@@ -67,18 +69,18 @@ public final class VelocityConsole extends SimpleTerminalConsole implements Cons
       .withStatic(FacetPointers.TYPE, Type.CONSOLE)
       .build();
 
-  public VelocityConsole(VelocityServer server) {
+  public VelocityConsole(final VelocityServer server) {
     this.server = server;
   }
 
   @Override
-  public void sendMessage(@NonNull Identity identity, @NonNull Component message,
-      @NonNull MessageType messageType) {
+  public void sendMessage(@NonNull final Identity identity, @NonNull final Component message,
+      @NonNull final MessageType messageType) {
     componentLogger.info(message);
   }
 
   @Override
-  public @NonNull Tristate getPermissionValue(@NonNull String permission) {
+  public @NonNull Tristate getPermissionValue(@NonNull final String permission) {
     return this.permissionFunction.getPermissionValue(permission);
   }
 
@@ -108,7 +110,7 @@ public final class VelocityConsole extends SimpleTerminalConsole implements Cons
   }
 
   @Override
-  protected LineReader buildReader(LineReaderBuilder builder) {
+  protected LineReader buildReader(final LineReaderBuilder builder) {
     return super.buildReader(builder
         .appName("Velocity")
         .completer((reader, parsedLine, list) -> {
@@ -132,7 +134,7 @@ public final class VelocityConsole extends SimpleTerminalConsole implements Cons
   }
 
   @Override
-  protected void runCommand(String command) {
+  protected void runCommand(final String command) {
     try {
       if (!this.server.getCommandManager().executeAsync(this, command).join()) {
         sendMessage(Component.translatable("velocity.command.command-does-not-exist",

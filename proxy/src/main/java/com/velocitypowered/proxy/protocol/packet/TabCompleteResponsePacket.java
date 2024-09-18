@@ -44,7 +44,7 @@ public class TabCompleteResponsePacket implements MinecraftPacket {
     return transactionId;
   }
 
-  public void setTransactionId(int transactionId) {
+  public void setTransactionId(final int transactionId) {
     this.transactionId = transactionId;
   }
 
@@ -52,7 +52,7 @@ public class TabCompleteResponsePacket implements MinecraftPacket {
     return start;
   }
 
-  public void setStart(int start) {
+  public void setStart(final int start) {
     this.start = start;
   }
 
@@ -60,7 +60,7 @@ public class TabCompleteResponsePacket implements MinecraftPacket {
     return length;
   }
 
-  public void setLength(int length) {
+  public void setLength(final int length) {
     this.length = length;
   }
 
@@ -79,7 +79,7 @@ public class TabCompleteResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(MINECRAFT_1_13)) {
       this.transactionId = ProtocolUtils.readVarInt(buf);
       this.start = ProtocolUtils.readVarInt(buf);
@@ -99,7 +99,7 @@ public class TabCompleteResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(MINECRAFT_1_13)) {
       ProtocolUtils.writeVarInt(buf, this.transactionId);
       ProtocolUtils.writeVarInt(buf, this.start);
@@ -121,7 +121,7 @@ public class TabCompleteResponsePacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
@@ -133,17 +133,17 @@ public class TabCompleteResponsePacket implements MinecraftPacket {
     private final String text;
     private final @Nullable ComponentHolder tooltip;
 
-    public Offer(String text) {
+    public Offer(final String text) {
       this(text, null);
     }
 
-    public Offer(String text, @Nullable ComponentHolder tooltip) {
+    public Offer(final String text, @Nullable final ComponentHolder tooltip) {
       this.text = text;
       this.tooltip = tooltip;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }
@@ -170,7 +170,7 @@ public class TabCompleteResponsePacket implements MinecraftPacket {
     }
 
     @Override
-    public int compareTo(Offer o) {
+    public int compareTo(final Offer o) {
       return this.text.compareTo(o.text);
     }
 

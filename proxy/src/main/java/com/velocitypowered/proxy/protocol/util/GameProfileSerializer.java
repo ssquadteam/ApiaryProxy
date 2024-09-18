@@ -45,15 +45,15 @@ public final class GameProfileSerializer implements JsonSerializer<GameProfile>,
   }
 
   @Override
-  public GameProfile deserialize(JsonElement json, Type typeOfT,
-      JsonDeserializationContext context) {
+  public GameProfile deserialize(final JsonElement json, final Type typeOfT,
+      final JsonDeserializationContext context) {
     JsonObject obj = json.getAsJsonObject();
     return new GameProfile(obj.get("id").getAsString(), obj.get("name").getAsString(),
         context.deserialize(obj.get("properties"), propertyList));
   }
 
   @Override
-  public JsonElement serialize(GameProfile src, Type typeOfSrc, JsonSerializationContext context) {
+  public JsonElement serialize(final GameProfile src, final Type typeOfSrc, final JsonSerializationContext context) {
     JsonObject obj = new JsonObject();
     obj.add("id", new JsonPrimitive(src.getUndashedId()));
     obj.add("name", new JsonPrimitive(src.getName()));

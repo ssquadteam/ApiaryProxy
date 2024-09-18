@@ -56,7 +56,7 @@ public final class SeparatePoolInetNameResolver extends InetNameResolver {
    * @param executor the {@link EventExecutor} which is used to notify the listeners of the
    *                 {@link Future} returned by {@link #resolve(String)}
    */
-  public SeparatePoolInetNameResolver(EventExecutor executor) {
+  public SeparatePoolInetNameResolver(final EventExecutor executor) {
     super(executor);
     this.resolveExecutor = Executors.newSingleThreadExecutor(
         new ThreadFactoryBuilder()
@@ -70,7 +70,7 @@ public final class SeparatePoolInetNameResolver extends InetNameResolver {
   }
 
   @Override
-  protected void doResolve(String inetHost, Promise<InetAddress> promise) {
+  protected void doResolve(final String inetHost, final Promise<InetAddress> promise) {
     List<InetAddress> addresses = cache.getIfPresent(inetHost);
     if (addresses != null) {
       promise.trySuccess(addresses.get(0));
@@ -92,7 +92,7 @@ public final class SeparatePoolInetNameResolver extends InetNameResolver {
   }
 
   @Override
-  protected void doResolveAll(String inetHost, Promise<List<InetAddress>> promise) {
+  protected void doResolveAll(final String inetHost, final Promise<List<InetAddress>> promise) {
     List<InetAddress> addresses = cache.getIfPresent(inetHost);
     if (addresses != null) {
       promise.trySuccess(addresses);
@@ -125,7 +125,7 @@ public final class SeparatePoolInetNameResolver extends InetNameResolver {
     if (this.resolverGroup == null) {
       this.resolverGroup = new AddressResolverGroup<>() {
         @Override
-        protected AddressResolver<InetSocketAddress> newResolver(EventExecutor executor) {
+        protected AddressResolver<InetSocketAddress> newResolver(final EventExecutor executor) {
           return asAddressResolver();
         }
       };

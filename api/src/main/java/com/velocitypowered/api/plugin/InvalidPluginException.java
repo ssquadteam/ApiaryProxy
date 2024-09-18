@@ -16,15 +16,15 @@ public class InvalidPluginException extends Exception {
     super();
   }
 
-  public InvalidPluginException(String message) {
+  public InvalidPluginException(final String message) {
     super(message);
   }
 
-  public InvalidPluginException(String message, Throwable cause) {
+  public InvalidPluginException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public InvalidPluginException(Throwable cause) {
+  public InvalidPluginException(final Throwable cause) {
     super(cause);
   }
 }

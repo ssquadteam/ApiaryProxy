@@ -33,7 +33,7 @@ public final class CommandExecuteEvent implements ResultedEvent<CommandResult> {
    * @param commandSource the source executing the command
    * @param command the command being executed without first slash
    */
-  public CommandExecuteEvent(CommandSource commandSource, String command) {
+  public CommandExecuteEvent(final CommandSource commandSource, final String command) {
     this.commandSource = Preconditions.checkNotNull(commandSource, "commandSource");
     this.command = Preconditions.checkNotNull(command, "command");
     this.result = CommandResult.allowed();

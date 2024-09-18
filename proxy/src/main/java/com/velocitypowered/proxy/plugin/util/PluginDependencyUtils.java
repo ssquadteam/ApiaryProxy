@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 /**
  * Handles sorting plugin dependencies into an order that satisfies all dependencies.
  */
-public class PluginDependencyUtils {
+public final class PluginDependencyUtils {
 
   private PluginDependencyUtils() {
     throw new AssertionError();
@@ -49,7 +49,7 @@ public class PluginDependencyUtils {
    * @return the sorted list of plugins
    * @throws IllegalStateException if there is a circular loop in the dependency graph
    */
-  public static List<PluginDescription> sortCandidates(List<PluginDescription> candidates) {
+  public static List<PluginDescription> sortCandidates(final List<PluginDescription> candidates) {
     List<PluginDescription> sortedCandidates = new ArrayList<>(candidates);
     sortedCandidates.sort(Comparator.comparing(PluginDescription::getId));
 
@@ -89,9 +89,9 @@ public class PluginDependencyUtils {
     return sorted;
   }
 
-  private static void visitNode(Graph<PluginDescription> dependencyGraph, PluginDescription current,
-      Map<PluginDescription, Mark> visited, List<PluginDescription> sorted,
-      Deque<PluginDescription> currentDependencyScanStack) {
+  private static void visitNode(final Graph<PluginDescription> dependencyGraph, final PluginDescription current,
+      final Map<PluginDescription, Mark> visited, final List<PluginDescription> sorted,
+      final Deque<PluginDescription> currentDependencyScanStack) {
     Mark mark = visited.getOrDefault(current, Mark.NOT_VISITED);
     if (mark == Mark.VISITED) {
       // Visited this node already, nothing to do.

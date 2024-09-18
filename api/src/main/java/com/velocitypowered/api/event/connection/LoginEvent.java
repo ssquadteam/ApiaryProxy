@@ -24,7 +24,7 @@ public final class LoginEvent implements ResultedEvent<ResultedEvent.ComponentRe
   private final Player player;
   private ComponentResult result;
 
-  public LoginEvent(Player player) {
+  public LoginEvent(final Player player) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.result = ComponentResult.allowed();
   }
@@ -39,7 +39,7 @@ public final class LoginEvent implements ResultedEvent<ResultedEvent.ComponentRe
   }
 
   @Override
-  public void setResult(ComponentResult result) {
+  public void setResult(final ComponentResult result) {
     this.result = Preconditions.checkNotNull(result, "result");
   }
 

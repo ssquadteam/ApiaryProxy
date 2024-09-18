@@ -30,7 +30,7 @@ public class ServerResourcePackRemoveEvent implements ResultedEvent<ResultedEven
   /**
    * Instantiates this event.
    */
-  public ServerResourcePackRemoveEvent(UUID packId, ServerConnection serverConnection) {
+  public ServerResourcePackRemoveEvent(final UUID packId, final ServerConnection serverConnection) {
     this.result = ResultedEvent.GenericResult.allowed();
     this.packId = packId;
     this.serverConnection = serverConnection;
@@ -62,7 +62,7 @@ public class ServerResourcePackRemoveEvent implements ResultedEvent<ResultedEven
   }
 
   @Override
-  public void setResult(GenericResult result) {
+  public void setResult(final GenericResult result) {
     this.result = Preconditions.checkNotNull(result, "result");
   }
 }

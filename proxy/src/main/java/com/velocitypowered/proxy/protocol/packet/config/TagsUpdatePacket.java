@@ -38,7 +38,7 @@ public class TagsUpdatePacket implements MinecraftPacket {
 
   private Map<String, Map<String, int[]>> tags;
 
-  public TagsUpdatePacket(Map<String, Map<String, int[]>> tags) {
+  public TagsUpdatePacket(final Map<String, Map<String, int[]>> tags) {
     this.tags = tags;
   }
 
@@ -47,8 +47,8 @@ public class TagsUpdatePacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-                     ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+                     final ProtocolVersion protocolVersion) {
     ImmutableMap.Builder<String, Map<String, int[]>> builder = ImmutableMap.builder();
     int size = ProtocolUtils.readVarInt(buf);
     for (int i = 0; i < size; i++) {
@@ -68,8 +68,8 @@ public class TagsUpdatePacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction,
-                     ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+                     final ProtocolVersion protocolVersion) {
     ProtocolUtils.writeVarInt(buf, tags.size());
     for (Map.Entry<String, Map<String, int[]>> entry : tags.entrySet()) {
       ProtocolUtils.writeString(buf, entry.getKey());
@@ -84,7 +84,7 @@ public class TagsUpdatePacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

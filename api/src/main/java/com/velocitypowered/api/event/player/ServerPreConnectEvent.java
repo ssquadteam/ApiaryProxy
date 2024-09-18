@@ -37,7 +37,7 @@ public final class ServerPreConnectEvent implements
    * @param player the player who is connecting to a server
    * @param originalServer the server the player was trying to connect to
    */
-  public ServerPreConnectEvent(Player player, RegisteredServer originalServer) {
+  public ServerPreConnectEvent(final Player player, final RegisteredServer originalServer) {
     this(player, originalServer,
         player.getCurrentServer().map(ServerConnection::getServer).orElse(null));
   }
@@ -49,8 +49,8 @@ public final class ServerPreConnectEvent implements
    * @param originalServer the server the player was trying to connect to
    * @param previousServer the server the player is connected to
    */
-  public ServerPreConnectEvent(Player player, RegisteredServer originalServer,
-      @Nullable RegisteredServer previousServer) {
+  public ServerPreConnectEvent(final Player player, final RegisteredServer originalServer,
+      @Nullable final RegisteredServer previousServer) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.originalServer = Preconditions.checkNotNull(originalServer, "originalServer");
     this.previousServer = previousServer;
@@ -72,7 +72,7 @@ public final class ServerPreConnectEvent implements
   }
 
   @Override
-  public void setResult(ServerResult result) {
+  public void setResult(final ServerResult result) {
     this.result = Preconditions.checkNotNull(result, "result");
   }
 
@@ -111,13 +111,13 @@ public final class ServerPreConnectEvent implements
   /**
    * Represents the result of the {@link ServerPreConnectEvent}.
    */
-  public static class ServerResult implements ResultedEvent.Result {
+  public static final class ServerResult implements ResultedEvent.Result {
 
     private static final ServerResult DENIED = new ServerResult(null);
 
     private final @Nullable RegisteredServer server;
 
-    private ServerResult(@Nullable RegisteredServer server) {
+    private ServerResult(@Nullable final RegisteredServer server) {
       this.server = server;
     }
 
@@ -155,7 +155,7 @@ public final class ServerPreConnectEvent implements
      * @param server the new server to connect to
      * @return a result to allow the player to connect to the specified server
      */
-    public static ServerResult allowed(RegisteredServer server) {
+    public static ServerResult allowed(final RegisteredServer server) {
       Preconditions.checkNotNull(server, "server");
       return new ServerResult(server);
     }

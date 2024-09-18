@@ -21,18 +21,24 @@ import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 
-public class RegistryKeyArgumentSerializer implements
-    ArgumentPropertySerializer<RegistryKeyArgument> {
+/**
+ * Serializer for {@link RegistryKeyArgument} objects.
+ * <p>
+ * This class handles the serialization and deserialization of {@code RegistryKeyArgument}
+ * objects to and from a {@link ByteBuf} using the specified {@link ProtocolVersion}.
+ * </p>
+ */
+public class RegistryKeyArgumentSerializer implements ArgumentPropertySerializer<RegistryKeyArgument> {
 
   static final RegistryKeyArgumentSerializer REGISTRY = new RegistryKeyArgumentSerializer();
 
   @Override
-  public RegistryKeyArgument deserialize(ByteBuf buf, ProtocolVersion protocolVersion) {
+  public RegistryKeyArgument deserialize(final ByteBuf buf, final ProtocolVersion protocolVersion) {
     return new RegistryKeyArgument(ProtocolUtils.readString(buf));
   }
 
   @Override
-  public void serialize(RegistryKeyArgument object, ByteBuf buf, ProtocolVersion protocolVersion) {
+  public void serialize(final RegistryKeyArgument object, final ByteBuf buf, final ProtocolVersion protocolVersion) {
     ProtocolUtils.writeString(buf, object.getIdentifier());
   }
 }

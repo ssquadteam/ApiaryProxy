@@ -57,9 +57,9 @@ public class VelocityPluginDescription implements PluginDescription {
    * @param dependencies the dependencies for this plugin
    * @param source       the original source for the plugin
    */
-  public VelocityPluginDescription(String id, @Nullable String name, @Nullable String version,
-      @Nullable String description, @Nullable String url,
-      @Nullable List<String> authors, Collection<PluginDependency> dependencies, Path source) {
+  public VelocityPluginDescription(final String id, @Nullable final String name, @Nullable final String version,
+      @Nullable final String description, @Nullable final String url,
+      @Nullable final List<String> authors, final Collection<PluginDependency> dependencies, final Path source) {
     this.id = checkNotNull(id, "id");
     this.name = Strings.emptyToNull(name);
     this.version = Strings.emptyToNull(version);
@@ -106,7 +106,7 @@ public class VelocityPluginDescription implements PluginDescription {
   }
 
   @Override
-  public Optional<PluginDependency> getDependency(String id) {
+  public Optional<PluginDependency> getDependency(final String id) {
     return Optional.ofNullable(dependencies.get(id));
   }
 

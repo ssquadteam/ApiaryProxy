@@ -42,8 +42,8 @@ public final class PluginMessageEvent implements ResultedEvent<PluginMessageEven
    * @param identifier the channel for this plugin message
    * @param data the payload of the plugin message
    */
-  public PluginMessageEvent(ChannelMessageSource source, ChannelMessageSink target,
-      ChannelIdentifier identifier, byte[] data) {
+  public PluginMessageEvent(final ChannelMessageSource source, final ChannelMessageSink target,
+      final ChannelIdentifier identifier, final byte[] data) {
     this.source = Preconditions.checkNotNull(source, "source");
     this.target = Preconditions.checkNotNull(target, "target");
     this.identifier = Preconditions.checkNotNull(identifier, "identifier");
@@ -57,7 +57,7 @@ public final class PluginMessageEvent implements ResultedEvent<PluginMessageEven
   }
 
   @Override
-  public void setResult(ForwardResult result) {
+  public void setResult(final ForwardResult result) {
     this.result = Preconditions.checkNotNull(result, "result");
   }
 
@@ -106,7 +106,7 @@ public final class PluginMessageEvent implements ResultedEvent<PluginMessageEven
 
     private final boolean status;
 
-    private ForwardResult(boolean b) {
+    private ForwardResult(final boolean b) {
       this.status = b;
     }
 

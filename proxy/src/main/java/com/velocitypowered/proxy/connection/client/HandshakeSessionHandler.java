@@ -61,13 +61,13 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
   private final MinecraftConnection connection;
   private final VelocityServer server;
 
-  public HandshakeSessionHandler(MinecraftConnection connection, VelocityServer server) {
+  public HandshakeSessionHandler(final MinecraftConnection connection, final VelocityServer server) {
     this.connection = Preconditions.checkNotNull(connection, "connection");
     this.server = Preconditions.checkNotNull(server, "server");
   }
 
   @Override
-  public boolean handle(LegacyPingPacket packet) {
+  public boolean handle(final LegacyPingPacket packet) {
     connection.setProtocolVersion(ProtocolVersion.LEGACY);
     final StatusSessionHandler handler =
         new StatusSessionHandler(server, new LegacyInboundConnection(connection, packet));
@@ -77,7 +77,7 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(LegacyHandshakePacket packet) {
+  public boolean handle(final LegacyHandshakePacket packet) {
     connection.closeWith(LegacyDisconnect.from(Component.text(
         "Your client is extremely old. Please update to a newer version of Minecraft.",
         NamedTextColor.RED)
@@ -115,7 +115,7 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
     return true;
   }
 
-  private static @Nullable StateRegistry getStateForProtocol(int status) {
+  private static @Nullable StateRegistry getStateForProtocol(final int status) {
     return switch (status) {
       case StateRegistry.STATUS_ID -> StateRegistry.STATUS;
       case StateRegistry.LOGIN_ID, StateRegistry.TRANSFER_ID -> StateRegistry.LOGIN;
@@ -123,7 +123,7 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
     };
   }
 
-  private void handleLogin(HandshakePacket handshake, InitialInboundConnection ic) {
+  private void handleLogin(final HandshakePacket handshake, final InitialInboundConnection ic) {
     if (!handshake.getProtocolVersion().isSupported()) {
       // Bump connection into correct protocol state so that we can send the disconnect packet.
       connection.setState(StateRegistry.LOGIN);
@@ -162,7 +162,7 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
         new InitialLoginSessionHandler(server, connection, lic));
   }
 
-  private ConnectionType getHandshakeConnectionType(HandshakePacket handshake) {
+  private ConnectionType getHandshakeConnectionType(final HandshakePacket handshake) {
 
     if (server.getConfiguration().isDisableForge()) {
       return ConnectionTypes.VANILLA;
@@ -194,7 +194,7 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
    * @return the cleaned hostname
    */
   @VisibleForTesting
-  static String cleanVhost(String hostname) {
+  static String cleanVhost(final String hostname) {
     // Clean out any anything after any zero bytes (this includes BungeeCord forwarding and the
     // legacy Forge handshake indicator).
     String cleaned = hostname;
@@ -212,13 +212,13 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void handleGeneric(MinecraftPacket packet) {
+  public void handleGeneric(final MinecraftPacket packet) {
     // Unknown packet received. Better to close the connection.
     connection.close(true);
   }
 
   @Override
-  public void handleUnknown(ByteBuf buf) {
+  public void handleUnknown(final ByteBuf buf) {
     // Unknown packet received. Better to close the connection.
     connection.close(true);
   }

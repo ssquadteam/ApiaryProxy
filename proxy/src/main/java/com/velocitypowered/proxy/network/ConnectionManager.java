@@ -69,7 +69,7 @@ public final class ConnectionManager {
    *
    * @param server a reference to the Velocity server
    */
-  public ConnectionManager(VelocityServer server) {
+  public ConnectionManager(final VelocityServer server) {
     this.server = server;
     this.transportType = TransportType.bestType();
     this.bossGroup = this.transportType.createEventLoopGroup(TransportType.Type.BOSS);
@@ -156,7 +156,7 @@ public final class ConnectionManager {
    * @param group the event loop group to use. Use {@code null} for the default worker group.
    * @return a new {@link Bootstrap}
    */
-  public Bootstrap createWorker(@Nullable EventLoopGroup group) {
+  public Bootstrap createWorker(@Nullable final EventLoopGroup group) {
     Bootstrap bootstrap = new Bootstrap()
         .channelFactory(this.transportType.socketChannelFactory)
         .option(ChannelOption.TCP_NODELAY, true)
@@ -175,7 +175,7 @@ public final class ConnectionManager {
    *
    * @param oldBind the endpoint to close
    */
-  public void close(InetSocketAddress oldBind) {
+  public void close(final InetSocketAddress oldBind) {
     Endpoint endpoint = endpoints.remove(oldBind);
 
     // Fire proxy close event to notify plugins of socket close. We block since plugins
@@ -194,7 +194,7 @@ public final class ConnectionManager {
    *
    * @param interrupt should closing forward interruptions
    */
-  public void closeEndpoints(boolean interrupt) {
+  public void closeEndpoints(final boolean interrupt) {
     for (final Map.Entry<InetSocketAddress, Endpoint> entry : this.endpoints.entrySet()) {
       final InetSocketAddress address = entry.getKey();
       final Endpoint endpoint = entry.getValue();

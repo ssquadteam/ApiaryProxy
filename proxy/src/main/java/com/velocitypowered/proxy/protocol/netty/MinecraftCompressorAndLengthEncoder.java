@@ -35,13 +35,13 @@ public class MinecraftCompressorAndLengthEncoder extends MessageToByteEncoder<By
   private int threshold;
   private final VelocityCompressor compressor;
 
-  public MinecraftCompressorAndLengthEncoder(int threshold, VelocityCompressor compressor) {
+  public MinecraftCompressorAndLengthEncoder(final int threshold, final VelocityCompressor compressor) {
     this.threshold = threshold;
     this.compressor = compressor;
   }
 
   @Override
-  protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
+  protected void encode(final ChannelHandlerContext ctx, final ByteBuf msg, final ByteBuf out) throws Exception {
     int uncompressed = msg.readableBytes();
     if (uncompressed < threshold) {
       // Under the threshold, there is nothing to do.
@@ -53,7 +53,7 @@ public class MinecraftCompressorAndLengthEncoder extends MessageToByteEncoder<By
     }
   }
 
-  private void handleCompressed(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out)
+  private void handleCompressed(final ChannelHandlerContext ctx, final ByteBuf msg, final ByteBuf out)
       throws DataFormatException {
     int uncompressed = msg.readableBytes();
 
@@ -80,7 +80,7 @@ public class MinecraftCompressorAndLengthEncoder extends MessageToByteEncoder<By
   }
 
   @Override
-  protected ByteBuf allocateBuffer(ChannelHandlerContext ctx, ByteBuf msg, boolean preferDirect) {
+  protected ByteBuf allocateBuffer(final ChannelHandlerContext ctx, final ByteBuf msg, final boolean preferDirect) {
     int uncompressed = msg.readableBytes();
     if (uncompressed < threshold) {
       int finalBufferSize = uncompressed + 1;
@@ -96,11 +96,11 @@ public class MinecraftCompressorAndLengthEncoder extends MessageToByteEncoder<By
   }
 
   @Override
-  public void handlerRemoved(ChannelHandlerContext ctx) {
+  public void handlerRemoved(final ChannelHandlerContext ctx) {
     compressor.close();
   }
 
-  public void setThreshold(int threshold) {
+  public void setThreshold(final int threshold) {
     this.threshold = threshold;
   }
 }

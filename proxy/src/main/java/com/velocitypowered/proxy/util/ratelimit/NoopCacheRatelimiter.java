@@ -26,7 +26,7 @@ enum NoopCacheRatelimiter implements Ratelimiter {
   INSTANCE;
 
   @Override
-  public boolean attempt(InetAddress address) {
+  public boolean attempt(final InetAddress address) {
     return true;
   }
 }

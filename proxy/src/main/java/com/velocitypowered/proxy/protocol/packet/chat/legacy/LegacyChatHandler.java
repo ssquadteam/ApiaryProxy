@@ -23,12 +23,20 @@ import com.velocitypowered.proxy.connection.MinecraftConnection;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatHandler;
 
+/**
+ * A handler for processing legacy chat packets, implementing {@link ChatHandler}.
+ * <p>
+ * The {@code LegacyChatHandler} is responsible for handling and processing chat messages
+ * sent using {@link LegacyChatPacket}. This class provides the necessary logic for
+ * processing chat data using legacy Minecraft chat formats.
+ * </p>
+ */
 public class LegacyChatHandler implements ChatHandler<LegacyChatPacket> {
 
   private final VelocityServer server;
   private final ConnectedPlayer player;
 
-  public LegacyChatHandler(VelocityServer server, ConnectedPlayer player) {
+  public LegacyChatHandler(final VelocityServer server, final ConnectedPlayer player) {
     this.server = server;
     this.player = player;
   }
@@ -39,7 +47,7 @@ public class LegacyChatHandler implements ChatHandler<LegacyChatPacket> {
   }
 
   @Override
-  public void handlePlayerChatInternal(LegacyChatPacket packet) {
+  public void handlePlayerChatInternal(final LegacyChatPacket packet) {
     MinecraftConnection serverConnection = player.ensureAndGetCurrentServer().ensureConnected();
     if (serverConnection == null) {
       return;

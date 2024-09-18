@@ -35,6 +35,14 @@ import java.util.List;
 import java.util.Map;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * Represents a player command packet with support for keyed commands.
+ * <p>
+ * The {@code KeyedPlayerCommandPacket} handles player commands sent to the server,
+ * allowing for command execution based on specific keys. This packet can include additional
+ * information such as arguments and key-based identifiers for the command.
+ * </p>
+ */
 public class KeyedPlayerCommandPacket implements MinecraftPacket {
 
   private static final int MAX_NUM_ARGUMENTS = 8;
@@ -73,7 +81,7 @@ public class KeyedPlayerCommandPacket implements MinecraftPacket {
    * @param arguments the arguments of the command
    * @param timestamp the timestamp of the command execution
    */
-  public KeyedPlayerCommandPacket(String command, List<String> arguments, Instant timestamp) {
+  public KeyedPlayerCommandPacket(final String command, final List<String> arguments, final Instant timestamp) {
     this.unsigned = true;
     ImmutableMap.Builder<String, byte[]> builder = ImmutableMap.builder();
     arguments.forEach(entry -> builder.put(entry, EncryptionUtils.EMPTY));
@@ -85,8 +93,8 @@ public class KeyedPlayerCommandPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     command = ProtocolUtils.readString(buf, 256);
     timestamp = Instant.ofEpochMilli(buf.readLong());
 
@@ -135,8 +143,8 @@ public class KeyedPlayerCommandPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     ProtocolUtils.writeString(buf, command);
     buf.writeLong(timestamp.toEpochMilli());
 
@@ -187,7 +195,7 @@ public class KeyedPlayerCommandPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

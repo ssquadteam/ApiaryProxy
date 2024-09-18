@@ -34,7 +34,7 @@ public class SetCompressionPacket implements MinecraftPacket {
   public SetCompressionPacket() {
   }
 
-  public SetCompressionPacket(int threshold) {
+  public SetCompressionPacket(final int threshold) {
     this.threshold = threshold;
   }
 
@@ -42,7 +42,7 @@ public class SetCompressionPacket implements MinecraftPacket {
     return threshold;
   }
 
-  public void setThreshold(int threshold) {
+  public void setThreshold(final int threshold) {
     this.threshold = threshold;
   }
 
@@ -54,17 +54,17 @@ public class SetCompressionPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     this.threshold = ProtocolUtils.readVarInt(buf);
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     ProtocolUtils.writeVarInt(buf, threshold);
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

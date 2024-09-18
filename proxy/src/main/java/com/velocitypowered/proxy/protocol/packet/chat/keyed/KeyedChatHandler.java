@@ -30,6 +30,14 @@ import net.kyori.adventure.text.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A handler for processing chat components based on specific keys.
+ * <p>
+ * The {@code KeyedChatHandler} class is responsible for managing chat interactions or
+ * messages that are identified by keys. It implements the required interface or class
+ * to handle key-based chat processing.
+ * </p>
+ */
 public class KeyedChatHandler implements
     com.velocitypowered.proxy.protocol.packet.chat.ChatHandler<KeyedPlayerChatPacket> {
 
@@ -38,7 +46,7 @@ public class KeyedChatHandler implements
   private final VelocityServer server;
   private final ConnectedPlayer player;
 
-  public KeyedChatHandler(VelocityServer server, ConnectedPlayer player) {
+  public KeyedChatHandler(final VelocityServer server, final ConnectedPlayer player) {
     this.server = server;
     this.player = player;
   }
@@ -48,7 +56,17 @@ public class KeyedChatHandler implements
     return KeyedPlayerChatPacket.class;
   }
 
-  public static void invalidCancel(Logger logger, ConnectedPlayer player) {
+  /**
+   * Logs an error and disconnects the player when a plugin attempts to cancel a signed chat message.
+   * <p>
+   * This method handles the invalid behavior of canceling signed chat messages, which is no longer allowed
+   * starting from Minecraft version 1.19.1.
+   * </p>
+   *
+   * @param logger the logger used to log the error
+   * @param player the player to disconnect due to the illegal action
+   */
+  public static void invalidCancel(final Logger logger, final ConnectedPlayer player) {
     logger.fatal("A plugin tried to cancel a signed chat message."
         + " This is no longer possible in 1.19.1 and newer. "
         + "Disconnecting player " + player.getUsername());
@@ -56,7 +74,17 @@ public class KeyedChatHandler implements
         + "Contact your network administrator."));
   }
 
-  public static void invalidChange(Logger logger, ConnectedPlayer player) {
+  /**
+   * Logs an error and disconnects the player when a plugin attempts to modify a signed chat message.
+   * <p>
+   * This method handles the invalid behavior of modifying signed chat messages, which is no longer allowed
+   * starting from Minecraft version 1.19.1.
+   * </p>
+   *
+   * @param logger the logger used to log the error
+   * @param player the player to disconnect due to the illegal action
+   */
+  public static void invalidChange(final Logger logger, final ConnectedPlayer player) {
     logger.fatal("A plugin tried to change a signed chat message. "
         + "This is no longer possible in 1.19.1 and newer. "
         + "Disconnecting player " + player.getUsername());
@@ -65,7 +93,7 @@ public class KeyedChatHandler implements
   }
 
   @Override
-  public void handlePlayerChatInternal(KeyedPlayerChatPacket packet) {
+  public void handlePlayerChatInternal(final KeyedPlayerChatPacket packet) {
     ChatQueue chatQueue = this.player.getChatQueue();
     EventManager eventManager = this.server.getEventManager();
     PlayerChatEvent toSend = new PlayerChatEvent(player, packet.getMessage());
@@ -100,7 +128,7 @@ public class KeyedChatHandler implements
     );
   }
 
-  private Function<PlayerChatEvent, MinecraftPacket> handleOldSignedChat(KeyedPlayerChatPacket packet) {
+  private Function<PlayerChatEvent, MinecraftPacket> handleOldSignedChat(final KeyedPlayerChatPacket packet) {
     IdentifiedKey playerKey = this.player.getIdentifiedKey();
     assert playerKey != null;
     return pme -> {

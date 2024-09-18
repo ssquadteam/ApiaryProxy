@@ -31,8 +31,8 @@ public final class ServerPing {
   private final @Nullable Favicon favicon;
   private final @Nullable ModInfo modinfo;
 
-  public ServerPing(Version version, @Nullable Players players,
-      net.kyori.adventure.text.Component description, @Nullable Favicon favicon) {
+  public ServerPing(final Version version, @Nullable final Players players,
+      final net.kyori.adventure.text.Component description, @Nullable final Favicon favicon) {
     this(version, players, description, favicon, ModInfo.DEFAULT);
   }
 
@@ -45,9 +45,9 @@ public final class ServerPing {
    * @param favicon the server's favicon
    * @param modinfo the mods this server runs
    */
-  public ServerPing(Version version, @Nullable Players players,
-      net.kyori.adventure.text.Component description, @Nullable Favicon favicon,
-      @Nullable ModInfo modinfo) {
+  public ServerPing(final Version version, @Nullable final Players players,
+      final net.kyori.adventure.text.Component description, @Nullable final Favicon favicon,
+      @Nullable final ModInfo modinfo) {
     this.version = Preconditions.checkNotNull(version, "version");
     this.players = players;
     this.description = Preconditions.checkNotNull(description, "description");
@@ -87,7 +87,7 @@ public final class ServerPing {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -159,32 +159,32 @@ public final class ServerPing {
 
     }
 
-    public Builder version(Version version) {
+    public Builder version(final Version version) {
       this.version = Preconditions.checkNotNull(version, "version");
       return this;
     }
 
-    public Builder onlinePlayers(int onlinePlayers) {
+    public Builder onlinePlayers(final int onlinePlayers) {
       this.onlinePlayers = onlinePlayers;
       return this;
     }
 
-    public Builder maximumPlayers(int maximumPlayers) {
+    public Builder maximumPlayers(final int maximumPlayers) {
       this.maximumPlayers = maximumPlayers;
       return this;
     }
 
-    public Builder samplePlayers(SamplePlayer... players) {
+    public Builder samplePlayers(final SamplePlayer... players) {
       this.samplePlayers.addAll(Arrays.asList(players));
       return this;
     }
 
-    public Builder modType(String modType) {
+    public Builder modType(final String modType) {
       this.modType = Preconditions.checkNotNull(modType, "modType");
       return this;
     }
 
-    public Builder mods(ModInfo.Mod... mods) {
+    public Builder mods(final ModInfo.Mod... mods) {
       this.mods.addAll(Arrays.asList(mods));
       return this;
     }
@@ -195,7 +195,7 @@ public final class ServerPing {
      * @param mods the mods list to use
      * @return this build, for chaining
      */
-    public Builder mods(ModInfo mods) {
+    public Builder mods(final ModInfo mods) {
       Preconditions.checkNotNull(mods, "mods");
       this.modType = mods.getType();
       this.mods.clear();
@@ -223,12 +223,12 @@ public final class ServerPing {
       return this;
     }
 
-    public Builder description(net.kyori.adventure.text.Component description) {
+    public Builder description(final net.kyori.adventure.text.Component description) {
       this.description = Preconditions.checkNotNull(description, "description");
       return this;
     }
 
-    public Builder favicon(Favicon favicon) {
+    public Builder favicon(final Favicon favicon) {
       this.favicon = Preconditions.checkNotNull(favicon, "favicon");
       return this;
     }
@@ -322,7 +322,7 @@ public final class ServerPing {
      * @param protocol the protocol version as an integer
      * @param name a friendly name for the protocol version
      */
-    public Version(int protocol, String name) {
+    public Version(final int protocol, final String name) {
       this.protocol = protocol;
       this.name = Preconditions.checkNotNull(name, "name");
     }
@@ -344,7 +344,7 @@ public final class ServerPing {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }
@@ -378,7 +378,7 @@ public final class ServerPing {
      * @param max the maximum number of players
      * @param sample a sample of players on the server
      */
-    public Players(int online, int max, List<SamplePlayer> sample) {
+    public Players(final int online, final int max, final List<SamplePlayer> sample) {
       this.online = online;
       this.max = max;
       this.sample = ImmutableList.copyOf(sample);
@@ -406,7 +406,7 @@ public final class ServerPing {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }
@@ -432,7 +432,7 @@ public final class ServerPing {
     private final String name;
     private final UUID id;
 
-    public SamplePlayer(String name, UUID id) {
+    public SamplePlayer(final String name, final UUID id) {
       this.name = name;
       this.id = id;
     }
@@ -454,7 +454,7 @@ public final class ServerPing {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }

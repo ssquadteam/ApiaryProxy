@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets;
  * Encodes {@code LegacyDisconnect} for Minecraft 1.3-1.6.4.
  */
 @ChannelHandler.Sharable
-public class LegacyPingEncoder extends MessageToByteEncoder<LegacyDisconnect> {
+public final class LegacyPingEncoder extends MessageToByteEncoder<LegacyDisconnect> {
 
   public static final LegacyPingEncoder INSTANCE = new LegacyPingEncoder();
 
@@ -36,13 +36,13 @@ public class LegacyPingEncoder extends MessageToByteEncoder<LegacyDisconnect> {
   }
 
   @Override
-  protected void encode(ChannelHandlerContext ctx, LegacyDisconnect msg, ByteBuf out)
+  protected void encode(final ChannelHandlerContext ctx, final LegacyDisconnect msg, final ByteBuf out)
       throws Exception {
     out.writeByte(0xff);
     writeLegacyString(out, msg.reason());
   }
 
-  private static void writeLegacyString(ByteBuf out, String string) {
+  private static void writeLegacyString(final ByteBuf out, final String string) {
     out.writeShort(string.length());
     out.writeCharSequence(string, StandardCharsets.UTF_16BE);
   }

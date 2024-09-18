@@ -45,14 +45,14 @@ public class SendCommand {
   private static final String SERVER_ARG = "server";
   private static final String PLAYER_ARG = "player";
 
-  public SendCommand(ProxyServer server) {
+  public SendCommand(final ProxyServer server) {
     this.server = server;
   }
 
   /**
    * Registers or unregisters the command based on the configuration value.
    */
-  public void register(boolean isSendEnabled) {
+  public void register(final boolean isSendEnabled) {
     if (!isSendEnabled) {
       return;
     }
@@ -212,7 +212,8 @@ public class SendCommand {
     return Command.SINGLE_SUCCESS;
   }
 
-  private void sendPlayer(CommandContext<CommandSource> context, Player player0, RegisteredServer targetServer) {
+  private void sendPlayer(final CommandContext<CommandSource> context, final Player player0,
+      final RegisteredServer targetServer) {
     if (player0.getCurrentServer().isPresent() && player0.getCurrentServer().get().getServer().equals(targetServer)) {
       context.getSource().sendMessage(Component.translatable("velocity.command.send-player-none",
               Component.text(player0.getUsername()), Component.text(targetServer.getServerInfo().getName())));
@@ -223,7 +224,8 @@ public class SendCommand {
     }
   }
 
-  private void sendPlayersFromServer(CommandContext<CommandSource> context, RegisteredServer server, RegisteredServer targetServer) {
+  private void sendPlayersFromServer(final CommandContext<CommandSource> context, final RegisteredServer server,
+      final RegisteredServer targetServer) {
     final int playerSize = server.getPlayersConnected().size();
     final String name = server.getServerInfo().getName();
 
@@ -241,7 +243,7 @@ public class SendCommand {
             Component.text(targetServer.getServerInfo().getName())));
   }
 
-  private ServerResult findServer(String serverName) {
+  private ServerResult findServer(final String serverName) {
     final Collection<RegisteredServer> servers = server.getAllServers();
     final String lowerServerName = serverName.toLowerCase();
 

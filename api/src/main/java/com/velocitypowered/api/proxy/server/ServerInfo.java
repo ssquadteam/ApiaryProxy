@@ -27,7 +27,7 @@ public final class ServerInfo implements Comparable<ServerInfo> {
    * @param name the name for the server
    * @param address the address of the server to connect to
    */
-  public ServerInfo(String name, InetSocketAddress address) {
+  public ServerInfo(final String name, final InetSocketAddress address) {
     this.name = Preconditions.checkNotNull(name, "name");
     this.address = Preconditions.checkNotNull(address, "address");
   }
@@ -49,7 +49,7 @@ public final class ServerInfo implements Comparable<ServerInfo> {
   }
 
   @Override
-  public boolean equals(@Nullable Object o) {
+  public boolean equals(@Nullable final Object o) {
     if (this == o) {
       return true;
     }
@@ -67,7 +67,7 @@ public final class ServerInfo implements Comparable<ServerInfo> {
   }
 
   @Override
-  public int compareTo(ServerInfo o) {
+  public int compareTo(final ServerInfo o) {
     return this.name.compareTo(o.getName());
   }
 }

@@ -36,7 +36,7 @@ public class RemoveResourcePackPacket implements MinecraftPacket {
   public RemoveResourcePackPacket() {
   }
 
-  public RemoveResourcePackPacket(UUID id) {
+  public RemoveResourcePackPacket(final UUID id) {
     this.id = id;
   }
 
@@ -45,14 +45,14 @@ public class RemoveResourcePackPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final Direction direction, final ProtocolVersion protocolVersion) {
     if (buf.readBoolean()) {
       this.id = ProtocolUtils.readUuid(buf);
     }
   }
 
   @Override
-  public void encode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final Direction direction, final ProtocolVersion protocolVersion) {
     buf.writeBoolean(id != null);
 
     if (id != null) {
@@ -61,7 +61,7 @@ public class RemoveResourcePackPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

@@ -39,7 +39,7 @@ public class RemovePlayerInfoPacket implements MinecraftPacket {
     this.profilesToRemove = new ArrayList<>();
   }
 
-  public RemovePlayerInfoPacket(Collection<UUID> profilesToRemove) {
+  public RemovePlayerInfoPacket(final Collection<UUID> profilesToRemove) {
     this.profilesToRemove = profilesToRemove;
   }
 
@@ -47,13 +47,13 @@ public class RemovePlayerInfoPacket implements MinecraftPacket {
     return profilesToRemove;
   }
 
-  public void setProfilesToRemove(Collection<UUID> profilesToRemove) {
+  public void setProfilesToRemove(final Collection<UUID> profilesToRemove) {
     this.profilesToRemove = profilesToRemove;
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     int length = ProtocolUtils.readVarInt(buf);
     Collection<UUID> profilesToRemove = Lists.newArrayListWithCapacity(length);
     for (int idx = 0; idx < length; idx++) {
@@ -63,8 +63,8 @@ public class RemovePlayerInfoPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     ProtocolUtils.writeVarInt(buf, this.profilesToRemove.size());
     for (UUID uuid : this.profilesToRemove) {
       ProtocolUtils.writeUuid(buf, uuid);
@@ -72,7 +72,7 @@ public class RemovePlayerInfoPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

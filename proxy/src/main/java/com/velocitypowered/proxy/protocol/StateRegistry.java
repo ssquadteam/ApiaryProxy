@@ -718,8 +718,8 @@ public enum StateRegistry {
   protected final PacketRegistry clientbound = new PacketRegistry(CLIENTBOUND, this);
   protected final PacketRegistry serverbound = new PacketRegistry(SERVERBOUND, this);
 
-  public StateRegistry.PacketRegistry.ProtocolRegistry getProtocolRegistry(Direction direction,
-      ProtocolVersion version) {
+  public StateRegistry.PacketRegistry.ProtocolRegistry getProtocolRegistry(final Direction direction,
+      final ProtocolVersion version) {
     return (direction == SERVERBOUND ? serverbound : clientbound).getProtocolRegistry(version);
   }
 
@@ -748,7 +748,7 @@ public enum StateRegistry {
     private final Map<ProtocolVersion, ProtocolRegistry> versions;
     private boolean fallback = true;
 
-    PacketRegistry(Direction direction, StateRegistry registry) {
+    PacketRegistry(final Direction direction, final StateRegistry registry) {
       this.direction = direction;
       this.registry = registry;
 
@@ -773,8 +773,8 @@ public enum StateRegistry {
       return registry;
     }
 
-    <P extends MinecraftPacket> void register(Class<P> clazz, Supplier<P> packetSupplier,
-                                              PacketMapping... mappings) {
+    <P extends MinecraftPacket> void register(final Class<P> clazz, final Supplier<P> packetSupplier,
+                                              final PacketMapping... mappings) {
       if (mappings.length == 0) {
         throw new IllegalArgumentException("At least one mapping must be provided.");
       }
@@ -909,9 +909,9 @@ public enum StateRegistry {
     private final boolean encodeOnly;
     private final @Nullable ProtocolVersion lastValidProtocolVersion;
 
-    PacketMapping(int id, ProtocolVersion protocolVersion,
-                  @Nullable ProtocolVersion lastValidProtocolVersion,
-                  boolean packetDecoding) {
+    PacketMapping(final int id, final ProtocolVersion protocolVersion,
+                  @Nullable final ProtocolVersion lastValidProtocolVersion,
+                  final boolean packetDecoding) {
       this.id = id;
       this.protocolVersion = protocolVersion;
       this.lastValidProtocolVersion = lastValidProtocolVersion;
@@ -931,7 +931,7 @@ public enum StateRegistry {
     }
 
     @Override
-    public boolean equals(@Nullable Object o) {
+    public boolean equals(@Nullable final Object o) {
       if (this == o) {
         return true;
       }
@@ -959,7 +959,7 @@ public enum StateRegistry {
    * @return PacketMapping with the provided arguments
    */
   @SuppressFBWarnings({"UPM_UNCALLED_PRIVATE_METHOD"})
-  private static PacketMapping map(int id, ProtocolVersion version, boolean encodeOnly) {
+  private static PacketMapping map(final int id, final ProtocolVersion version, final boolean encodeOnly) {
     return map(id, version, null, encodeOnly);
   }
 
@@ -972,8 +972,8 @@ public enum StateRegistry {
    * @param lastValidProtocolVersion Last version this Mapping is valid at
    * @return PacketMapping with the provided arguments
    */
-  private static PacketMapping map(int id, ProtocolVersion version,
-                                   ProtocolVersion lastValidProtocolVersion, boolean encodeOnly) {
+  private static PacketMapping map(final int id, final ProtocolVersion version,
+                                   final ProtocolVersion lastValidProtocolVersion, final boolean encodeOnly) {
     return new PacketMapping(id, version, lastValidProtocolVersion, encodeOnly);
   }
 

@@ -99,7 +99,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   private boolean exceptionTriggered = false;
   private int packetsFlushed;
 
-  BackendPlaySessionHandler(VelocityServer server, VelocityServerConnection serverConn) {
+  BackendPlaySessionHandler(final VelocityServer server, final VelocityServerConnection serverConn) {
     this.server = server;
     this.serverConn = serverConn;
     this.playerConnection = serverConn.getPlayer().getConnection();
@@ -139,13 +139,13 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(BundleDelimiterPacket bundleDelimiterPacket) {
+  public boolean handle(final BundleDelimiterPacket bundleDelimiterPacket) {
     serverConn.getPlayer().getBundleHandler().toggleBundleSession();
     return false;
   }
 
   @Override
-  public boolean handle(StartUpdatePacket packet) {
+  public boolean handle(final StartUpdatePacket packet) {
     MinecraftConnection smc = serverConn.ensureConnected();
     smc.setAutoReading(false);
     // Even when not auto reading messages are still decoded. Decode them with the correct state
@@ -155,26 +155,26 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(KeepAlivePacket packet) {
+  public boolean handle(final KeepAlivePacket packet) {
     serverConn.getPendingPings().put(packet.getRandomId(), System.nanoTime());
     return false; // forwards on
   }
 
   @Override
-  public boolean handle(ClientSettingsPacket packet) {
+  public boolean handle(final ClientSettingsPacket packet) {
     serverConn.ensureConnected().write(packet);
     return true;
   }
 
   @Override
-  public boolean handle(DisconnectPacket packet) {
+  public boolean handle(final DisconnectPacket packet) {
     serverConn.disconnect();
     serverConn.getPlayer().handleConnectionException(serverConn.getServer(), packet, true);
     return true;
   }
 
   @Override
-  public boolean handle(BossBarPacket packet) {
+  public boolean handle(final BossBarPacket packet) {
     if (packet.getAction() == BossBarPacket.ADD) {
       playerSessionHandler.getServerBossBars().add(packet.getUuid());
     } else if (packet.getAction() == BossBarPacket.REMOVE) {
@@ -258,7 +258,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(RemoveResourcePackPacket packet) {
+  public boolean handle(final RemoveResourcePackPacket packet) {
     final ServerResourcePackRemoveEvent event = new ServerResourcePackRemoveEvent(
             packet.getId(), this.serverConn);
     server.getEventManager().fire(event).thenAcceptAsync(serverResourcePackRemoveEvent -> {
@@ -283,7 +283,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(PluginMessagePacket packet) {
+  public boolean handle(final PluginMessagePacket packet) {
     if (bungeecordMessageResponder.process(packet)) {
       return true;
     }
@@ -329,31 +329,31 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(TabCompleteResponsePacket packet) {
+  public boolean handle(final TabCompleteResponsePacket packet) {
     playerSessionHandler.handleTabCompleteResponse(packet);
     return true;
   }
 
   @Override
-  public boolean handle(LegacyPlayerListItemPacket packet) {
+  public boolean handle(final LegacyPlayerListItemPacket packet) {
     serverConn.getPlayer().getTabList().processLegacy(packet);
     return false;
   }
 
   @Override
-  public boolean handle(UpsertPlayerInfoPacket packet) {
+  public boolean handle(final UpsertPlayerInfoPacket packet) {
     serverConn.getPlayer().getTabList().processUpdate(packet);
     return false;
   }
 
   @Override
-  public boolean handle(RemovePlayerInfoPacket packet) {
+  public boolean handle(final RemovePlayerInfoPacket packet) {
     serverConn.getPlayer().getTabList().processRemove(packet);
     return false;
   }
 
   @Override
-  public boolean handle(AvailableCommandsPacket commands) {
+  public boolean handle(final AvailableCommandsPacket commands) {
     RootCommandNode<CommandSource> rootNode = commands.getRootNode();
     if (server.getConfiguration().isAnnounceProxyCommands()) {
       // Inject commands from the proxy.
@@ -373,7 +373,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ServerDataPacket packet) {
+  public boolean handle(final ServerDataPacket packet) {
     server.getServerListPingHandler().getInitialPing(this.serverConn.getPlayer()).thenComposeAsync(
         ping -> server.getEventManager()
             .fire(new ProxyPingEvent(this.serverConn.getPlayer(), ping)),
@@ -387,7 +387,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(TransferPacket packet) {
+  public boolean handle(final TransferPacket packet) {
     final InetSocketAddress originalAddress = packet.address();
     if (originalAddress == null) {
       logger.error("""
@@ -411,7 +411,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ClientboundStoreCookiePacket packet) {
+  public boolean handle(final ClientboundStoreCookiePacket packet) {
     server.getEventManager()
         .fire(new CookieStoreEvent(serverConn.getPlayer(), packet.getKey(), packet.getPayload()))
         .thenAcceptAsync(event -> {
@@ -429,7 +429,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ClientboundCookieRequestPacket packet) {
+  public boolean handle(final ClientboundCookieRequestPacket packet) {
     server.getEventManager().fire(new CookieRequestEvent(serverConn.getPlayer(), packet.getKey()))
         .thenAcceptAsync(event -> {
           if (event.getResult().isAllowed()) {
@@ -444,7 +444,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void handleGeneric(MinecraftPacket packet) {
+  public void handleGeneric(final MinecraftPacket packet) {
     if (packet instanceof PluginMessagePacket) {
       ((PluginMessagePacket) packet).retain();
     }
@@ -456,7 +456,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void handleUnknown(ByteBuf buf) {
+  public void handleUnknown(final ByteBuf buf) {
     playerConnection.delayedWrite(buf.retain());
     if (++packetsFlushed >= MAXIMUM_PACKETS_TO_FLUSH) {
       playerConnection.flush();
@@ -471,7 +471,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void exception(Throwable throwable) {
+  public void exception(final Throwable throwable) {
     exceptionTriggered = true;
     serverConn.getPlayer().handleConnectionException(serverConn.getServer(), throwable,
         !(throwable instanceof ReadTimeoutException));

@@ -22,7 +22,7 @@ public final class PlayerSettingsChangedEvent {
   private final Player player;
   private final PlayerSettings playerSettings;
 
-  public PlayerSettingsChangedEvent(Player player, PlayerSettings playerSettings) {
+  public PlayerSettingsChangedEvent(final Player player, final PlayerSettings playerSettings) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.playerSettings = Preconditions.checkNotNull(playerSettings, "playerSettings");
   }

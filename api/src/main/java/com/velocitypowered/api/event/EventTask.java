@@ -62,7 +62,7 @@ public interface EventTask {
     return new EventTask() {
 
       @Override
-      public void execute(Continuation continuation) {
+      public void execute(final Continuation continuation) {
         task.run();
         continuation.resume();
       }

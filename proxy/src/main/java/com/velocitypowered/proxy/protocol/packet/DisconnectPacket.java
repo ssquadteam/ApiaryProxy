@@ -39,11 +39,11 @@ public class DisconnectPacket implements MinecraftPacket {
   private @Nullable ComponentHolder reason;
   private final StateRegistry state;
 
-  public DisconnectPacket(StateRegistry state) {
+  public DisconnectPacket(final StateRegistry state) {
     this.state = state;
   }
 
-  private DisconnectPacket(StateRegistry state, ComponentHolder reason) {
+  private DisconnectPacket(final StateRegistry state, final ComponentHolder reason) {
     this.state = state;
     this.reason = Preconditions.checkNotNull(reason, "reason");
   }
@@ -61,7 +61,7 @@ public class DisconnectPacket implements MinecraftPacket {
     return reason;
   }
 
-  public void setReason(@Nullable ComponentHolder reason) {
+  public void setReason(@Nullable final ComponentHolder reason) {
     this.reason = reason;
   }
 
@@ -73,18 +73,18 @@ public class DisconnectPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     reason = ComponentHolder.read(buf, state == StateRegistry.LOGIN
         ? ProtocolVersion.MINECRAFT_1_20_2 : version);
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     getReason().write(buf);
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
@@ -96,7 +96,7 @@ public class DisconnectPacket implements MinecraftPacket {
    * @param state the state in which the disconnection occurs
    * @return the created {@code DisconnectPacket}
    */
-  public static DisconnectPacket create(Component component, ProtocolVersion version, StateRegistry state) {
+  public static DisconnectPacket create(final Component component, final ProtocolVersion version, final StateRegistry state) {
     Preconditions.checkNotNull(component, "component");
     return new DisconnectPacket(state, new ComponentHolder(state == StateRegistry.LOGIN
         ? ProtocolVersion.MINECRAFT_1_20_2 : version, component));

@@ -25,6 +25,14 @@ import com.velocitypowered.proxy.protocol.packet.chat.LastSeenMessages;
 import io.netty.buffer.ByteBuf;
 import java.time.Instant;
 
+/**
+ * Represents a player chat packet specific to a session, implementing {@link MinecraftPacket}.
+ * <p>
+ * The {@code SessionPlayerChatPacket} handles chat messages sent by a player during a session,
+ * and may include session-specific context, such as timestamps, message formatting, or other
+ * relevant session data.
+ * </p>
+ */
 public class SessionPlayerChatPacket implements MinecraftPacket {
 
   protected String message;
@@ -62,8 +70,8 @@ public class SessionPlayerChatPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     this.message = ProtocolUtils.readString(buf, 256);
     this.timestamp = Instant.ofEpochMilli(buf.readLong());
     this.salt = buf.readLong();
@@ -77,8 +85,8 @@ public class SessionPlayerChatPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction,
-      ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction,
+      final ProtocolVersion protocolVersion) {
     ProtocolUtils.writeString(buf, this.message);
     buf.writeLong(this.timestamp.toEpochMilli());
     buf.writeLong(this.salt);
@@ -90,17 +98,27 @@ public class SessionPlayerChatPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
-  protected static byte[] readMessageSignature(ByteBuf buf) {
+  protected static byte[] readMessageSignature(final ByteBuf buf) {
     byte[] signature = new byte[256];
     buf.readBytes(signature);
     return signature;
   }
 
-  public SessionPlayerChatPacket withLastSeenMessages(LastSeenMessages lastSeenMessages) {
+  /**
+   * Creates a new {@code SessionPlayerChatPacket} with the specified last seen messages.
+   * <p>
+   * This method constructs a new {@code SessionPlayerChatPacket} instance that retains the
+   * current packet's properties, while updating the last seen messages.
+   * </p>
+   *
+   * @param lastSeenMessages the last seen messages to associate with the new packet
+   * @return a new {@code SessionPlayerChatPacket} with the updated last seen messages
+   */
+  public SessionPlayerChatPacket withLastSeenMessages(final LastSeenMessages lastSeenMessages) {
     SessionPlayerChatPacket packet = new SessionPlayerChatPacket();
     packet.message = message;
     packet.timestamp = timestamp;

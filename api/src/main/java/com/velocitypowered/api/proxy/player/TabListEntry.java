@@ -153,7 +153,7 @@ public interface TabListEntry extends KeyIdentifiable {
    *
    * @see TabListEntry
    */
-  class Builder {
+  final class Builder {
 
     private @Nullable TabList tabList;
     private @Nullable GameProfile profile;
@@ -174,7 +174,7 @@ public interface TabListEntry extends KeyIdentifiable {
      * @param tabList to set
      * @return {@code this}, for chaining
      */
-    public Builder tabList(TabList tabList) {
+    public Builder tabList(final TabList tabList) {
       this.tabList = tabList;
       return this;
     }
@@ -186,7 +186,7 @@ public interface TabListEntry extends KeyIdentifiable {
      * @return {@code this}, for chaining
      * @see TabListEntry#getProfile()
      */
-    public Builder profile(GameProfile profile) {
+    public Builder profile(final GameProfile profile) {
       this.profile = profile;
       return this;
     }
@@ -201,7 +201,7 @@ public interface TabListEntry extends KeyIdentifiable {
      * @return {@code this}, for chaining
      * @see TabListEntry#getChatSession()
      */
-    public Builder chatSession(ChatSession chatSession) {
+    public Builder chatSession(final ChatSession chatSession) {
       this.chatSession = chatSession;
       return this;
     }
@@ -213,7 +213,7 @@ public interface TabListEntry extends KeyIdentifiable {
      * @return {@code this}, for chaining
      * @see TabListEntry#getDisplayNameComponent() ()
      */
-    public Builder displayName(@Nullable Component displayName) {
+    public Builder displayName(@Nullable final Component displayName) {
       this.displayName = displayName;
       return this;
     }
@@ -225,7 +225,7 @@ public interface TabListEntry extends KeyIdentifiable {
      * @return {@code this}, for chaining
      * @see TabListEntry#getLatency()
      */
-    public Builder latency(int latency) {
+    public Builder latency(final int latency) {
       this.latency = latency;
       return this;
     }
@@ -237,7 +237,7 @@ public interface TabListEntry extends KeyIdentifiable {
      * @return {@code this}, for chaining
      * @see TabListEntry#getGameMode()
      */
-    public Builder gameMode(int gameMode) {
+    public Builder gameMode(final int gameMode) {
       this.gameMode = gameMode;
       return this;
     }
@@ -249,7 +249,7 @@ public interface TabListEntry extends KeyIdentifiable {
      * @return ${code this}, for chaining
      * @see TabListEntry#isListed()
      */
-    public Builder listed(boolean listed) {
+    public Builder listed(final boolean listed) {
       this.listed = listed;
       return this;
     }

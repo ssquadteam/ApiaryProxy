@@ -24,13 +24,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-class BuiltinCommandUtil {
+final class BuiltinCommandUtil {
 
   private BuiltinCommandUtil() {
     throw new AssertionError();
   }
 
-  static List<RegisteredServer> sortedServerList(ProxyServer proxy) {
+  static List<RegisteredServer> sortedServerList(final ProxyServer proxy) {
     List<RegisteredServer> servers = new ArrayList<>(proxy.getAllServers());
     servers.sort(Comparator.comparing(RegisteredServer::getServerInfo));
     return Collections.unmodifiableList(servers);

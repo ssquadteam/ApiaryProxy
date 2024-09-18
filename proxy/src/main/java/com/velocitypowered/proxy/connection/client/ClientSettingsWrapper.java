@@ -36,7 +36,7 @@ public class ClientSettingsWrapper implements PlayerSettings {
   private final SkinParts parts;
   private @Nullable Locale locale;
 
-  ClientSettingsWrapper(ClientSettingsPacket settings) {
+  ClientSettingsWrapper(final ClientSettingsPacket settings) {
     this.settings = settings;
     this.parts = new SkinParts((byte) settings.getSkinParts());
   }

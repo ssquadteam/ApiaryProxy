@@ -36,8 +36,8 @@ public class LegacyForgeConnectionType extends ConnectionTypeImpl {
   }
 
   @Override
-  public GameProfile addGameProfileTokensIfRequired(GameProfile original,
-      PlayerInfoForwarding forwardingType) {
+  public GameProfile addGameProfileTokensIfRequired(final GameProfile original,
+      final PlayerInfoForwarding forwardingType) {
     // We can't forward the FML token to the server when we are running in legacy forwarding mode,
     // since both use the "hostname" field in the handshake. We add a special property to the
     // profile instead, which will be ignored by non-Forge servers and can be intercepted by a

@@ -79,8 +79,8 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
   private LoginState currentState = LoginState.LOGIN_PACKET_EXPECTED;
   private final boolean forceKeyAuthentication;
 
-  InitialLoginSessionHandler(VelocityServer server, MinecraftConnection mcConnection,
-                             LoginInboundConnection inbound) {
+  InitialLoginSessionHandler(final VelocityServer server, final MinecraftConnection mcConnection,
+                             final LoginInboundConnection inbound) {
     this.server = Preconditions.checkNotNull(server, "server");
     this.mcConnection = Preconditions.checkNotNull(mcConnection, "mcConnection");
     this.inbound = Preconditions.checkNotNull(inbound, "inbound");
@@ -89,7 +89,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(ServerLoginPacket packet) {
+  public boolean handle(final ServerLoginPacket packet) {
     assertState(LoginState.LOGIN_PACKET_EXPECTED);
     this.currentState = LoginState.LOGIN_PACKET_RECEIVED;
     IdentifiedKey playerKey = packet.getPlayerKey();
@@ -166,13 +166,13 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public boolean handle(LoginPluginResponsePacket packet) {
+  public boolean handle(final LoginPluginResponsePacket packet) {
     this.inbound.handleLoginPluginResponse(packet);
     return true;
   }
 
   @Override
-  public boolean handle(EncryptionResponsePacket packet) {
+  public boolean handle(final EncryptionResponsePacket packet) {
     assertState(LoginState.ENCRYPTION_REQUEST_SENT);
     this.currentState = LoginState.ENCRYPTION_RESPONSE_RECEIVED;
     ServerLoginPacket login = this.login;
@@ -297,7 +297,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
-  public void handleUnknown(ByteBuf buf) {
+  public void handleUnknown(final ByteBuf buf) {
     mcConnection.close(true);
   }
 
@@ -306,7 +306,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
     this.inbound.cleanup();
   }
 
-  private void assertState(LoginState expectedState) {
+  private void assertState(final LoginState expectedState) {
     if (this.currentState != expectedState) {
       if (MinecraftDecoder.DEBUG) {
         logger.error("{} Received an unexpected packet requiring state {}, but we are in {}",

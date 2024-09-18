@@ -28,12 +28,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Represents an argument type for registry keys.
+ * <p>
+ * This class handles parsing and validating registry key arguments.
+ * </p>
+ */
 public class RegistryKeyArgument implements ArgumentType<String> {
 
   private static final List<String> EXAMPLES = Arrays.asList("foo", "foo:bar", "012");
   private final String identifier;
 
-  public RegistryKeyArgument(String identifier) {
+  public RegistryKeyArgument(final String identifier) {
     this.identifier = identifier;
   }
 
@@ -42,13 +48,13 @@ public class RegistryKeyArgument implements ArgumentType<String> {
   }
 
   @Override
-  public String parse(StringReader stringReader) throws CommandSyntaxException {
+  public String parse(final StringReader stringReader) throws CommandSyntaxException {
     return stringReader.readString();
   }
 
   @Override
-  public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context,
-      SuggestionsBuilder builder) {
+  public <S> CompletableFuture<Suggestions> listSuggestions(final CommandContext<S> context,
+      final SuggestionsBuilder builder) {
     return Suggestions.empty();
   }
 

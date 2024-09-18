@@ -26,11 +26,18 @@ import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatHandler;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatQueue;
+import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.CompletableFuture;
-
+/**
+ * A handler for processing session-based chat packets, implementing {@link ChatHandler}.
+ * <p>
+ * The {@code SessionChatHandler} processes and handles chat messages sent during a player's
+ * session using {@link SessionPlayerChatPacket}. It provides the logic for handling session-specific
+ * chat messages, ensuring the correct context and formatting within the session.
+ * </p>
+ */
 public class SessionChatHandler implements ChatHandler<SessionPlayerChatPacket> {
 
   private static final Logger logger = LogManager.getLogger(SessionChatHandler.class);
@@ -38,7 +45,7 @@ public class SessionChatHandler implements ChatHandler<SessionPlayerChatPacket> 
   private final ConnectedPlayer player;
   private final VelocityServer server;
 
-  public SessionChatHandler(ConnectedPlayer player, VelocityServer server) {
+  public SessionChatHandler(final ConnectedPlayer player, final VelocityServer server) {
     this.player = player;
     this.server = server;
   }
@@ -49,7 +56,7 @@ public class SessionChatHandler implements ChatHandler<SessionPlayerChatPacket> 
   }
 
   @Override
-  public void handlePlayerChatInternal(SessionPlayerChatPacket packet) {
+  public void handlePlayerChatInternal(final SessionPlayerChatPacket packet) {
     ChatQueue chatQueue = this.player.getChatQueue();
     EventManager eventManager = this.server.getEventManager();
     PlayerChatEvent toSend = new PlayerChatEvent(player, packet.getMessage());

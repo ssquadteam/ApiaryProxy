@@ -51,7 +51,7 @@ public class ResourcePackRequestPacket implements MinecraftPacket {
     return id;
   }
 
-  public void setId(UUID id) {
+  public void setId(final UUID id) {
     this.id = id;
   }
 
@@ -59,7 +59,7 @@ public class ResourcePackRequestPacket implements MinecraftPacket {
     return url;
   }
 
-  public void setUrl(String url) {
+  public void setUrl(final String url) {
     this.url = url;
   }
 
@@ -71,11 +71,11 @@ public class ResourcePackRequestPacket implements MinecraftPacket {
     return hash;
   }
 
-  public void setHash(String hash) {
+  public void setHash(final String hash) {
     this.hash = hash;
   }
 
-  public void setRequired(boolean required) {
+  public void setRequired(final boolean required) {
     isRequired = required;
   }
 
@@ -83,12 +83,12 @@ public class ResourcePackRequestPacket implements MinecraftPacket {
     return prompt;
   }
 
-  public void setPrompt(@Nullable ComponentHolder prompt) {
+  public void setPrompt(@Nullable final ComponentHolder prompt) {
     this.prompt = prompt;
   }
 
   @Override
-  public void decode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final Direction direction, final ProtocolVersion protocolVersion) {
     if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_20_3)) {
       this.id = ProtocolUtils.readUuid(buf);
     }
@@ -105,7 +105,7 @@ public class ResourcePackRequestPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final Direction direction, final ProtocolVersion protocolVersion) {
     if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_20_3)) {
       if (id == null) {
         throw new IllegalStateException("Resource pack id not set yet!");
@@ -149,7 +149,7 @@ public class ResourcePackRequestPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 

@@ -21,17 +21,23 @@ import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 
+/**
+ * Serializer for registry ID arguments.
+ * <p>
+ * Handles serialization and deserialization of integer-based registry ID arguments.
+ * </p>
+ */
 public class RegistryIdArgumentSerializer implements ArgumentPropertySerializer<Integer> {
 
   static final RegistryIdArgumentSerializer REGISTRY_ID = new RegistryIdArgumentSerializer();
 
   @Override
-  public Integer deserialize(ByteBuf buf, ProtocolVersion protocolVersion) {
+  public Integer deserialize(final ByteBuf buf, final ProtocolVersion protocolVersion) {
     return ProtocolUtils.readVarInt(buf);
   }
 
   @Override
-  public void serialize(Integer object, ByteBuf buf, ProtocolVersion protocolVersion) {
+  public void serialize(final Integer object, final ByteBuf buf, final ProtocolVersion protocolVersion) {
     ProtocolUtils.writeVarInt(buf, object);
   }
 }

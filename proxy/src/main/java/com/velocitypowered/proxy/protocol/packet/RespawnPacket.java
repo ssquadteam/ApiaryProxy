@@ -64,10 +64,10 @@ public class RespawnPacket implements MinecraftPacket {
    * @param lastDeathPosition optional last death position (for 1.19+)
    * @param portalCooldown the cooldown for portal usage (for 1.20+)
    */
-  public RespawnPacket(int dimension, long partialHashedSeed, short difficulty, short gamemode,
-                       String levelType, byte dataToKeep, DimensionInfo dimensionInfo,
-                       short previousGamemode, CompoundBinaryTag currentDimensionData,
-                       @Nullable Pair<String, Long> lastDeathPosition, int portalCooldown) {
+  public RespawnPacket(final int dimension, final long partialHashedSeed, final short difficulty, final short gamemode,
+                       final String levelType, final byte dataToKeep, final DimensionInfo dimensionInfo,
+                       final short previousGamemode, final CompoundBinaryTag currentDimensionData,
+                       @Nullable final Pair<String, Long> lastDeathPosition, final int portalCooldown) {
     this.dimension = dimension;
     this.partialHashedSeed = partialHashedSeed;
     this.difficulty = difficulty;
@@ -87,7 +87,7 @@ public class RespawnPacket implements MinecraftPacket {
    * @param joinGame the {@code JoinGamePacket} to use
    * @return a new {@code RespawnPacket} based on the provided {@code JoinGamePacket}
    */
-  public static RespawnPacket fromJoinGame(JoinGamePacket joinGame) {
+  public static RespawnPacket fromJoinGame(final JoinGamePacket joinGame) {
     return new RespawnPacket(joinGame.getDimension(), joinGame.getPartialHashedSeed(),
         joinGame.getDifficulty(), joinGame.getGamemode(), joinGame.getLevelType(),
         (byte) 0, joinGame.getDimensionInfo(), joinGame.getPreviousGamemode(),
@@ -98,7 +98,7 @@ public class RespawnPacket implements MinecraftPacket {
     return dimension;
   }
 
-  public void setDimension(int dimension) {
+  public void setDimension(final int dimension) {
     this.dimension = dimension;
   }
 
@@ -106,7 +106,7 @@ public class RespawnPacket implements MinecraftPacket {
     return partialHashedSeed;
   }
 
-  public void setPartialHashedSeed(long partialHashedSeed) {
+  public void setPartialHashedSeed(final long partialHashedSeed) {
     this.partialHashedSeed = partialHashedSeed;
   }
 
@@ -114,7 +114,7 @@ public class RespawnPacket implements MinecraftPacket {
     return difficulty;
   }
 
-  public void setDifficulty(short difficulty) {
+  public void setDifficulty(final short difficulty) {
     this.difficulty = difficulty;
   }
 
@@ -122,7 +122,7 @@ public class RespawnPacket implements MinecraftPacket {
     return gamemode;
   }
 
-  public void setGamemode(short gamemode) {
+  public void setGamemode(final short gamemode) {
     this.gamemode = gamemode;
   }
 
@@ -130,7 +130,7 @@ public class RespawnPacket implements MinecraftPacket {
     return levelType;
   }
 
-  public void setLevelType(String levelType) {
+  public void setLevelType(final String levelType) {
     this.levelType = levelType;
   }
 
@@ -138,7 +138,7 @@ public class RespawnPacket implements MinecraftPacket {
     return dataToKeep;
   }
 
-  public void setDataToKeep(byte dataToKeep) {
+  public void setDataToKeep(final byte dataToKeep) {
     this.dataToKeep = dataToKeep;
   }
 
@@ -146,7 +146,7 @@ public class RespawnPacket implements MinecraftPacket {
     return previousGamemode;
   }
 
-  public void setPreviousGamemode(short previousGamemode) {
+  public void setPreviousGamemode(final short previousGamemode) {
     this.previousGamemode = previousGamemode;
   }
 
@@ -154,7 +154,7 @@ public class RespawnPacket implements MinecraftPacket {
     return lastDeathPosition;
   }
 
-  public void setLastDeathPosition(@Nullable Pair<String, Long> lastDeathPosition) {
+  public void setLastDeathPosition(@Nullable final Pair<String, Long> lastDeathPosition) {
     this.lastDeathPosition = lastDeathPosition;
   }
 
@@ -162,7 +162,7 @@ public class RespawnPacket implements MinecraftPacket {
     return portalCooldown;
   }
 
-  public void setPortalCooldown(int portalCooldown) {
+  public void setPortalCooldown(final int portalCooldown) {
     this.portalCooldown = portalCooldown;
   }
 
@@ -184,7 +184,7 @@ public class RespawnPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     String dimensionKey = "";
     String levelName = null;
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_16)) {
@@ -235,7 +235,7 @@ public class RespawnPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_16)) {
       if (version.noLessThan(ProtocolVersion.MINECRAFT_1_16_2)
           && version.lessThan(ProtocolVersion.MINECRAFT_1_19)) {
@@ -293,7 +293,7 @@ public class RespawnPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

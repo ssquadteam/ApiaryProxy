@@ -40,7 +40,7 @@ public class MinecraftEncoder extends MessageToByteEncoder<MinecraftPacket> {
    *
    * @param direction the direction to encode to
    */
-  public MinecraftEncoder(ProtocolUtils.Direction direction) {
+  public MinecraftEncoder(final ProtocolUtils.Direction direction) {
     this.direction = Preconditions.checkNotNull(direction, "direction");
     this.registry = StateRegistry.HANDSHAKE.getProtocolRegistry(
         direction, ProtocolVersion.MINIMUM_VERSION);
@@ -48,7 +48,7 @@ public class MinecraftEncoder extends MessageToByteEncoder<MinecraftPacket> {
   }
 
   @Override
-  protected void encode(ChannelHandlerContext ctx, MinecraftPacket msg, ByteBuf out) {
+  protected void encode(final ChannelHandlerContext ctx, final MinecraftPacket msg, final ByteBuf out) {
     int packetId = this.registry.getPacketId(msg);
     ProtocolUtils.writeVarInt(out, packetId);
     msg.encode(out, direction, registry.version);
@@ -58,7 +58,7 @@ public class MinecraftEncoder extends MessageToByteEncoder<MinecraftPacket> {
     this.registry = state.getProtocolRegistry(direction, protocolVersion);
   }
 
-  public void setState(StateRegistry state) {
+  public void setState(final StateRegistry state) {
     this.state = state;
     this.setProtocolVersion(registry.version);
   }

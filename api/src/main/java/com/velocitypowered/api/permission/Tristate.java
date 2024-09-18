@@ -46,7 +46,7 @@ public enum Tristate {
    * @return {@link #TRUE} or {@link #FALSE}, if the value is <code>true</code> or
    *     <code>false</code>, respectively.
    */
-  public static Tristate fromBoolean(boolean val) {
+  public static Tristate fromBoolean(final boolean val) {
     return val ? TRUE : FALSE;
   }
 
@@ -60,7 +60,7 @@ public enum Tristate {
    * @return {@link #UNDEFINED}, {@link #TRUE} or {@link #FALSE}, if the value is <code>null</code>,
    *     <code>true</code> or <code>false</code>, respectively.
    */
-  public static Tristate fromNullableBoolean(@Nullable Boolean val) {
+  public static Tristate fromNullableBoolean(@Nullable final Boolean val) {
     if (val == null) {
       return UNDEFINED;
     }
@@ -77,14 +77,14 @@ public enum Tristate {
    * @return {@link #UNDEFINED}, {@link #TRUE} or {@link #FALSE}, if the value is empty,
    *     <code>true</code> or <code>false</code>, respectively.
    */
-  public static Tristate fromOptionalBoolean(Optional<Boolean> val) {
+  public static Tristate fromOptionalBoolean(final Optional<Boolean> val) {
     return val.map(Tristate::fromBoolean).orElse(UNDEFINED);
   }
 
 
   private final boolean booleanValue;
 
-  Tristate(boolean booleanValue) {
+  Tristate(final boolean booleanValue) {
     this.booleanValue = booleanValue;
   }
 

@@ -44,12 +44,12 @@ public class BackendChannelInitializer extends ChannelInitializer<Channel> {
 
   private final VelocityServer server;
 
-  public BackendChannelInitializer(VelocityServer server) {
+  public BackendChannelInitializer(final VelocityServer server) {
     this.server = server;
   }
 
   @Override
-  protected void initChannel(Channel ch) {
+  protected void initChannel(final Channel ch) {
     ch.pipeline()
         .addLast(FRAME_DECODER, new MinecraftVarintFrameDecoder())
         .addLast(READ_TIMEOUT,

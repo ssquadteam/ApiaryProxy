@@ -25,7 +25,7 @@ record PassthroughProperty<T>(ArgumentIdentifier identifier, ArgumentPropertySer
     @Nullable T result) implements ArgumentType<T> {
 
   @Override
-  public T parse(StringReader reader) {
+  public T parse(final StringReader reader) {
     throw new UnsupportedOperationException();
   }
 }

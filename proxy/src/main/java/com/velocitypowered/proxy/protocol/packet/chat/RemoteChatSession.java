@@ -36,12 +36,12 @@ public class RemoteChatSession implements ChatSession {
   private final @Nullable UUID sessionId;
   private final IdentifiedKey identifiedKey;
 
-  public RemoteChatSession(ProtocolVersion version, ByteBuf buf) {
+  public RemoteChatSession(final ProtocolVersion version, final ByteBuf buf) {
     this.sessionId = ProtocolUtils.readUuid(buf);
     this.identifiedKey = ProtocolUtils.readPlayerKey(version, buf);
   }
 
-  public RemoteChatSession(@Nullable UUID sessionId, IdentifiedKey identifiedKey) {
+  public RemoteChatSession(@Nullable final UUID sessionId, final IdentifiedKey identifiedKey) {
     this.sessionId = sessionId;
     this.identifiedKey = identifiedKey;
   }
@@ -54,7 +54,7 @@ public class RemoteChatSession implements ChatSession {
     return sessionId;
   }
 
-  public void write(ByteBuf buf) {
+  public void write(final ByteBuf buf) {
     ProtocolUtils.writeUuid(buf, Objects.requireNonNull(this.sessionId));
     ProtocolUtils.writePlayerKey(buf, this.identifiedKey);
   }

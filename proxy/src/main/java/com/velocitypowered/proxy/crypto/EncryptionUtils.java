@@ -97,8 +97,8 @@ public enum EncryptionUtils {
    * @param toVerify  the byte array(s) of data to verify
    * @return validity of the signature
    */
-  public static boolean verifySignature(String algorithm, PublicKey base, byte[] signature,
-      byte[]... toVerify) {
+  public static boolean verifySignature(final String algorithm, final PublicKey base, final byte[] signature,
+      final byte[]... toVerify) {
     Preconditions.checkArgument(toVerify.length > 0);
     try {
       Signature construct = Signature.getInstance(algorithm);
@@ -120,7 +120,7 @@ public enum EncryptionUtils {
    * @param toSign    the byte array(s) of data to sign
    * @return the generated signature
    */
-  public static byte[] generateSignature(String algorithm, PrivateKey base, byte[]... toSign) {
+  public static byte[] generateSignature(final String algorithm, final PrivateKey base, final byte[]... toSign) {
     Preconditions.checkArgument(toSign.length > 0);
     try {
       Signature construct = Signature.getInstance(algorithm);
@@ -140,7 +140,7 @@ public enum EncryptionUtils {
    * @param bits the long (array) of numbers to encode
    * @return the encoded bytes
    */
-  public static byte[] longToBigEndianByteArray(long... bits) {
+  public static byte[] longToBigEndianByteArray(final long... bits) {
     ByteBuffer ret = ByteBuffer.allocate(8 * bits.length).order(ByteOrder.BIG_ENDIAN);
     for (long put : bits) {
       ret.putLong(put);
@@ -148,11 +148,11 @@ public enum EncryptionUtils {
     return ret.array();
   }
 
-  public static String encodeUrlEncoded(byte[] data) {
+  public static String encodeUrlEncoded(final byte[] data) {
     return MIME_SPECIAL_ENCODER.encodeToString(data);
   }
 
-  public static byte[] decodeUrlEncoded(String toParse) {
+  public static byte[] decodeUrlEncoded(final String toParse) {
     return Base64.getMimeDecoder().decode(toParse);
   }
 
@@ -163,7 +163,7 @@ public enum EncryptionUtils {
    * @param descriptors the type of key
    * @return the parsed key bytes
    */
-  public static byte[] parsePemEncoded(String toParse, Pair<String, String> descriptors) {
+  public static byte[] parsePemEncoded(final String toParse, final Pair<String, String> descriptors) {
     int startIdx = toParse.indexOf(descriptors.first());
     Preconditions.checkArgument(startIdx >= 0);
     int firstLen = descriptors.first().length();
@@ -178,7 +178,7 @@ public enum EncryptionUtils {
    * @param toEncode the private or public RSA key
    * @return the encoded key cer
    */
-  public static String pemEncodeRsaKey(Key toEncode) {
+  public static String pemEncodeRsaKey(final Key toEncode) {
     Preconditions.checkNotNull(toEncode);
     Pair<String, String> encoder;
     if (toEncode instanceof PublicKey) {
@@ -200,7 +200,7 @@ public enum EncryptionUtils {
    * @param keyValue the key bytes
    * @return the generated key
    */
-  public static PublicKey parseRsaPublicKey(byte[] keyValue) {
+  public static PublicKey parseRsaPublicKey(final byte[] keyValue) {
     try {
       return RSA_KEY_FACTORY.generatePublic(new X509EncodedKeySpec(keyValue));
     } catch (InvalidKeySpecException e) {
@@ -230,7 +230,7 @@ public enum EncryptionUtils {
    * @param digest the bytes to digest
    * @return the hex digest
    */
-  public static String twosComplementHexdigest(byte[] digest) {
+  public static String twosComplementHexdigest(final byte[] digest) {
     return new BigInteger(digest).toString(16);
   }
 
@@ -242,7 +242,7 @@ public enum EncryptionUtils {
    * @return the decrypted message
    * @throws GeneralSecurityException if the message couldn't be decoded
    */
-  public static byte[] decryptRsa(KeyPair keyPair, byte[] bytes) throws GeneralSecurityException {
+  public static byte[] decryptRsa(final KeyPair keyPair, final byte[] bytes) throws GeneralSecurityException {
     Cipher cipher = Cipher.getInstance("RSA");
     cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
     return cipher.doFinal(bytes);
@@ -255,7 +255,7 @@ public enum EncryptionUtils {
    * @param key          the RSA public key
    * @return the server ID
    */
-  public static String generateServerId(byte[] sharedSecret, PublicKey key) {
+  public static String generateServerId(final byte[] sharedSecret, final PublicKey key) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-1");
       digest.update(sharedSecret);

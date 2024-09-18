@@ -36,7 +36,7 @@ public class KeepAlivePacket implements MinecraftPacket {
     return randomId;
   }
 
-  public void setRandomId(long randomId) {
+  public void setRandomId(final long randomId) {
     this.randomId = randomId;
   }
 
@@ -48,7 +48,7 @@ public class KeepAlivePacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_12_2)) {
       randomId = buf.readLong();
     } else if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
@@ -59,7 +59,7 @@ public class KeepAlivePacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_12_2)) {
       buf.writeLong(randomId);
     } else if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
@@ -70,7 +70,7 @@ public class KeepAlivePacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

@@ -44,11 +44,11 @@ public class ChatQueue {
    *
    * @param player the {@link ConnectedPlayer} to maintain the queue for.
    */
-  public ChatQueue(ConnectedPlayer player) {
+  public ChatQueue(final ConnectedPlayer player) {
     this.player = player;
   }
 
-  private void queueTask(Task task) {
+  private void queueTask(final Task task) {
     synchronized (internalLock) {
       MinecraftConnection smc = player.ensureAndGetCurrentServer().ensureConnected();
       head = head.thenCompose(v -> {
@@ -71,7 +71,7 @@ public class ChatQueue {
    * @param timestamp        the new {@link Instant} timestamp of this packet to update the internal chat state.
    * @param lastSeenMessages the new {@link LastSeenMessages} last seen messages to update the internal chat state.
    */
-  public void queuePacket(Function<LastSeenMessages, CompletableFuture<MinecraftPacket>> nextPacket, @Nullable Instant timestamp, @Nullable LastSeenMessages lastSeenMessages) {
+  public void queuePacket(final Function<LastSeenMessages, CompletableFuture<MinecraftPacket>> nextPacket, @Nullable final Instant timestamp, @Nullable final LastSeenMessages lastSeenMessages) {
     queueTask((chatState, smc) -> {
       LastSeenMessages newLastSeenMessages = chatState.updateFromMessage(timestamp, lastSeenMessages);
       return nextPacket.apply(newLastSeenMessages).thenCompose(packet -> writePacket(packet, smc));
@@ -85,7 +85,7 @@ public class ChatQueue {
    * @param packetFunction a function that maps the prior {@link ChatState} into a new packet.
    * @param <T>            the type of packet to send.
    */
-  public <T extends MinecraftPacket> void queuePacket(Function<ChatState, T> packetFunction) {
+  public <T extends MinecraftPacket> void queuePacket(final Function<ChatState, T> packetFunction) {
     queueTask((chatState, smc) -> {
       T packet = packetFunction.apply(chatState);
       return writePacket(packet, smc);
@@ -98,7 +98,7 @@ public class ChatQueue {
    *
    * @param offset the offset representing the specific message or event being acknowledged
    */
-  public void handleAcknowledgement(int offset) {
+  public void handleAcknowledgement(final int offset) {
     queueTask((chatState, smc) -> {
       int ackCountToForward = chatState.accumulateAckCount(offset);
       if (ackCountToForward > 0) {
@@ -108,7 +108,7 @@ public class ChatQueue {
     });
   }
 
-  private static <T extends MinecraftPacket> CompletableFuture<Void> writePacket(T packet, MinecraftConnection smc) {
+  private static <T extends MinecraftPacket> CompletableFuture<Void> writePacket(final T packet, final MinecraftConnection smc) {
     return CompletableFuture.runAsync(() -> {
       if (!smc.isClosed()) {
         ChannelFuture future = smc.write(packet);
@@ -143,7 +143,7 @@ public class ChatQueue {
    * updates.
    * </p>
    */
-  public static class ChatState {
+  public static final class ChatState {
     private static final int MINIMUM_DELAYED_ACK_COUNT = LastSeenMessages.WINDOW_SIZE;
     private static final BitSet DUMMY_LAST_SEEN_MESSAGES = new BitSet();
 
@@ -166,7 +166,7 @@ public class ChatQueue {
      * @return the updated {@link LastSeenMessages} with the applied offset, or {@code null} if no updates were made
      */
     @Nullable
-    public LastSeenMessages updateFromMessage(@Nullable Instant timestamp, @Nullable LastSeenMessages lastSeenMessages) {
+    public LastSeenMessages updateFromMessage(@Nullable final Instant timestamp, @Nullable final LastSeenMessages lastSeenMessages) {
       if (timestamp != null) {
         this.lastTimestamp = timestamp;
       }
@@ -189,7 +189,7 @@ public class ChatQueue {
      * @param ackCount the number of acknowledgements to add to the accumulated count
      * @return the number of acknowledgements that should be forwarded, or 0 if the threshold has not been reached
      */
-    public int accumulateAckCount(int ackCount) {
+    public int accumulateAckCount(final int ackCount) {
       int delayedAckCount = this.delayedAckCount.addAndGet(ackCount);
       int ackCountToForward = delayedAckCount - MINIMUM_DELAYED_ACK_COUNT;
       if (ackCountToForward >= LastSeenMessages.WINDOW_SIZE) {

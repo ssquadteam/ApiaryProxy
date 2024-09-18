@@ -28,13 +28,13 @@ import net.kyori.adventure.text.Component;
 /**
  * Common connection request results.
  */
-public class ConnectionRequestResults {
+public final class ConnectionRequestResults {
 
   private ConnectionRequestResults() {
     throw new AssertionError();
   }
 
-  public static Impl successful(RegisteredServer server) {
+  public static Impl successful(final RegisteredServer server) {
     return plainResult(Status.SUCCESS, server);
   }
 
@@ -46,8 +46,8 @@ public class ConnectionRequestResults {
    * @return the result
    */
   public static Impl plainResult(
-      ConnectionRequestBuilder.Status status,
-      RegisteredServer server) {
+      final ConnectionRequestBuilder.Status status,
+      final RegisteredServer server) {
     return new Impl(status, null, server, true);
   }
 
@@ -58,15 +58,15 @@ public class ConnectionRequestResults {
    * @param server    the server to use
    * @return the result
    */
-  public static Impl forDisconnect(Component component, RegisteredServer server) {
+  public static Impl forDisconnect(final Component component, final RegisteredServer server) {
     return new Impl(Status.SERVER_DISCONNECTED, component, server, true);
   }
 
-  public static Impl forDisconnect(DisconnectPacket disconnect, RegisteredServer server) {
+  public static Impl forDisconnect(final DisconnectPacket disconnect, final RegisteredServer server) {
     return forDisconnect(disconnect.getReason().getComponent(), server);
   }
 
-  public static Impl forUnsafeDisconnect(DisconnectPacket disconnect, RegisteredServer server) {
+  public static Impl forUnsafeDisconnect(final DisconnectPacket disconnect, final RegisteredServer server) {
     return new Impl(Status.SERVER_DISCONNECTED, disconnect.getReason().getComponent(), server,
         false);
   }
@@ -81,8 +81,8 @@ public class ConnectionRequestResults {
     private final RegisteredServer attemptedConnection;
     private final boolean safe;
 
-    Impl(Status status, @Nullable Component component,
-        RegisteredServer attemptedConnection, boolean safe) {
+    Impl(final Status status, @Nullable final Component component,
+        final RegisteredServer attemptedConnection, final boolean safe) {
       this.status = status;
       this.component = component;
       this.attemptedConnection = attemptedConnection;

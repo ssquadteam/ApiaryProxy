@@ -56,7 +56,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * Velocity's configuration.
  */
-public class VelocityConfiguration implements ProxyConfig {
+public final class VelocityConfiguration implements ProxyConfig {
 
   private static final Logger logger = LogManager.getLogger(VelocityConfiguration.class);
 
@@ -111,8 +111,8 @@ public class VelocityConfiguration implements ProxyConfig {
   @Expose
   private String minimumVersion = "1.7.2";
 
-  private VelocityConfiguration(Servers servers, ForcedHosts forcedHosts, Commands commands,
-      Advanced advanced, Query query, Metrics metrics) {
+  private VelocityConfiguration(final Servers servers, final ForcedHosts forcedHosts, final Commands commands,
+      final Advanced advanced, final Query query, final Metrics metrics) {
     this.servers = servers;
     this.forcedHosts = forcedHosts;
     this.commands = commands;
@@ -121,15 +121,15 @@ public class VelocityConfiguration implements ProxyConfig {
     this.metrics = metrics;
   }
 
-  private VelocityConfiguration(String bind, String motd, int showMaxPlayers, boolean onlineMode,
-      boolean preventClientProxyConnections, boolean announceForge,
-      PlayerInfoForwarding playerInfoForwardingMode, byte[] forwardingSecret,
-      boolean onlineModeKickExistingPlayers, PingPassthroughMode pingPassthrough,
-      boolean enablePlayerAddressLogging, Servers servers, ForcedHosts forcedHosts,
-      Commands commands, Advanced advanced, Query query, Metrics metrics, boolean forceKeyAuthentication,
-      boolean logPlayerConnections, boolean logPlayerDisconnections,
-      boolean logOfflineConnections, boolean disableForge, boolean enforceChatSigning,
-      boolean translateHeaderFooter, boolean logMinimumVersion, String minimumVersion) {
+  private VelocityConfiguration(final String bind, final String motd, final int showMaxPlayers, final boolean onlineMode,
+      final boolean preventClientProxyConnections, final boolean announceForge,
+      final PlayerInfoForwarding playerInfoForwardingMode, final byte[] forwardingSecret,
+      final boolean onlineModeKickExistingPlayers, final PingPassthroughMode pingPassthrough,
+      final boolean enablePlayerAddressLogging, final Servers servers, final ForcedHosts forcedHosts,
+      final Commands commands, final Advanced advanced, final Query query, final Metrics metrics, final boolean forceKeyAuthentication,
+      final boolean logPlayerConnections, final boolean logPlayerDisconnections,
+      final boolean logOfflineConnections, final boolean disableForge, final boolean enforceChatSigning,
+      final boolean translateHeaderFooter, final boolean logMinimumVersion, final String minimumVersion) {
     this.bind = bind;
     this.motd = motd;
     this.showMaxPlayers = showMaxPlayers;
@@ -348,7 +348,7 @@ public class VelocityConfiguration implements ProxyConfig {
     return playerInfoForwardingMode;
   }
 
-  public PlayerInfoForwarding getServerForwardingMode(String server) {
+  public PlayerInfoForwarding getServerForwardingMode(final String server) {
     return servers.getServerForwardingModes().getOrDefault(server, playerInfoForwardingMode);
   }
 
@@ -446,7 +446,7 @@ public class VelocityConfiguration implements ProxyConfig {
     return advanced.isProxyProtocol();
   }
 
-  public void setProxyProtocol(boolean proxyProtocol) {
+  public void setProxyProtocol(final boolean proxyProtocol) {
     advanced.setProxyProtocol(proxyProtocol);
   }
 
@@ -552,7 +552,7 @@ public class VelocityConfiguration implements ProxyConfig {
    */
   @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE",
       justification = "I looked carefully and there's no way SpotBugs is right.")
-  public static VelocityConfiguration read(Path path) throws IOException {
+  public static VelocityConfiguration read(final Path path) throws IOException {
     URL defaultConfigLocation = VelocityConfiguration.class.getClassLoader()
         .getResource("default-velocity.toml");
     if (defaultConfigLocation == null) {
@@ -565,7 +565,7 @@ public class VelocityConfiguration implements ProxyConfig {
       Files.writeString(defaultForwardingSecretPath, generateRandomString(12));
     }
 
-    try (final CommentedFileConfig config = CommentedFileConfig.builder(path)
+    try (CommentedFileConfig config = CommentedFileConfig.builder(path)
             .defaultData(defaultConfigLocation)
             .autosave()
             .preserveInsertionOrder()
@@ -691,7 +691,7 @@ public class VelocityConfiguration implements ProxyConfig {
    * @param length the required string size.
    * @return a new random string.
    */
-  public static String generateRandomString(int length) {
+  public static String generateRandomString(final int length) {
     final String chars = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890";
     final StringBuilder builder = new StringBuilder();
     final Random rnd = new SecureRandom();
@@ -737,7 +737,7 @@ public class VelocityConfiguration implements ProxyConfig {
     return minimumVersion;
   }
 
-  private static class Servers {
+  private static final class Servers {
 
     private Map<String, String> servers = ImmutableMap.of(
         "lobby", "127.0.0.1:30066",
@@ -752,7 +752,7 @@ public class VelocityConfiguration implements ProxyConfig {
     private Servers() {
     }
 
-    private Servers(CommentedConfig config) {
+    private Servers(final CommentedConfig config) {
       if (config != null) {
         Map<String, String> servers = new HashMap<>();
         Map<String, PlayerInfoForwarding> serverForwardingModes = new HashMap<>();
@@ -787,7 +787,8 @@ public class VelocityConfiguration implements ProxyConfig {
       }
     }
 
-    private Servers(Map<String, String> servers, List<String> attemptConnectionOrder, Map<String, PlayerInfoForwarding> serverForwardingModes) {
+    private Servers(final Map<String, String> servers, final List<String> attemptConnectionOrder,
+        final Map<String, PlayerInfoForwarding> serverForwardingModes) {
       this.servers = servers;
       this.attemptConnectionOrder = attemptConnectionOrder;
     }
@@ -796,7 +797,7 @@ public class VelocityConfiguration implements ProxyConfig {
       return servers;
     }
 
-    public void setServers(Map<String, String> servers) {
+    public void setServers(final Map<String, String> servers) {
       this.servers = servers;
     }
 
@@ -808,7 +809,7 @@ public class VelocityConfiguration implements ProxyConfig {
       return enableDynamicFallbacks;
     }
 
-    public void setAttemptConnectionOrder(List<String> attemptConnectionOrder) {
+    public void setAttemptConnectionOrder(final List<String> attemptConnectionOrder) {
       this.attemptConnectionOrder = attemptConnectionOrder;
       this.serverForwardingModes = ImmutableMap.copyOf(serverForwardingModes);
     }
@@ -817,7 +818,7 @@ public class VelocityConfiguration implements ProxyConfig {
       return serverForwardingModes;
     }
 
-    public void setServerForwardingModes(Map<String, PlayerInfoForwarding> serverForwardingModes) {
+    public void setServerForwardingModes(final Map<String, PlayerInfoForwarding> serverForwardingModes) {
       this.serverForwardingModes = serverForwardingModes;
     }
 
@@ -829,7 +830,7 @@ public class VelocityConfiguration implements ProxyConfig {
      * @param name the server name to clean
      * @return the cleaned server name
      */
-    private String cleanServerName(String name) {
+    private String cleanServerName(final String name) {
       return name.replace("\"", "");
     }
 
@@ -843,7 +844,7 @@ public class VelocityConfiguration implements ProxyConfig {
     }
   }
 
-  private static class ForcedHosts {
+  private static final class ForcedHosts {
 
     private Map<String, List<String>> forcedHosts = ImmutableMap.of(
         "lobby.example.com", ImmutableList.of("lobby"),
@@ -854,7 +855,7 @@ public class VelocityConfiguration implements ProxyConfig {
     private ForcedHosts() {
     }
 
-    private ForcedHosts(CommentedConfig config) {
+    private ForcedHosts(final CommentedConfig config) {
       if (config != null) {
         Map<String, List<String>> forcedHosts = new HashMap<>();
         for (UnmodifiableConfig.Entry entry : config.entrySet()) {
@@ -873,7 +874,7 @@ public class VelocityConfiguration implements ProxyConfig {
       }
     }
 
-    private ForcedHosts(Map<String, List<String>> forcedHosts) {
+    private ForcedHosts(final Map<String, List<String>> forcedHosts) {
       this.forcedHosts = forcedHosts;
     }
 
@@ -881,7 +882,7 @@ public class VelocityConfiguration implements ProxyConfig {
       return forcedHosts;
     }
 
-    private void setForcedHosts(Map<String, List<String>> forcedHosts) {
+    private void setForcedHosts(final Map<String, List<String>> forcedHosts) {
       this.forcedHosts = forcedHosts;
     }
 
@@ -893,7 +894,7 @@ public class VelocityConfiguration implements ProxyConfig {
     }
   }
 
-  private static class Commands {
+  private static final class Commands {
     @Expose
     private boolean serverCommand = true;
     @Expose
@@ -916,7 +917,7 @@ public class VelocityConfiguration implements ProxyConfig {
     private Commands() {
     }
 
-    private Commands(CommentedConfig config) {
+    private Commands(final CommentedConfig config) {
       if (config != null) {
         this.serverCommand = config.getOrElse("server-enabled", true);
         this.alertCommand = config.getOrElse("alert-enabled", true);
@@ -982,7 +983,7 @@ public class VelocityConfiguration implements ProxyConfig {
     }
   }
 
-  private static class Advanced {
+  private static final class Advanced {
 
     @Expose
     private int compressionThreshold = 256;
@@ -1022,7 +1023,7 @@ public class VelocityConfiguration implements ProxyConfig {
     private Advanced() {
     }
 
-    private Advanced(CommentedConfig config) {
+    private Advanced(final CommentedConfig config) {
       if (config != null) {
         this.compressionThreshold = config.getIntOrElse("compression-threshold", 256);
         this.compressionLevel = config.getIntOrElse("compression-level", -1);
@@ -1073,7 +1074,7 @@ public class VelocityConfiguration implements ProxyConfig {
       return proxyProtocol;
     }
 
-    public void setProxyProtocol(boolean proxyProtocol) {
+    public void setProxyProtocol(final boolean proxyProtocol) {
       this.proxyProtocol = proxyProtocol;
     }
 
@@ -1142,7 +1143,7 @@ public class VelocityConfiguration implements ProxyConfig {
     }
   }
 
-  private static class Query {
+  private static final class Query {
 
     @Expose
     private boolean queryEnabled = false;
@@ -1156,14 +1157,14 @@ public class VelocityConfiguration implements ProxyConfig {
     private Query() {
     }
 
-    private Query(boolean queryEnabled, int queryPort, String queryMap, boolean showPlugins) {
+    private Query(final boolean queryEnabled, final int queryPort, final String queryMap, final boolean showPlugins) {
       this.queryEnabled = queryEnabled;
       this.queryPort = queryPort;
       this.queryMap = queryMap;
       this.showPlugins = showPlugins;
     }
 
-    private Query(CommentedConfig config) {
+    private Query(final CommentedConfig config) {
       if (config != null) {
         this.queryEnabled = config.getOrElse("enabled", false);
         this.queryPort = config.getIntOrElse("port", 25565);
@@ -1202,11 +1203,11 @@ public class VelocityConfiguration implements ProxyConfig {
   /**
    * Configuration for metrics.
    */
-  public static class Metrics {
+  public static final class Metrics {
 
     private boolean enabled = true;
 
-    private Metrics(CommentedConfig toml) {
+    private Metrics(final CommentedConfig toml) {
       if (toml != null) {
         this.enabled = toml.getOrElse("enabled", true);
       }

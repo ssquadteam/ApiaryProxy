@@ -46,7 +46,7 @@ public class LoginPluginMessagePacket extends DeferredByteBufHolder implements M
    * @param channel the channel name, or {@code null} if not specified
    * @param data the data buffer
    */
-  public LoginPluginMessagePacket(int id, @Nullable String channel, ByteBuf data) {
+  public LoginPluginMessagePacket(final int id, @Nullable final String channel, final ByteBuf data) {
     super(data);
     this.id = id;
     this.channel = channel;
@@ -79,7 +79,7 @@ public class LoginPluginMessagePacket extends DeferredByteBufHolder implements M
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     this.id = ProtocolUtils.readVarInt(buf);
     this.channel = ProtocolUtils.readString(buf);
     if (buf.isReadable()) {
@@ -90,7 +90,7 @@ public class LoginPluginMessagePacket extends DeferredByteBufHolder implements M
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     ProtocolUtils.writeVarInt(buf, id);
     if (channel == null) {
       throw new IllegalStateException("Channel is not specified!");
@@ -100,7 +100,7 @@ public class LoginPluginMessagePacket extends DeferredByteBufHolder implements M
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 }

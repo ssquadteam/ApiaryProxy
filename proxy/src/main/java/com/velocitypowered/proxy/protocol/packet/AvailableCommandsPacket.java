@@ -25,7 +25,6 @@ import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
@@ -53,6 +52,14 @@ import java.util.concurrent.CompletableFuture;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * Represents a packet that contains the list of available commands, implementing {@link MinecraftPacket}.
+ * <p>
+ * The {@code AvailableCommandsPacket} is responsible for transmitting the set of commands
+ * that a player can execute. It provides the necessary information about available commands
+ * within the current session or game state.
+ * </p>
+ */
 public class AvailableCommandsPacket implements MinecraftPacket {
 
   private static final Command<CommandSource> PLACEHOLDER_COMMAND = source -> 0;
@@ -81,7 +88,7 @@ public class AvailableCommandsPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+  public void decode(final ByteBuf buf, final Direction direction, final ProtocolVersion protocolVersion) {
     int commands = ProtocolUtils.readVarInt(buf);
     WireNode[] wireNodes = new WireNode[commands];
     for (int i = 0; i < commands; i++) {
@@ -113,7 +120,7 @@ public class AvailableCommandsPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+  public void encode(final ByteBuf buf, final Direction direction, final ProtocolVersion protocolVersion) {
     // Assign all the children an index.
     Deque<CommandNode<CommandSource>> childrenQueue = new ArrayDeque<>(ImmutableList.of(rootNode));
     Object2IntMap<CommandNode<CommandSource>> idMappings = new Object2IntLinkedOpenCustomHashMap<>(
@@ -137,8 +144,8 @@ public class AvailableCommandsPacket implements MinecraftPacket {
     ProtocolUtils.writeVarInt(buf, idMappings.getInt(rootNode));
   }
 
-  private static void serializeNode(CommandNode<CommandSource> node, ByteBuf buf,
-      Object2IntMap<CommandNode<CommandSource>> idMappings, ProtocolVersion protocolVersion) {
+  private static void serializeNode(final CommandNode<CommandSource> node, final ByteBuf buf,
+      final Object2IntMap<CommandNode<CommandSource>> idMappings, final ProtocolVersion protocolVersion) {
     byte flags = 0;
     if (node.getRedirect() != null) {
       flags |= FLAG_IS_REDIRECT;
@@ -187,11 +194,11 @@ public class AvailableCommandsPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
-  private static WireNode deserializeNode(ByteBuf buf, int idx, ProtocolVersion version) {
+  private static WireNode deserializeNode(final ByteBuf buf, final int idx, final ProtocolVersion version) {
     byte flags = buf.readByte();
     int[] children = ProtocolUtils.readIntegerArray(buf);
     int redirectTo = -1;
@@ -220,7 +227,7 @@ public class AvailableCommandsPacket implements MinecraftPacket {
     }
   }
 
-  private static class WireNode {
+  private static final class WireNode {
 
     private final int idx;
     private final byte flags;
@@ -230,8 +237,8 @@ public class AvailableCommandsPacket implements MinecraftPacket {
     private @MonotonicNonNull CommandNode<CommandSource> built;
     private boolean validated;
 
-    private WireNode(int idx, byte flags, int[] children, int redirectTo,
-        @Nullable ArgumentBuilder<CommandSource, ?> args) {
+    private WireNode(final int idx, final byte flags, final int[] children, final int redirectTo,
+        @Nullable final ArgumentBuilder<CommandSource, ?> args) {
       this.idx = idx;
       this.flags = flags;
       this.children = children;
@@ -240,7 +247,7 @@ public class AvailableCommandsPacket implements MinecraftPacket {
       this.validated = false;
     }
 
-    void validate(WireNode[] wireNodes) {
+    void validate(final WireNode[] wireNodes) {
       // Ensure all children exist. Note that we delay checking if the node has been built yet;
       // that needs to come after this node is built.
       for (int child : children) {
@@ -259,7 +266,7 @@ public class AvailableCommandsPacket implements MinecraftPacket {
       this.validated = true;
     }
 
-    boolean toNode(WireNode[] wireNodes) {
+    boolean toNode(final WireNode[] wireNodes) {
       if (!this.validated) {
         this.validate(wireNodes);
       }
@@ -341,13 +348,13 @@ public class AvailableCommandsPacket implements MinecraftPacket {
 
     private final String name;
 
-    public ProtocolSuggestionProvider(String name) {
+    public ProtocolSuggestionProvider(final String name) {
       this.name = name;
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSource> context,
-        SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(final CommandContext<CommandSource> context,
+        final SuggestionsBuilder builder) {
       return builder.buildFuture();
     }
   }

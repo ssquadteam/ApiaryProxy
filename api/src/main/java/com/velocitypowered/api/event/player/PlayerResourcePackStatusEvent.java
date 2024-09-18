@@ -37,7 +37,7 @@ public class PlayerResourcePackStatusEvent {
    *             (Player, UUID, Status, ResourcePackInfo)} instead.
    */
   @Deprecated
-  public PlayerResourcePackStatusEvent(Player player, Status status) {
+  public PlayerResourcePackStatusEvent(final Player player, final Status status) {
     this(player, null, status, null);
   }
 
@@ -48,7 +48,7 @@ public class PlayerResourcePackStatusEvent {
    *             (Player, UUID, Status, ResourcePackInfo)} instead.
    */
   @Deprecated
-  public PlayerResourcePackStatusEvent(Player player, Status status, ResourcePackInfo packInfo) {
+  public PlayerResourcePackStatusEvent(final Player player, final Status status, final ResourcePackInfo packInfo) {
     this(player, null, status, packInfo);
   }
 
@@ -56,7 +56,7 @@ public class PlayerResourcePackStatusEvent {
    * Instantiates this event.
    */
   public PlayerResourcePackStatusEvent(
-          Player player, UUID packId, Status status, ResourcePackInfo packInfo) {
+          final Player player, final UUID packId, final Status status, final ResourcePackInfo packInfo) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.packId = packId == null ? packInfo == null ? null : packInfo.getId() : packId;
     this.status = Preconditions.checkNotNull(status, "status");
@@ -121,7 +121,7 @@ public class PlayerResourcePackStatusEvent {
    * @param overwriteKick whether to cancel the kick
    * @throws IllegalArgumentException if the player version is 1.17 or newer
    */
-  public void setOverwriteKick(boolean overwriteKick) {
+  public void setOverwriteKick(final boolean overwriteKick) {
     Preconditions.checkArgument(player.getProtocolVersion()
             .lessThan(ProtocolVersion.MINECRAFT_1_17),
             "overwriteKick is not supported on 1.17 or newer");

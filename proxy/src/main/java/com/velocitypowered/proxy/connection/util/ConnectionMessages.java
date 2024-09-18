@@ -24,7 +24,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 /**
  * Common messages that might be sent a client for various connection-related states.
  */
-public class ConnectionMessages {
+public final class ConnectionMessages {
 
   public static final TranslatableComponent ALREADY_CONNECTED = Component
       .translatable("velocity.error.already-connected", NamedTextColor.RED);

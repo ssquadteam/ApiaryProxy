@@ -17,7 +17,7 @@ public enum HandshakeIntent {
 
   private final int id;
 
-  HandshakeIntent(int id) {
+  HandshakeIntent(final int id) {
     this.id = id;
   }
 
@@ -31,7 +31,7 @@ public enum HandshakeIntent {
    * @param id the intent id
    * @return the HandshakeIntent desired
    */
-  public static HandshakeIntent getById(int id) {
+  public static HandshakeIntent getById(final int id) {
     return switch (id) {
       case 1 -> STATUS;
       case 2 -> LOGIN;

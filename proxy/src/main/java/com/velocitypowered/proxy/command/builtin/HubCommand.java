@@ -40,14 +40,14 @@ public class HubCommand {
 
   private final ProxyServer server;
 
-  public HubCommand(ProxyServer server) {
+  public HubCommand(final ProxyServer server) {
     this.server = server;
   }
 
   /**
    * Registers or unregisters the command based on the configuration value.
    */
-  public BrigadierCommand register(boolean isHubCommand) {
+  public BrigadierCommand register(final boolean isHubCommand) {
     if (!isHubCommand) {
       return null;
     }
@@ -119,7 +119,7 @@ public class HubCommand {
     return 0;
   }
 
-  private static boolean translationExists(String key, Player player) {
+  private static boolean translationExists(final String key, final Player player) {
     Locale locale = player.getEffectiveLocale();
 
     if (locale == null) {

@@ -47,7 +47,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
   private int action;
   private final List<Item> items = new ArrayList<>();
 
-  public LegacyPlayerListItemPacket(int action, List<Item> items) {
+  public LegacyPlayerListItemPacket(final int action, final List<Item> items) {
     this.action = action;
     this.items.addAll(items);
   }
@@ -64,7 +64,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
   }
 
   @Override
-  public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void decode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
       action = ProtocolUtils.readVarInt(buf);
       int length = ProtocolUtils.readVarInt(buf);
@@ -111,7 +111,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
     }
   }
 
-  private static @Nullable Component readOptionalComponent(ByteBuf buf, ProtocolVersion version) {
+  private static @Nullable Component readOptionalComponent(final ByteBuf buf, final ProtocolVersion version) {
     if (buf.readBoolean()) {
       return ProtocolUtils.getJsonChatSerializer(version)
           .deserialize(ProtocolUtils.readString(buf));
@@ -120,7 +120,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
+  public void encode(final ByteBuf buf, final ProtocolUtils.Direction direction, final ProtocolVersion version) {
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
       ProtocolUtils.writeVarInt(buf, action);
       ProtocolUtils.writeVarInt(buf, items.size());
@@ -178,12 +178,12 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
   }
 
   @Override
-  public boolean handle(MinecraftSessionHandler handler) {
+  public boolean handle(final MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
 
-  private void writeDisplayName(ByteBuf buf, @Nullable Component displayName,
-      ProtocolVersion version) {
+  private void writeDisplayName(final ByteBuf buf, @Nullable final Component displayName,
+      final ProtocolVersion version) {
     buf.writeBoolean(displayName != null);
     if (displayName != null) {
       ProtocolUtils.writeString(buf, ProtocolUtils.getJsonChatSerializer(version)
@@ -209,7 +209,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
       uuid = null;
     }
 
-    public Item(UUID uuid) {
+    public Item(final UUID uuid) {
       this.uuid = uuid;
     }
 
@@ -222,7 +222,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
      * @param entry the {@link TabListEntry} from which to extract data
      * @return an {@link Item} populated with data from the {@link TabListEntry}
      */
-    public static Item from(TabListEntry entry) {
+    public static Item from(final TabListEntry entry) {
       return new Item(entry.getProfile().getId())
           .setName(entry.getProfile().getName())
           .setProperties(entry.getProfile().getProperties())
@@ -240,7 +240,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
       return name;
     }
 
-    public Item setName(String name) {
+    public Item setName(final String name) {
       this.name = name;
       return this;
     }
@@ -249,7 +249,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
       return properties;
     }
 
-    public Item setProperties(List<GameProfile.Property> properties) {
+    public Item setProperties(final List<GameProfile.Property> properties) {
       this.properties = properties;
       return this;
     }
@@ -258,7 +258,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
       return gameMode;
     }
 
-    public Item setGameMode(int gameMode) {
+    public Item setGameMode(final int gameMode) {
       this.gameMode = gameMode;
       return this;
     }
@@ -267,7 +267,7 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
       return latency;
     }
 
-    public Item setLatency(int latency) {
+    public Item setLatency(final int latency) {
       this.latency = latency;
       return this;
     }
@@ -276,12 +276,12 @@ public class LegacyPlayerListItemPacket implements MinecraftPacket {
       return displayName;
     }
 
-    public Item setDisplayName(@Nullable Component displayName) {
+    public Item setDisplayName(@Nullable final Component displayName) {
       this.displayName = displayName;
       return this;
     }
 
-    public Item setPlayerKey(IdentifiedKey playerKey) {
+    public Item setPlayerKey(final IdentifiedKey playerKey) {
       this.playerKey = playerKey;
       return this;
     }

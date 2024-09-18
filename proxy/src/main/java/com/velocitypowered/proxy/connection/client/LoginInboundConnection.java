@@ -55,7 +55,7 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
   private @MonotonicNonNull IdentifiedKey playerKey;
 
   LoginInboundConnection(
-      InitialInboundConnection delegate) {
+      final InitialInboundConnection delegate) {
     this.delegate = delegate;
     this.outstandingResponses = Int2ObjectSyncMap.hashmap();
     this.loginMessagesToSend = new ConcurrentLinkedQueue<>();
@@ -82,8 +82,8 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
   }
 
   @Override
-  public void sendLoginPluginMessage(ChannelIdentifier identifier, byte[] contents,
-      MessageConsumer consumer) {
+  public void sendLoginPluginMessage(final ChannelIdentifier identifier, final byte[] contents,
+      final MessageConsumer consumer) {
     if (identifier == null) {
       throw new NullPointerException("identifier");
     }
@@ -115,7 +115,7 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
    *
    * @param reason the reason for disconnecting
    */
-  public void disconnect(Component reason) {
+  public void disconnect(final Component reason) {
     this.delegate.disconnect(reason);
     this.cleanup();
   }
@@ -159,7 +159,7 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
     return delegate.getConnection();
   }
 
-  public void setPlayerKey(IdentifiedKey playerKey) {
+  public void setPlayerKey(final IdentifiedKey playerKey) {
     this.playerKey = playerKey;
   }
 

@@ -34,8 +34,8 @@ public class SignedChatCommand implements KeySigned {
   private final PublicKey signer;
   private final Instant expiry;
   private final byte[] salt;
-  private final UUID sender;
-  //private final boolean isValid;
+  public final UUID sender;
+  // private final boolean isValid;
   private final boolean isPreviewSigned;
 
   private final Map<String, byte[]> signatures;
@@ -46,10 +46,10 @@ public class SignedChatCommand implements KeySigned {
   /**
    * Create a signed command from data.
    */
-  public SignedChatCommand(String command, PublicKey signer, UUID sender,
-      Instant expiry, Map<String, byte[]> signature, byte[] salt,
-      boolean isPreviewSigned, SignaturePair[] previousSignatures,
-      @Nullable SignaturePair lastSignature) {
+  public SignedChatCommand(final String command, final PublicKey signer, final UUID sender,
+      final Instant expiry, final Map<String, byte[]> signature, final byte[] salt,
+      final boolean isPreviewSigned, final SignaturePair[] previousSignatures,
+      @Nullable final SignaturePair lastSignature) {
     this.command = Preconditions.checkNotNull(command);
     this.signer = Preconditions.checkNotNull(signer);
     this.sender = Preconditions.checkNotNull(sender);

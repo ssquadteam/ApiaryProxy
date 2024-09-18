@@ -32,7 +32,7 @@ public class PlayerChooseInitialServerEvent {
    * @param player the player that was connected
    * @param initialServer the initial server selected, may be {@code null}
    */
-  public PlayerChooseInitialServerEvent(Player player, @Nullable RegisteredServer initialServer) {
+  public PlayerChooseInitialServerEvent(final Player player, @Nullable final RegisteredServer initialServer) {
     this.player = Preconditions.checkNotNull(player, "player");
     this.initialServer = initialServer;
   }
@@ -50,7 +50,7 @@ public class PlayerChooseInitialServerEvent {
    *
    * @param server the initial server the player should connect to
    */
-  public void setInitialServer(@Nullable RegisteredServer server) {
+  public void setInitialServer(@Nullable final RegisteredServer server) {
     this.initialServer = server;
   }
 

@@ -34,7 +34,7 @@ public class ByteBufDataOutput extends OutputStream implements ByteArrayDataOutp
   private final ByteBuf buf;
   private final DataOutputStream utf8out;
 
-  public ByteBufDataOutput(ByteBuf buf) {
+  public ByteBufDataOutput(final ByteBuf buf) {
     this.buf = buf;
     this.utf8out = new DataOutputStream(this);
   }
@@ -45,74 +45,74 @@ public class ByteBufDataOutput extends OutputStream implements ByteArrayDataOutp
   }
 
   @Override
-  public void write(int b) {
+  public void write(final int b) {
     buf.writeByte(b);
   }
 
   @Override
-  public void write(byte @NotNull [] b) {
+  public void write(final byte @NotNull [] b) {
     buf.writeBytes(b);
   }
 
   @Override
-  public void write(byte @NotNull [] b, int off, int len) {
+  public void write(final byte @NotNull [] b, final int off, final int len) {
     buf.writeBytes(b, off, len);
   }
 
   @Override
-  public void writeBoolean(boolean v) {
+  public void writeBoolean(final boolean v) {
     buf.writeBoolean(v);
   }
 
   @Override
-  public void writeByte(int v) {
+  public void writeByte(final int v) {
     buf.writeByte(v);
   }
 
   @Override
-  public void writeShort(int v) {
+  public void writeShort(final int v) {
     buf.writeShort(v);
   }
 
   @Override
-  public void writeChar(int v) {
+  public void writeChar(final int v) {
     buf.writeChar(v);
   }
 
   @Override
-  public void writeInt(int v) {
+  public void writeInt(final int v) {
     buf.writeInt(v);
   }
 
   @Override
-  public void writeLong(long v) {
+  public void writeLong(final long v) {
     buf.writeLong(v);
   }
 
   @Override
-  public void writeFloat(float v) {
+  public void writeFloat(final float v) {
     buf.writeFloat(v);
   }
 
   @Override
-  public void writeDouble(double v) {
+  public void writeDouble(final double v) {
     buf.writeDouble(v);
   }
 
   @Override
-  public void writeBytes(@NotNull String s) {
+  public void writeBytes(@NotNull final String s) {
     buf.writeCharSequence(s, StandardCharsets.US_ASCII);
   }
 
   @Override
-  public void writeChars(String s) {
+  public void writeChars(final String s) {
     for (char c : s.toCharArray()) {
       buf.writeChar(c);
     }
   }
 
   @Override
-  public void writeUTF(@NotNull String s) {
+  public void writeUTF(@NotNull final String s) {
     try {
       this.utf8out.writeUTF(s);
     } catch (IOException e) {

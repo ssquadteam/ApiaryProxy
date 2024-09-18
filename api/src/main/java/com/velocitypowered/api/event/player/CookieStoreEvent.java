@@ -48,7 +48,7 @@ public final class CookieStoreEvent implements ResultedEvent<CookieStoreEvent.Fo
   }
 
   @Override
-  public void setResult(ForwardResult result) {
+  public void setResult(final ForwardResult result) {
     this.result = Preconditions.checkNotNull(result, "result");
   }
 
