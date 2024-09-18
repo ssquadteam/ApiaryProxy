@@ -24,8 +24,8 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew build
 
-    - name: Upload Apiary
-      uses: marvinpinto/action-automatic-releases@master
+    - name: Automatic Releases
+      uses: marvinpinto/action-automatic-releases@v1.2.1
       with:
         title: "ApiaryProxy"
         automatic_release_tag: "latest"
