@@ -28,7 +28,7 @@ jobs:
       uses: marvinpinto/action-automatic-releases@master
       with:
         title: "ApiaryProxy"
-        automatic_release_tag: "Releases"
+        automatic_release_tag: "latest"
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         files: "*/build/libs/*.jar"
         prerelease: false
