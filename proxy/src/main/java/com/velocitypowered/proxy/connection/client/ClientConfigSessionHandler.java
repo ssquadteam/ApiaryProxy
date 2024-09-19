@@ -254,7 +254,12 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
     callConfigurationEvent().thenCompose(v -> server.getEventManager().fire(new PlayerFinishConfigurationEvent(player, serverConn))
         .completeOnTimeout(null, 5, TimeUnit.SECONDS)).thenRunAsync(() -> {
           player.getConnection().write(FinishedUpdatePacket.INSTANCE);
-          player.getConnection().getChannel().pipeline().get(MinecraftEncoder.class).setState(StateRegistry.PLAY);
+          MinecraftEncoder encoder = player.getConnection().getChannel().pipeline().get(MinecraftEncoder.class);
+          if (encoder != null) {
+            encoder.setState(StateRegistry.PLAY);
+          } else {
+            logger.error("MinecraftEncoder not found in the pipeline. Cannot switch to play state.");
+          }
           server.getEventManager().fireAndForget(new PlayerFinishedConfigurationEvent(player, serverConn));
         }, player.getConnection().eventLoop()).exceptionally(ex -> {
           logger.error("Error finishing configuration state:", ex);

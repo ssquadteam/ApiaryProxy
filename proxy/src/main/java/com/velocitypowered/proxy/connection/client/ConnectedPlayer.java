@@ -1343,8 +1343,12 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
             connection.write(BundleDelimiterPacket.INSTANCE);
           }
           connection.write(StartUpdatePacket.INSTANCE);
-          connection.getChannel().pipeline().get(MinecraftEncoder.class).setState(StateRegistry.CONFIG);
-          // Make sure we don't send any play packets to the player after update start
+          MinecraftEncoder encoder = connection.getChannel().pipeline().get(MinecraftEncoder.class);
+          if (encoder != null) {
+            encoder.setState(StateRegistry.CONFIG);
+          } else {
+            logger.error("MinecraftEncoder not found in the pipeline. Cannot switch state.");
+          }
           connection.addPlayPacketQueueHandler();
         }, connection.eventLoop()).exceptionally((ex) -> {
           logger.error("Error switching player connection to config state", ex);
