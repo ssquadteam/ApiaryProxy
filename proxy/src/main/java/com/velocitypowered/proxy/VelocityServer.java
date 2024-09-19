@@ -182,6 +182,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   private final VelocityScheduler scheduler;
   private final VelocityChannelRegistrar channelRegistrar = new VelocityChannelRegistrar();
   private final ServerListPingHandler serverListPingHandler;
+  private final long startTime;
   private final Key translationRegistryKey = Key.key("velocity", "translations");
 
   VelocityServer(final ProxyOptions options) {
@@ -192,6 +193,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     console = new VelocityConsole(this);
     cm = new ConnectionManager(this);
     servers = new ServerMap(this);
+    startTime = System.currentTimeMillis();
     serverListPingHandler = new ServerListPingHandler(this);
     this.options = options;
   }
@@ -205,6 +207,10 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     return this.configuration;
   }
 
+  public long getStartTime() {
+    return startTime;
+  }
+  
   @Override
   public ProxyVersion getVersion() {
     Package pkg = VelocityServer.class.getPackage();

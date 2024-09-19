@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,261 +15,417 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.velocitypowered.proxy.command;
+package com.velocitypowered.proxy.command.builtin;
 
-import com.google.common.base.Preconditions;
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.context.CommandContextBuilder;
-import com.mojang.brigadier.context.ParsedArgument;
-import com.mojang.brigadier.context.ParsedCommandNode;
-import com.mojang.brigadier.tree.ArgumentCommandNode;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-import com.mojang.brigadier.tree.RootCommandNode;
-import com.velocitypowered.api.command.Command;
-import com.velocitypowered.api.command.CommandManager;
+import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.command.InvocableCommand;
-import com.velocitypowered.proxy.command.brigadier.VelocityArgumentCommandNode;
-import com.velocitypowered.proxy.command.brigadier.VelocityBrigadierCommandWrapper;
+import com.velocitypowered.api.permission.Tristate;
+import com.velocitypowered.api.plugin.PluginContainer;
+import com.velocitypowered.api.plugin.PluginDescription;
+import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.server.RegisteredServer;
+import com.velocitypowered.api.util.ProxyVersion;
+import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.util.InformationUtils;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.management.ManagementFactory;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Provides utility methods common to most {@link Command} implementations. In particular,
- * {@link InvocableCommand} implementations use the same logic for creating and parsing the alias
- * and arguments command nodes, which is contained in this class.
+ * Implements the {@code /velocity} command and friends.
  */
-public final class VelocityCommands {
-
-  // Wrapping
+public final class VelocityCommand {
+  private static final String USAGE = "/velocity <%s>";
 
   /**
-   * Walks the command node tree and wraps all {@link Command} instances in a {@link VelocityBrigadierCommandWrapper},
-   * to indicate the plugin that registered the command. This also has the side effect of cloning
-   * the command node tree.
+   * Creates a BrigadierCommand for various administrative tasks such as dump, heap, info, plugins, reload, and uptime.
    *
-   * @param delegate the command node to wrap
-   * @param registrant the plugin that registered the command
-   * @return the wrapped command node
+   * @param server the VelocityServer instance used for executing the commands.
+   * @return the root BrigadierCommand containing all subcommands.
    */
-  public static CommandNode<CommandSource> wrap(final CommandNode<CommandSource> delegate,
-      final @Nullable Object registrant) {
-    Preconditions.checkNotNull(delegate, "delegate");
-    if (registrant == null) {
-      // the registrant is null if the `plugin` was absent when we try to register the command
-      return delegate;
-    }
+  public static BrigadierCommand create(final VelocityServer server) {
+    final LiteralCommandNode<CommandSource> dump = BrigadierCommand.literalArgumentBuilder("dump")
+        .requires(source -> source.getPermissionValue("velocity.command.dump") == Tristate.TRUE)
+        .executes(new Dump(server))
+        .build();
+    final LiteralCommandNode<CommandSource> heap = BrigadierCommand.literalArgumentBuilder("heap")
+        .requires(source -> source.getPermissionValue("velocity.command.heap") == Tristate.TRUE)
+        .executes(new Heap())
+        .build();
+    final LiteralCommandNode<CommandSource> info = BrigadierCommand.literalArgumentBuilder("info")
+        .requires(source -> source.getPermissionValue("velocity.command.info") != Tristate.FALSE)
+        .executes(new Info(server))
+        .build();
+    final LiteralCommandNode<CommandSource> plugins = BrigadierCommand
+        .literalArgumentBuilder("plugins")
+        .requires(source -> source.getPermissionValue("velocity.command.plugins") == Tristate.TRUE)
+        .executes(new Plugins(server))
+        .build();
+    final LiteralCommandNode<CommandSource> reload = BrigadierCommand
+        .literalArgumentBuilder("reload")
+        .requires(source -> source.getPermissionValue("velocity.command.reload") == Tristate.TRUE)
+        .executes(new Reload(server))
+        .build();
+    final LiteralCommandNode<CommandSource> uptime = BrigadierCommand
+        .literalArgumentBuilder("uptime")
+        .requires(source -> source.getPermissionValue("velocity.command.uptime") == Tristate.TRUE)
+        .executes(new Uptime(server))
+        .build();
 
-    com.mojang.brigadier.Command<CommandSource> maybeCommand = delegate.getCommand();
-    if (maybeCommand != null && !(maybeCommand instanceof VelocityBrigadierCommandWrapper)) {
-      maybeCommand = VelocityBrigadierCommandWrapper.wrap(delegate.getCommand(), registrant);
-    }
+    final List<LiteralCommandNode<CommandSource>> commands = List
+            .of(dump, heap, info, plugins, reload, uptime);
+    return new BrigadierCommand(
+      commands.stream()
+        .reduce(
+          BrigadierCommand.literalArgumentBuilder("velocity")
+            .executes(ctx -> {
+              final CommandSource source = ctx.getSource();
+              final String availableCommands = commands.stream()
+                      .filter(e -> e.getRequirement().test(source))
+                      .map(LiteralCommandNode::getName)
+                      .collect(Collectors.joining("|"));
+              final String commandText = USAGE.formatted(availableCommands);
+              source.sendMessage(Component.text(commandText, NamedTextColor.RED));
+              return Command.SINGLE_SUCCESS;
+            })
+            .requires(commands.stream()
+                    .map(CommandNode::getRequirement)
+                    .reduce(Predicate::or)
+                    .orElseThrow()),
+          ArgumentBuilder::then,
+          ArgumentBuilder::then
+        )
+    );
+  }
 
-    if (delegate instanceof LiteralCommandNode<CommandSource> lcn) {
-      var literalBuilder = shallowCopyAsBuilder(lcn, delegate.getName(), true);
-      literalBuilder.executes(maybeCommand);
-      // we also need to wrap any children
-      for (final CommandNode<CommandSource> child : delegate.getChildren()) {
-        literalBuilder.then(wrap(child, registrant));
+  private record Uptime(VelocityServer server) implements Command<CommandSource> {
+
+    @Override
+    public int run(final CommandContext<CommandSource> context) {
+      final CommandSource source = context.getSource();
+
+      long timeInSeconds = (System.currentTimeMillis() - server.getStartTime()) / 1000;
+      int days = (int) TimeUnit.SECONDS.toDays(timeInSeconds);
+      long hours = TimeUnit.SECONDS.toHours(timeInSeconds) - (days * 24L);
+      long minutes = TimeUnit.SECONDS.toMinutes(timeInSeconds) - (TimeUnit.SECONDS.toHours(timeInSeconds) * 60);
+      long seconds = TimeUnit.SECONDS.toSeconds(timeInSeconds) - (TimeUnit.SECONDS.toMinutes(timeInSeconds) * 60);
+
+      source.sendMessage(Component.translatable("velocity.command.uptime",
+          NamedTextColor.GREEN,
+          Component.text(days),
+          Component.text(hours),
+          Component.text(minutes),
+          Component.text(seconds)
+      ));
+      return Command.SINGLE_SUCCESS;
+    }
+  }
+
+  private record Reload(VelocityServer server) implements Command<CommandSource> {
+
+    private static final Logger logger = LogManager.getLogger(Reload.class);
+
+    @Override
+    public int run(final CommandContext<CommandSource> context) {
+      final CommandSource source = context.getSource();
+      try {
+        if (server.reloadConfiguration()) {
+          source.sendMessage(Component.translatable("velocity.command.reload-success",
+              NamedTextColor.GREEN));
+        } else {
+          source.sendMessage(Component.translatable("velocity.command.reload-failure",
+              NamedTextColor.RED));
+        }
+      } catch (Exception e) {
+        logger.error("Unable to reload configuration", e);
+        source.sendMessage(Component.translatable("velocity.command.reload-failure",
+            NamedTextColor.RED));
       }
-      if (delegate.getRedirect() != null) {
-        literalBuilder.redirect(wrap(delegate.getRedirect(), registrant));
+      return Command.SINGLE_SUCCESS;
+    }
+  }
+
+  private record Info(ProxyServer server) implements Command<CommandSource> {
+
+    private static final TextColor VELOCITY_COLOR = TextColor.color(0xff3a4c);
+
+    @Override
+    public int run(final CommandContext<CommandSource> context) {
+      final CommandSource source = context.getSource();
+      final ProxyVersion version = server.getVersion();
+
+      final Component velocity = Component.text()
+          .content(version.getName() + " ")
+          .decoration(TextDecoration.BOLD, true)
+          .color(VELOCITY_COLOR)
+          .append(Component.text()
+                  .content(version.getVersion())
+                  .decoration(TextDecoration.BOLD, false))
+          .build();
+      final Component copyright = Component
+          .translatable("velocity.command.version-copyright",
+              Component.text(version.getVendor()),
+                  Component.text(version.getName()),
+                  Component.text(LocalDate.now().getYear()));
+      source.sendMessage(velocity);
+      source.sendMessage(copyright);
+
+      if (version.getName().equals("Velocity")) {
+        final TextComponent embellishment = Component.text()
+            .append(Component.text()
+                .content("discord.gg/themegahive")
+                .color(NamedTextColor.GOLD)
+                .clickEvent(
+                    ClickEvent.openUrl("https://discord.gg/themegahive"))
+                .build())
+            .append(Component.text(" - "))
+            .append(Component.text()
+                .content("GitHub")
+                .color(NamedTextColor.RED)
+                .decoration(TextDecoration.UNDERLINED, true)
+                .clickEvent(ClickEvent.openUrl(
+                    "https://github.com/ssquadteam/ApiaryProxy"))
+                .build())
+            .build();
+        source.sendMessage(embellishment);
       }
-      return literalBuilder.build();
-    } else if (delegate instanceof VelocityArgumentCommandNode<CommandSource, ?> vacn) {
-      return vacn.withCommand(maybeCommand)
-          .withRedirect(delegate.getRedirect() != null ? wrap(delegate.getRedirect(), registrant) : null);
-    } else if (delegate instanceof ArgumentCommandNode) {
-      var argBuilder = delegate.createBuilder().executes(maybeCommand);
-      // we also need to wrap any children
-      for (final CommandNode<CommandSource> child : delegate.getChildren()) {
-        argBuilder.then(wrap(child, registrant));
+      return Command.SINGLE_SUCCESS;
+    }
+  }
+
+  private record Plugins(ProxyServer server) implements Command<CommandSource> {
+
+    @Override
+    public int run(final CommandContext<CommandSource> context) {
+      final CommandSource source = context.getSource();
+
+      final List<PluginContainer> plugins = List.copyOf(server.getPluginManager().getPlugins());
+      final int pluginCount = plugins.size();
+
+      if (pluginCount == 0) {
+        source.sendMessage(Component.translatable("velocity.command.no-plugins",
+            NamedTextColor.YELLOW));
+        return Command.SINGLE_SUCCESS;
       }
-      if (delegate.getRedirect() != null) {
-        argBuilder.redirect(wrap(delegate.getRedirect(), registrant));
+
+      final TextComponent.Builder listBuilder = Component.text();
+      for (int i = 0; i < pluginCount; i++) {
+        final PluginContainer plugin = plugins.get(i);
+        listBuilder.append(componentForPlugin(plugin.getDescription()));
+        if (i + 1 < pluginCount) {
+          listBuilder.append(Component.text(", "));
+        }
       }
-      return argBuilder.build();
-    } else {
-      throw new IllegalArgumentException("Unsupported node type: " + delegate.getClass());
+
+      final TranslatableComponent output = Component.translatable()
+          .key("velocity.command.plugins-list")
+          .color(NamedTextColor.YELLOW)
+          .arguments(listBuilder.build())
+          .build();
+      source.sendMessage(output);
+      return Command.SINGLE_SUCCESS;
     }
-  }
 
-  // Normalization
+    private TextComponent componentForPlugin(PluginDescription description) {
+      final String pluginInfo = description.getName().orElse(description.getId())
+          + description.getVersion().map(v -> " " + v).orElse("");
 
-  /**
-   * Normalizes the given command input.
-   *
-   * @param input the raw command input, without the leading slash ('/')
-   * @param trim  whether to remove leading and trailing whitespace from the input
-   * @return the normalized command input
-   */
-  static String normalizeInput(final String input, final boolean trim) {
-    final String command = trim ? input.trim() : input;
-    int firstSep = command.indexOf(CommandDispatcher.ARGUMENT_SEPARATOR_CHAR);
-    if (firstSep != -1) {
-      // Aliases are case-insensitive, arguments are not
-      return command.substring(0, firstSep).toLowerCase(Locale.ENGLISH)
-          + command.substring(firstSep);
-    } else {
-      return command.toLowerCase(Locale.ENGLISH);
-    }
-  }
+      final TextComponent.Builder hoverText = Component.text().content(pluginInfo);
 
-  // Parsing
-
-  /**
-   * Returns the parsed alias, used to execute the command.
-   *
-   * @param nodes the list of parsed nodes, as returned by {@link CommandContext#getNodes()} or
-   *              {@link CommandContextBuilder#getNodes()}
-   * @return the command alias
-   */
-  public static String readAlias(final List<? extends ParsedCommandNode<?>> nodes) {
-    if (nodes.isEmpty()) {
-      throw new IllegalArgumentException("Cannot read alias from empty node list");
-    }
-    return nodes.get(0).getNode().getName();
-  }
-
-  public static final String ARGS_NODE_NAME = "arguments";
-
-  /**
-   * Returns the parsed arguments that come after the command alias, or {@code fallback} if no
-   * arguments were provided.
-   *
-   * @param arguments the map of parsed arguments, as returned by
-   *                  {@link CommandContext#getArguments()} or
-   *                  {@link CommandContextBuilder#getArguments()}
-   * @param type      the type class of the arguments
-   * @param fallback  the value to return if no arguments were provided
-   * @param <V>       the type of the arguments
-   * @return the command arguments
-   */
-  public static <V> V readArguments(final Map<String, ? extends ParsedArgument<?, ?>> arguments,
-      final Class<V> type, final V fallback) {
-    final ParsedArgument<?, ?> argument = arguments.get(ARGS_NODE_NAME);
-    if (argument == null) {
-      return fallback; // either no arguments were given or this isn't an InvocableCommand
-    }
-    final Object result = argument.getResult();
-    try {
-      return type.cast(result);
-    } catch (final ClassCastException e) {
-      throw new IllegalArgumentException("Parsed argument is of type " + result.getClass()
-          + ", expected " + type, e);
-    }
-  }
-
-  // Alias nodes
-
-  /**
-   * Returns whether a literal node with the given name can be added to the {@link RootCommandNode}
-   * associated to a {@link CommandManager}.
-   *
-   * <p>This is an internal method and should not be used in user-facing
-   * methods. Instead, they should lowercase the given aliases themselves.
-   *
-   * @param alias the alias to check
-   * @return true if the alias can be registered; false otherwise
-   */
-  public static boolean isValidAlias(final String alias) {
-    return alias.equals(alias.toLowerCase(Locale.ENGLISH));
-  }
-
-  /**
-   * Creates a copy of the given literal with the specified name.
-   *
-   * @param original the literal node to copy
-   * @param newName  the name of the returned literal node
-   * @return a copy of the literal with the given name
-   */
-  public static LiteralCommandNode<CommandSource> shallowCopy(
-      final LiteralCommandNode<CommandSource> original, final String newName) {
-    return shallowCopy(original, newName, original.getCommand());
-  }
-
-  /**
-   * Creates a copy of the given literal with the specified name.
-   *
-   * @param original   the literal node to copy
-   * @param newName    the name of the returned literal node
-   * @param newCommand the new command to set on the copied node
-   * @return a copy of the literal with the given name
-   */
-  private static LiteralCommandNode<CommandSource> shallowCopy(
-      final LiteralCommandNode<CommandSource> original, final String newName,
-      final com.mojang.brigadier.Command<CommandSource> newCommand) {
-    return shallowCopyAsBuilder(original, newName, false).executes(newCommand).build();
-  }
-
-  /**
-   * Creates a copy of the given literal with the specified name.
-   *
-   * @param original the literal node to copy
-   * @param newName  the name of the returned literal node
-   * @return a copy of the literal with the given name
-   */
-  private static LiteralArgumentBuilder<CommandSource> shallowCopyAsBuilder(
-      final LiteralCommandNode<CommandSource> original, final String newName,
-      final boolean skipChildren) {
-    // Brigadier resolves the redirect of a node if further input can be parsed.
-    // Let <bar> be a literal node having a redirect to a <foo> literal. Then,
-    // the context returned by CommandDispatcher#parseNodes when given the input
-    // string "<bar> " does not contain a child context with <foo> as its root node.
-    // Thus, the vanilla client asks the children of <bar> for suggestions, instead
-    // of those of <foo> (https://github.com/Mojang/brigadier/issues/46).
-    // Perform a shallow copy of the literal instead.
-    Preconditions.checkNotNull(original, "original");
-    Preconditions.checkNotNull(newName, "secondaryAlias");
-    final LiteralArgumentBuilder<CommandSource> builder = LiteralArgumentBuilder
-        .<CommandSource>literal(newName)
-        .requires(original.getRequirement())
-        .requiresWithContext(original.getContextRequirement())
-        .forward(original.getRedirect(), original.getRedirectModifier(), original.isFork())
-        .executes(original.getCommand());
-    if (!skipChildren) {
-      for (final CommandNode<CommandSource> child : original.getChildren()) {
-        builder.then(child);
+      description.getUrl().ifPresent(url -> {
+        hoverText.append(Component.newline());
+        hoverText.append(Component.translatable(
+            "velocity.command.plugin-tooltip-website",
+            Component.text(url)));
+      });
+      if (!description.getAuthors().isEmpty()) {
+        hoverText.append(Component.newline());
+        if (description.getAuthors().size() == 1) {
+          hoverText.append(Component.translatable("velocity.command.plugin-tooltip-author",
+              Component.text(description.getAuthors().get(0))));
+        } else {
+          hoverText.append(
+              Component.translatable("velocity.command.plugin-tooltip-author",
+                  Component.text(String.join(", ", description.getAuthors()))
+              )
+          );
+        }
       }
+      description.getDescription().ifPresent(pdesc -> {
+        hoverText.append(Component.newline());
+        hoverText.append(Component.newline());
+        hoverText.append(Component.text(pdesc));
+      });
+
+      return Component.text()
+              .content(description.getId())
+              .color(NamedTextColor.GRAY)
+              .hoverEvent(HoverEvent.showText(hoverText.build()))
+              .build();
     }
-    return builder;
   }
 
-  // Arguments node
+  private record Dump(ProxyServer server) implements Command<CommandSource> {
+    private static final Logger logger = LogManager.getLogger(Dump.class);
+
+
+    @Override
+    public int run(final CommandContext<CommandSource> context) {
+      final CommandSource source = context.getSource();
+
+      final Collection<RegisteredServer> allServers = Set.copyOf(server.getAllServers());
+      final JsonObject servers = new JsonObject();
+      for (final RegisteredServer iter : allServers) {
+        servers.add(iter.getServerInfo().getName(),
+            InformationUtils.collectServerInfo(iter));
+      }
+      final JsonArray connectOrder = new JsonArray();
+      final List<String> attemptedConnectionOrder = List.copyOf(
+          server.getConfiguration().getAttemptConnectionOrder());
+      for (final String s : attemptedConnectionOrder) {
+        connectOrder.add(s);
+      }
+
+      final JsonObject proxyConfig = InformationUtils.collectProxyConfig(server.getConfiguration());
+      proxyConfig.add("servers", servers);
+      proxyConfig.add("connectOrder", connectOrder);
+      proxyConfig.add("forcedHosts",
+          InformationUtils.collectForcedHosts(server.getConfiguration()));
+
+      final JsonObject dump = new JsonObject();
+      dump.add("versionInfo", InformationUtils.collectProxyInfo(server.getVersion()));
+      dump.add("platform", InformationUtils.collectEnvironmentInfo());
+      dump.add("config", proxyConfig);
+      dump.add("plugins", InformationUtils.collectPluginInfo(server));
+
+      final Path dumpPath = Path.of("velocity-dump-"
+          + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date())
+          + ".json");
+      try (final BufferedWriter bw = Files.newBufferedWriter(
+          dumpPath, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW)) {
+        bw.write(InformationUtils.toHumanReadableString(dump));
+
+        source.sendMessage(Component.text(
+            "An anonymised report containing useful information about "
+                + "this proxy has been saved at " + dumpPath.toAbsolutePath(),
+            NamedTextColor.GREEN));
+      } catch (IOException e) {
+        logger.error("Failed to complete dump command, the executor was interrupted: {}", e.getMessage(), e);
+        source.sendMessage(Component.text(
+            "We could not save the anonymized dump. Check the console for more details.",
+            NamedTextColor.RED)
+        );
+      }
+      return Command.SINGLE_SUCCESS;
+    }
+  }
 
   /**
-   * Returns the arguments node for the command represented by the given alias node, if present;
-   * otherwise returns {@code null}.
-   *
-   * @param alias the alias node
-   * @param <S>   the type of the command source
-   * @return the arguments node, or null if not present
+   * Heap SubCommand.
    */
-  static <S> @Nullable VelocityArgumentCommandNode<S, ?> getArgumentsNode(
-      final LiteralCommandNode<S> alias) {
-    final CommandNode<S> node = alias.getChild(ARGS_NODE_NAME);
-    if (node instanceof VelocityArgumentCommandNode) {
-      return (VelocityArgumentCommandNode<S, ?>) node;
+  public static final class Heap implements Command<CommandSource> {
+    private static final Logger logger = LogManager.getLogger(Heap.class);
+    private MethodHandle heapGenerator;
+    private Consumer<CommandSource> heapConsumer;
+    private final Path dir = Path.of("./dumps");
+
+    @Override
+    public int run(final CommandContext<CommandSource> context) throws CommandSyntaxException {
+      final CommandSource source = context.getSource();
+
+      try {
+        if (Files.notExists(dir)) {
+          Files.createDirectories(dir);
+        }
+
+        // A single lookup of the heap dump generator method is performed on execution
+        // to avoid assigning variables unnecessarily in case the user never executes the command
+        if (heapGenerator == null || heapConsumer == null) {
+          javax.management.MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+          MethodHandles.Lookup lookup = MethodHandles.lookup();
+          SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+          MethodType type;
+          try {
+            Class<?> clazz = Class.forName("openj9.lang.management.OpenJ9DiagnosticsMXBean");
+            type = MethodType.methodType(String.class, String.class, String.class);
+
+            this.heapGenerator = lookup.findVirtual(clazz, "triggerDumpToFile", type);
+            this.heapConsumer = (src) -> {
+              String name = "heap-dump-" + format.format(new Date());
+              Path file = dir.resolve(name + ".phd");
+              try {
+                Object openj9Mbean = ManagementFactory.newPlatformMXBeanProxy(
+                    server, "openj9.lang.management:type=OpenJ9Diagnostics", clazz);
+                heapGenerator.invoke(openj9Mbean, "heap", file.toString());
+              } catch (Throwable e) {
+                // This should not occur
+                throw new RuntimeException(e);
+              }
+              src.sendMessage(Component.text("Heap dump saved to " + file, NamedTextColor.GREEN));
+            };
+          } catch (ClassNotFoundException e) {
+            Class<?> clazz = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
+            type = MethodType.methodType(void.class, String.class, boolean.class);
+
+            this.heapGenerator = lookup.findVirtual(clazz, "dumpHeap", type);
+            this.heapConsumer = (src) -> {
+              String name = "heap-dump-" + format.format(new Date());
+              Path file = dir.resolve(name + ".hprof");
+              try {
+                Object hotspotMbean = ManagementFactory.newPlatformMXBeanProxy(
+                    server, "com.sun.management:type=HotSpotDiagnostic", clazz);
+                this.heapGenerator.invoke(hotspotMbean, file.toString(), true);
+              } catch (Throwable e1) {
+                // This should not occur
+                throw new RuntimeException(e1);
+              }
+              src.sendMessage(Component.text("Heap dump saved to " + file, NamedTextColor.GREEN));
+            };
+          }
+        }
+
+        this.heapConsumer.accept(source);
+      } catch (Throwable t) {
+        source.sendMessage(Component.text("Failed to write heap dump, see server log for details",
+            NamedTextColor.RED));
+        logger.error("Could not write heap", t);
+      }
+      return Command.SINGLE_SUCCESS;
     }
-    return null;
-  }
-
-  /**
-   * Returns whether the given node is an argument's node.
-   *
-   * @param node the node to check
-   * @return true if the node is an arguments node; false otherwise
-   */
-  public static boolean isArgumentsNode(final CommandNode<?> node) {
-    return node instanceof VelocityArgumentCommandNode && node.getName().equals(ARGS_NODE_NAME);
-  }
-
-  private VelocityCommands() {
-    throw new AssertionError();
   }
 }
