@@ -59,8 +59,8 @@ public class SessionCommandHandler implements CommandHandler<SessionPlayerComman
       // Any signed message produced by the client *must* be passed through to the server in order to maintain a
       // consistent state for future messages.
       logger.fatal("A plugin tried to deny a command with signable component(s). This is not supported. "
-              + "Disconnecting player {}. Command packet: {}",
-              player.getUsername(), packet);
+          + "Disconnecting player {}. Command packet: {}",
+          player.getUsername(), packet);
       player.disconnect(Component.text(
           "A proxy plugin caused an illegal protocol state. "
               + "Contact your network administrator."));
