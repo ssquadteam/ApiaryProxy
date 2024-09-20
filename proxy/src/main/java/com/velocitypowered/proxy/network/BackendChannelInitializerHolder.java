@@ -48,8 +48,6 @@ public class BackendChannelInitializerHolder implements Supplier<ChannelInitiali
    */
   @Deprecated
   public void set(final ChannelInitializer<Channel> initializer) {
-    LOGGER.warn("The backend channel initializer has been replaced by {}",
-        Thread.currentThread().getStackTrace()[2]);
     this.initializer = initializer;
   }
 }

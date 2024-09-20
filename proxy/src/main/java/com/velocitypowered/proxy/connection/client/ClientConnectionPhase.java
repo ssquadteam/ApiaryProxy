@@ -64,6 +64,7 @@ public interface ClientConnectionPhase {
    *
    * @return true if so
    */
+  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   default boolean consideredComplete() {
     return true;
   }

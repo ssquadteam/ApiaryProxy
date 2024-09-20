@@ -60,7 +60,8 @@ public class KeyedCommandHandler implements CommandHandler<KeyedPlayerCommandPac
               && playerKey.getKeyRevision().noLessThan(IdentifiedKey.Revision.LINKED_V2)) {
             logger.fatal("A plugin tried to deny a command with signable component(s). "
                 + "This is not supported. "
-                + "Disconnecting player " + player.getUsername() + ". Command packet: " + packet);
+                + "Disconnecting player {}. Command packet: {}",
+                player.getUsername(), packet);
             player.disconnect(Component.text(
                 "A proxy plugin caused an illegal protocol state. "
                     + "Contact your network administrator."));
@@ -83,7 +84,8 @@ public class KeyedCommandHandler implements CommandHandler<KeyedPlayerCommandPac
               && playerKey.getKeyRevision().noLessThan(IdentifiedKey.Revision.LINKED_V2)) {
             logger.fatal("A plugin tried to change a command with signed component(s). "
                 + "This is not supported. "
-                + "Disconnecting player " + player.getUsername() + ". Command packet: " + packet);
+                + "Disconnecting player {}. Command packet: {}",
+                player.getUsername(), packet);
             player.disconnect(Component.text(
                 "A proxy plugin caused an illegal protocol state. "
                     + "Contact your network administrator."));
@@ -103,7 +105,8 @@ public class KeyedCommandHandler implements CommandHandler<KeyedPlayerCommandPac
               && playerKey.getKeyRevision().noLessThan(IdentifiedKey.Revision.LINKED_V2)) {
             logger.fatal("A plugin tried to change a command with signed component(s). "
                 + "This is not supported. "
-                + "Disconnecting player " + player.getUsername() + ". Command packet: " + packet);
+                + "Disconnecting player {}. Command packet: {}",
+                player.getUsername(), packet);
             player.disconnect(Component.text(
                 "A proxy plugin caused an illegal protocol state. "
                     + "Contact your network administrator."));

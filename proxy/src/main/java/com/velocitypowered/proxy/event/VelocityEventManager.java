@@ -384,7 +384,8 @@ public class VelocityEventManager implements EventManager {
     register(plugin, eventClass, postOrder, handler, AsyncType.SOMETIMES);
   }
 
-  private  <E> void register(final Object plugin, final Class<E> eventClass, final short postOrder,
+  @SuppressWarnings("unchecked")
+  private <E> void register(final Object plugin, final Class<E> eventClass, final short postOrder,
       final EventHandler<E> handler, final AsyncType asyncType) {
     final PluginContainer pluginContainer = pluginManager.ensurePluginContainer(plugin);
     requireNonNull(eventClass, "eventClass");
@@ -577,11 +578,9 @@ public class VelocityEventManager implements EventManager {
     private final Thread firedOnThread;
 
     // This field is modified via a VarHandle, so this field is used and cannot be final.
-    @SuppressWarnings({"UnusedVariable", "FieldMayBeFinal", "FieldCanBeLocal"})
     private volatile int state = TASK_STATE_DEFAULT;
 
     // This field is modified via a VarHandle, so this field is used and cannot be final.
-    @SuppressWarnings({"UnusedVariable", "FieldMayBeFinal"})
     private volatile boolean resumed = false;
 
     private ContinuationTask(

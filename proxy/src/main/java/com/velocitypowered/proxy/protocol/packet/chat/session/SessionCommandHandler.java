@@ -58,9 +58,9 @@ public class SessionCommandHandler implements CommandHandler<SessionPlayerComman
     if (server.getConfiguration().enforceChatSigning() && packet.isSigned()) {
       // Any signed message produced by the client *must* be passed through to the server in order to maintain a
       // consistent state for future messages.
-      logger.fatal("A plugin tried to deny a command with signable component(s). "
-          + "This is not supported. "
-          + "Disconnecting player " + player.getUsername() + ". Command packet: " + packet);
+      logger.fatal("A plugin tried to deny a command with signable component(s). This is not supported. "
+              + "Disconnecting player {}. Command packet: {}",
+              player.getUsername(), packet);
       player.disconnect(Component.text(
           "A proxy plugin caused an illegal protocol state. "
               + "Contact your network administrator."));
@@ -88,7 +88,8 @@ public class SessionCommandHandler implements CommandHandler<SessionPlayerComman
     if (server.getConfiguration().enforceChatSigning() && packet.isSigned()) {
       logger.fatal("A plugin tried to change a command with signed component(s). "
           + "This is not supported. "
-          + "Disconnecting player " + player.getUsername() + ". Command packet: " + packet);
+          + "Disconnecting player {}. Command packet: {}",
+          player.getUsername(), packet);
       player.disconnect(Component.text(
           "A proxy plugin caused an illegal protocol state. "
               + "Contact your network administrator."));

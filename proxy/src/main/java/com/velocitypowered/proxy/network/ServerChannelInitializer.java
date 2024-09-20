@@ -45,7 +45,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Server channel initializer.
  */
-@SuppressWarnings("WeakerAccess")
 public class ServerChannelInitializer extends ChannelInitializer<Channel> {
 
   private final VelocityServer server;

@@ -124,7 +124,6 @@ public abstract class GenericTitlePacket implements MinecraftPacket {
         case SET_TIMES -> new TitleTimesPacket();
         case SET_TITLE -> new TitleTextPacket();
         case HIDE, RESET -> new TitleClearPacket();
-        default -> throw new IllegalArgumentException("Invalid ActionType");
       };
     } else {
       packet = new LegacyTitlePacket();

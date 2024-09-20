@@ -107,6 +107,7 @@ public class PlayerResourcePackStatusEvent {
    *
    * @return whether to overwrite the result
    */
+  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   public boolean isOverwriteKick() {
     return overwriteKick;
   }

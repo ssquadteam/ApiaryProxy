@@ -108,7 +108,6 @@ public interface EventTask {
    */
   // The Error Prone annotation here is spurious. The Future is handled via the CompletableFuture
   // API, which does NOT use the traditional blocking model.
-  @SuppressWarnings("FutureReturnValueIgnored")
   static EventTask resumeWhenComplete(final CompletableFuture<?> future) {
     requireNonNull(future, "future");
     return withContinuation(continuation -> future.whenComplete((result, cause) -> {

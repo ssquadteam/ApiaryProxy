@@ -275,9 +275,9 @@ public class ComponentHolder {
         }
 
         return jsonByteArray;
-      case 8://BinaryTagTypes.STRING:
+      case 8: // BinaryTagTypes.STRING:
         return new JsonPrimitive(((StringBinaryTag) tag).value());
-      case 9://BinaryTagTypes.LIST:
+      case 9: // BinaryTagTypes.LIST:
         ListBinaryTag items = (ListBinaryTag) tag;
         JsonArray jsonList = new JsonArray(items.size());
 

@@ -17,7 +17,6 @@
 
 package com.velocitypowered.proxy.util;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -46,7 +45,6 @@ public class ResourceUtils {
    * @param firstPathComponent      First path component
    * @param remainingPathComponents Remaining path components
    */
-  @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
   public static boolean visitResources(final Class<?> target, final Consumer<Path> consumer,
       final String firstPathComponent, final String... remainingPathComponents)
       throws IOException {

@@ -143,7 +143,9 @@ public class CommandManagerTests extends CommandTestSuite {
 
   @Test
   void testUnregisterRegisteredAlias() {
-    manager.register("hello", DummyCommand.INSTANCE);
+    final var meta = manager.metaBuilder("hello")
+        .build();
+    manager.register(meta, DummyCommand.INSTANCE);
     manager.unregister("hello");
 
     assertFalse(manager.hasCommand("hello"));

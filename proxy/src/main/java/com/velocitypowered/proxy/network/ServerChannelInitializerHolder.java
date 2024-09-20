@@ -48,8 +48,6 @@ public class ServerChannelInitializerHolder implements Supplier<ChannelInitializ
    */
   @Deprecated
   public void set(final ChannelInitializer<Channel> initializer) {
-    LOGGER.warn("The server channel initializer has been replaced by {}",
-        Thread.currentThread().getStackTrace()[2]);
     this.initializer = initializer;
   }
 }

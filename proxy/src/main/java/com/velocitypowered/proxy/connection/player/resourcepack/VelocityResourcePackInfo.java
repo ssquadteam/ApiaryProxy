@@ -122,7 +122,14 @@ public final class VelocityResourcePackInfo implements ResourcePackInfo {
             .build();
   }
 
-  @SuppressWarnings("checkstyle:MissingJavadocMethod")
+  /**
+   * Converts a {@link net.kyori.adventure.resource.ResourcePackInfo} from an Adventure resource pack request
+   * into a {@link ResourcePackInfo}.
+   *
+   * @param request the {@link ResourcePackRequest} containing details of the resource pack request
+   * @param pack the {@link net.kyori.adventure.resource.ResourcePackInfo} instance to convert from
+   * @return a new {@link ResourcePackInfo} representing the converted Adventure resource pack request
+   */
   public static ResourcePackInfo fromAdventureRequest(
           final ResourcePackRequest request,
           final net.kyori.adventure.resource.ResourcePackInfo pack

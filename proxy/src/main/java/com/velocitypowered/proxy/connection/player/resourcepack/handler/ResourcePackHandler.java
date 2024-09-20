@@ -164,14 +164,13 @@ public abstract sealed class ResourcePackHandler
     return handled;
   }
 
+  public abstract boolean hasPackAppliedByHash(byte[] hash);
+
   /**
    * Check if a pack has already been applied.
    *
    * @param hash the resource pack hash
    */
-  public abstract boolean hasPackAppliedByHash(byte[] hash);
-
-  @SuppressWarnings("checkstyle:MissingJavadocMethod")
   public void checkAlreadyAppliedPack(final byte[] hash) {
     if (this.hasPackAppliedByHash(hash)) {
       throw new IllegalStateException("Cannot apply a resource pack already applied");

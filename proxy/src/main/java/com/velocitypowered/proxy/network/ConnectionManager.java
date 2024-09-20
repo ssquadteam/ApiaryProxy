@@ -57,9 +57,7 @@ public final class ConnectionManager {
   private final VelocityServer server;
   // These are intentionally made public for plugins like ViaVersion, which inject their own
   // protocol logic into the proxy.
-  @SuppressWarnings("WeakerAccess")
   public final ServerChannelInitializerHolder serverChannelInitializer;
-  @SuppressWarnings("WeakerAccess")
   public final BackendChannelInitializerHolder backendChannelInitializer;
 
   private final SeparatePoolInetNameResolver resolver;

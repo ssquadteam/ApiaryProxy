@@ -69,7 +69,6 @@ public record LegacyDisconnect(String reason) {
             Integer.toString(players.getOnline()),
             Integer.toString(players.getMax())
         ));
-      default -> throw new IllegalArgumentException("Unknown version " + version);
     };
   }
 

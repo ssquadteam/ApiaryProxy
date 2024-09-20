@@ -1262,8 +1262,8 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
   }
 
   @Override
-  @SuppressWarnings("checkstyle:linelength")
-  public void removeResourcePacks(@NotNull final ResourcePackInfoLike request, @NotNull final ResourcePackInfoLike @NotNull ... others) {
+  public void removeResourcePacks(@NotNull final ResourcePackInfoLike request,
+      @NotNull final ResourcePackInfoLike @NotNull ... others) {
     removeResourcePacks(request.asResourcePackInfo().id());
     for (final ResourcePackInfoLike other : others) {
       removeResourcePacks(other.asResourcePackInfo().id());
@@ -1344,11 +1344,8 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
           }
           connection.write(StartUpdatePacket.INSTANCE);
           MinecraftEncoder encoder = connection.getChannel().pipeline().get(MinecraftEncoder.class);
-          if (encoder != null) {
-            encoder.setState(StateRegistry.CONFIG);
-          } else {
-            logger.error("MinecraftEncoder not found in the pipeline. Cannot switch state.");
-          }
+          connection.getChannel().pipeline().get(MinecraftEncoder.class).setState(StateRegistry.CONFIG);
+          // Make sure we don't send any play packets to the player after update start
           connection.addPlayPacketQueueHandler();
         }, connection.eventLoop()).exceptionally((ex) -> {
           logger.error("Error switching player connection to config state", ex);

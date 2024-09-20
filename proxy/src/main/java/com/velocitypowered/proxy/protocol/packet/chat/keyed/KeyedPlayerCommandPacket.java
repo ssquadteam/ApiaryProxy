@@ -63,6 +63,7 @@ public class KeyedPlayerCommandPacket implements MinecraftPacket {
     return timestamp;
   }
 
+  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   public boolean isUnsigned() {
     return unsigned;
   }
