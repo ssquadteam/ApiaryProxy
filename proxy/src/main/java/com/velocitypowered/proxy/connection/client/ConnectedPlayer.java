@@ -880,7 +880,9 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
       } else {
         if (server.getConfiguration().isEnableDynamicFallbacks()) {
           Optional<RegisteredServer> emptiestServer = Optional.empty();
+          Optional<RegisteredServer> selectedServer = Optional.empty();
           int index = 0;
+
           for (String serverName : connOrder) {
             if (attemptedServers.contains(serverName)) {
               continue;
@@ -889,29 +891,36 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
             RegisteredServer registeredServer = server.getServer(serverName).orElse(null);
             if (registeredServer == null) {
               logger.error(Component.text("Unable to read your velocity.toml fallback servers. Users are unable to connect."));
-              return emptiestServer;
+              return selectedServer;
             }
 
             if ((connectedServer != null && hasSameName(connectedServer.getServer(), serverName))
-                    || (connectionInFlight != null && hasSameName(connectionInFlight.getServer(), serverName))
-                    || (current != null && hasSameName(current, serverName))) {
+                || (connectionInFlight != null && hasSameName(connectionInFlight.getServer(), serverName))
+                || (current != null && hasSameName(current, serverName))) {
               continue;
             }
 
-            if (emptiestServer.isEmpty()) {
+            if (selectedServer.isEmpty()) {
               index = connOrder.indexOf(serverName);
-              emptiestServer = Optional.of(registeredServer);
+              selectedServer = Optional.of(registeredServer);
             } else {
-              if (registeredServer.getPlayersConnected().size() < emptiestServer.get().getPlayersConnected().size()) {
-                index = connOrder.indexOf(serverName);
-                emptiestServer = Optional.of(registeredServer);
+              if (server.getConfiguration().isEnableMostPopulatedFallbacks()) {
+                if (registeredServer.getPlayersConnected().size() > selectedServer.get().getPlayersConnected().size()) {
+                  index = connOrder.indexOf(serverName);
+                  selectedServer = Optional.of(registeredServer);
+                }
+              } else {
+                if (registeredServer.getPlayersConnected().size() < selectedServer.get().getPlayersConnected().size()) {
+                  index = connOrder.indexOf(serverName);
+                  selectedServer = Optional.of(registeredServer);
+                }
               }
             }
           }
 
-          emptiestServer.ifPresent(registeredServer -> attemptedServers.add(registeredServer.getServerInfo().getName()));
+          selectedServer.ifPresent(registeredServer -> attemptedServers.add(registeredServer.getServerInfo().getName()));
           tryIndex = index;
-          return emptiestServer;
+          return selectedServer;
         }
         serversToTry = connOrder;
       }

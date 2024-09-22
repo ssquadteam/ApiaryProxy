@@ -510,6 +510,10 @@ public final class VelocityConfiguration implements ProxyConfig {
     return servers.isEnableDynamicFallbacks();
   }
 
+  public boolean isEnableMostPopulatedFallbacks() {
+    return servers.isEnableMostPopulatedFallbacks();
+  }
+
   public boolean isForceKeyAuthentication() {
     return forceKeyAuthentication;
   }
@@ -748,6 +752,7 @@ public final class VelocityConfiguration implements ProxyConfig {
     private Map<String, PlayerInfoForwarding> serverForwardingModes = ImmutableMap.of();
 
     private boolean enableDynamicFallbacks = false;
+    private boolean enableMostPopulatedFallbacks = false;
 
     private Servers() {
     }
@@ -775,7 +780,9 @@ public final class VelocityConfiguration implements ProxyConfig {
 
             servers.put(name, address);
           } else {
-            if (!entry.getKey().equalsIgnoreCase("try") && !entry.getKey().equalsIgnoreCase("enable-dynamic-fallbacks")) {
+            if (!entry.getKey().equalsIgnoreCase("try")
+                && !entry.getKey().equalsIgnoreCase("enable-dynamic-fallbacks")
+                && !entry.getKey().equalsIgnoreCase("enable-most-populated-fallbacks")) {
               throw new IllegalArgumentException(
                   "Server entry " + entry.getKey() + " is not a string!");
             }
@@ -784,6 +791,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.servers = ImmutableMap.copyOf(servers);
         this.attemptConnectionOrder = config.getOrElse("try", attemptConnectionOrder);
         this.enableDynamicFallbacks = config.getOrElse("enable-dynamic-fallbacks", false);
+        this.enableMostPopulatedFallbacks = config.getOrElse("enable-most-populated-fallbacks", false);
       }
     }
 
@@ -807,6 +815,10 @@ public final class VelocityConfiguration implements ProxyConfig {
 
     public boolean isEnableDynamicFallbacks() {
       return enableDynamicFallbacks;
+    }
+
+    public boolean isEnableMostPopulatedFallbacks() {
+      return enableMostPopulatedFallbacks;
     }
 
     public void setAttemptConnectionOrder(final List<String> attemptConnectionOrder) {
