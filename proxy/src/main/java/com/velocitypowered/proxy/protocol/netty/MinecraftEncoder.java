@@ -42,41 +42,23 @@ public class MinecraftEncoder extends MessageToByteEncoder<MinecraftPacket> {
    */
   public MinecraftEncoder(final ProtocolUtils.Direction direction) {
     this.direction = Preconditions.checkNotNull(direction, "direction");
+    this.registry = StateRegistry.HANDSHAKE.getProtocolRegistry(
+        direction, ProtocolVersion.MINIMUM_VERSION);
     this.state = StateRegistry.HANDSHAKE;
-    this.registry = this.state.getProtocolRegistry(direction, ProtocolVersion.MINIMUM_VERSION);
   }
 
   @Override
   protected void encode(final ChannelHandlerContext ctx, final MinecraftPacket msg, final ByteBuf out) {
-    if (registry == null || state == null) {
-      return;
-    }
     int packetId = this.registry.getPacketId(msg);
     ProtocolUtils.writeVarInt(out, packetId);
     msg.encode(out, direction, registry.version);
   }
 
-  /**
-   * Updates the protocol version for the encoder.
-   *
-   * @param protocolVersion the new protocol version to set
-   */
   public void setProtocolVersion(final ProtocolVersion protocolVersion) {
-    if (state == null) {
-      return;
-    }
     this.registry = state.getProtocolRegistry(direction, protocolVersion);
   }
 
-  /**
-   * Sets the state for the encoder and updates the protocol version.
-   *
-   * @param state the new state to set
-   */
   public void setState(final StateRegistry state) {
-    if (state == null) {
-      return;
-    }
     this.state = state;
     this.setProtocolVersion(registry.version);
   }
