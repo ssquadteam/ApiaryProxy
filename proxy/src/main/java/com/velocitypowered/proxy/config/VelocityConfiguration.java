@@ -790,6 +790,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         }
         this.servers = ImmutableMap.copyOf(servers);
         this.attemptConnectionOrder = config.getOrElse("try", attemptConnectionOrder);
+        this.attemptConnectionOrder = config.getOrElse("try", attemptConnectionOrder);
         this.enableDynamicFallbacks = config.getOrElse("enable-dynamic-fallbacks", false);
         this.enableMostPopulatedFallbacks = config.getOrElse("enable-most-populated-fallbacks", false);
       }
