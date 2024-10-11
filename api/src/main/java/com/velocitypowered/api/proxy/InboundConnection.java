@@ -39,6 +39,7 @@ public interface InboundConnection {
    * @return the raw hostname from the client
    */
   Optional<String> getRawVirtualHost();
+
   /**
    * Determine whether the player remains online.
    *
