@@ -55,12 +55,8 @@ public final class ShutdownCommand {
                 StringArgumentType.greedyString())
             .executes(context -> {
               String reason = context.getArgument("reason", String.class);
-              server.shutdown(true, MiniMessage.miniMessage().deserialize(
-                  MiniMessage.miniMessage().serialize(
-                      LegacyComponentSerializer.legacy('&').deserialize(reason)
-                  )
-              ));
               Component reasonComponent = null;
+
               if (reason.startsWith("{") || reason.startsWith("[") || reason.startsWith("\"")) {
                 try {
                   reasonComponent = GsonComponentSerializer.gson()
@@ -69,9 +65,11 @@ public final class ShutdownCommand {
                     // Nullified deserialization is effectively already handled
                 }
               }
+
               if (reasonComponent == null) {
                 reasonComponent = MiniMessage.miniMessage().deserialize(reason);
               }
+
               server.shutdown(true, reasonComponent);
               return Command.SINGLE_SUCCESS;
             })
