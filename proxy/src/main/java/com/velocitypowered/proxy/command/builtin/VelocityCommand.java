@@ -205,7 +205,7 @@ public final class VelocityCommand {
       source.sendMessage(velocity);
       source.sendMessage(copyright);
 
-      if (version.getName().equals("Apiary Proxy")) {
+      if (version.getName().equals("Velocity")) {
         final TextComponent embellishment = Component.text()
             .append(Component.text()
                 .content("discord.gg/themegahivemc")
