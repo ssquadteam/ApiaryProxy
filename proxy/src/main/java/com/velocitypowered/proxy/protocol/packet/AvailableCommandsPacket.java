@@ -184,6 +184,7 @@ public class AvailableCommandsPacket implements MinecraftPacket {
     if (node.getCommand() != null) {
       flags |= FLAG_EXECUTABLE;
     }
+
     if (node instanceof LiteralCommandNode<?>) {
       flags |= NODE_TYPE_LITERAL;
     } else if (node instanceof ArgumentCommandNode<?, ?>) {

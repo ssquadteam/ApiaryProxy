@@ -205,18 +205,18 @@ public final class VelocityCommand {
       source.sendMessage(velocity);
       source.sendMessage(copyright);
 
-      if (version.getName().equals("Velocity")) {
+      if (version.getName().equals("Apiary Proxy")) {
         final TextComponent embellishment = Component.text()
             .append(Component.text()
-                .content("discord.gg/themegahive")
+                .content("discord.gg/themegahivemc")
                 .color(NamedTextColor.GOLD)
                 .clickEvent(
-                    ClickEvent.openUrl("https://discord.gg/themegahive"))
+                    ClickEvent.openUrl("https://discord.gg/themegahivemc"))
                 .build())
             .append(Component.text(" - "))
             .append(Component.text()
                 .content("GitHub")
-                .color(NamedTextColor.RED)
+                .color(NamedTextColor.GOLD)
                 .decoration(TextDecoration.UNDERLINED, true)
                 .clickEvent(ClickEvent.openUrl(
                     "https://github.com/ssquadteam/ApiaryProxy"))

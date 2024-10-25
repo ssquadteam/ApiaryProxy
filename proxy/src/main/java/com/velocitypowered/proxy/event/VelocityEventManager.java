@@ -581,6 +581,7 @@ public class VelocityEventManager implements EventManager {
     private volatile int state = TASK_STATE_DEFAULT;
 
     // This field is modified via a VarHandle, so this field is used and cannot be final.
+    @SuppressWarnings({"FieldMayBeFinal"})
     private volatile boolean resumed = false;
 
     private ContinuationTask(

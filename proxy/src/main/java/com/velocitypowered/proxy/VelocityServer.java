@@ -209,7 +209,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   public long getStartTime() {
     return startTime;
   }
-  
+
   @Override
   public ProxyVersion getVersion() {
     Package pkg = VelocityServer.class.getPackage();
@@ -288,8 +288,14 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
 
     registerTranslations(true);
 
-    for (Map.Entry<String, String> entry : configuration.getServers().entrySet()) {
-      servers.register(new ServerInfo(entry.getKey(), AddressUtil.parseAddress(entry.getValue())));
+    for (ServerInfo cliServer : options.getServers()) {
+      servers.register(cliServer);
+    }
+
+    if (!options.isIgnoreConfigServers()) {
+      for (Map.Entry<String, String> entry : configuration.getServers().entrySet()) {
+        servers.register(new ServerInfo(entry.getKey(), AddressUtil.parseAddress(entry.getValue())));
+      }
     }
 
     ipAttemptLimiter = Ratelimiters.createWithMilliseconds(configuration.getLoginRatelimit());

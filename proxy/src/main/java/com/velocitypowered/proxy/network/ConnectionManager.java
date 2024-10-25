@@ -113,7 +113,7 @@ public final class ConnectionManager {
             if (this.server.getConfiguration().isProxyProtocol()) {
               LOGGER.warn("Using HAProxy and listening on {}, please ensure this listener is adequately firewalled.", channel.localAddress());
             }
-            
+
             LOGGER.info("Listening on {}", channel.localAddress());
 
             // Fire the proxy bound event after the socket is bound
