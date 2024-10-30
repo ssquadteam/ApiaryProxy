@@ -36,6 +36,7 @@ public final class RawCommandInvocation extends AbstractCommandInvocation<String
 
   /**
    * Factory class for creating instances of {@link RawCommand.Invocation}.
+   *
    * <p>
    * This class implements the {@link CommandInvocationFactory} interface and provides
    * a method to create new {@link RawCommand.Invocation} instances. It is responsible

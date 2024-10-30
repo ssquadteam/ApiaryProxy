@@ -498,12 +498,16 @@ public final class VelocityConfiguration implements ProxyConfig {
     return advanced.getServerBrand();
   }
 
-  public String getOutdatedVersionPing() {
-    return advanced.getOutdatedVersionPing();
-  }
-
   public String getFallbackVersionPing() {
     return advanced.getFallbackVersionPing();
+  }
+
+  public String getProxyBrandCustom() {
+    return advanced.getProxyBrandCustom();
+  }
+
+  public String getBackendBrandCustom() {
+    return advanced.getBackendBrandCustom();
   }
 
   public boolean isEnableDynamicFallbacks() {
@@ -1027,11 +1031,13 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private boolean allowIllegalCharactersInChat = false;
     @Expose
-    private String serverBrand = "{0} ({1})";
+    private String serverBrand = "{backend-brand} ({proxy-brand})";
     @Expose
-    private String outdatedVersionPing = "{proxy-brand} {protocol-min}-{protocol-max}";
+    private String fallbackVersionPing = "{proxy-brand} {protocol-min}-{protocol-max}";
     @Expose
-    private String fallbackVersionPing = "{protocol-min}-{protocol-max} ({proxy-brand})";
+    private String proxyBrandCustom = "Velocity";
+    @Expose
+    private String backendBrandCustom = "Paper";
 
     private Advanced() {
     }
@@ -1057,9 +1063,10 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.logCommandExecutions = config.getOrElse("log-command-executions", false);
         this.acceptTransfers = config.getOrElse("accepts-transfers", false);
         this.allowIllegalCharactersInChat = config.getOrElse("allow-illegal-characters-in-chat", false);
-        this.serverBrand = config.getOrElse("server-brand", "Apiary Proxy");
-        this.outdatedVersionPing = config.getOrElse("outdated-version-ping", "{proxy-brand} {protocol-min}-{protocol-max}");
-        this.fallbackVersionPing = config.getOrElse("fallback-version-ping", "{protocol-min}-{protocol-max} ({proxy-brand})");
+        this.serverBrand = config.getOrElse("server-brand", "{backend-brand} ({proxy-brand})");
+        this.fallbackVersionPing = config.getOrElse("fallback-version-ping", "{proxy-brand} {protocol-min}-{protocol-max}");
+        this.proxyBrandCustom = config.getOrElse("custom-brand-proxy", "Velocity");
+        this.backendBrandCustom = config.getOrElse("custom-brand-backend", "Paper");
       }
     }
 
@@ -1127,6 +1134,18 @@ public final class VelocityConfiguration implements ProxyConfig {
       return serverBrand;
     }
 
+    public String getFallbackVersionPing() {
+      return this.fallbackVersionPing;
+    }
+
+    public String getProxyBrandCustom() {
+      return this.proxyBrandCustom;
+    }
+
+    public String getBackendBrandCustom() {
+      return this.backendBrandCustom;
+    }
+
     @Override
     public String toString() {
       return "Advanced{"
@@ -1145,14 +1164,6 @@ public final class VelocityConfiguration implements ProxyConfig {
           + ", acceptTransfers=" + acceptTransfers
           + ", allowIllegalCharactersInChat=" + allowIllegalCharactersInChat
           + '}';
-    }
-
-    public String getOutdatedVersionPing() {
-      return this.outdatedVersionPing;
-    }
-
-    public String getFallbackVersionPing() {
-      return this.fallbackVersionPing;
     }
   }
 

@@ -1,4 +1,4 @@
-# Use the official Eclipse Temurin 17.0.12_7-jdk-focal image as the base image.
+# Use the official Eclipse Temurin 17.0.13_11-jdk-focal image as the base image.
 # We compile for Ubuntu Focal Fossa (20.04 LTS) as it is still supported until 2025, and the crypto
 # native is specific to a given OpenSSL version.
 FROM eclipse-temurin:17.0.13_11-jdk-focal

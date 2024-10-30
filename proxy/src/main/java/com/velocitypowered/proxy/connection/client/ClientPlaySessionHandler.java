@@ -332,7 +332,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
         return true;
       } else {
         if (serverConn.getPhase() == BackendConnectionPhases.IN_TRANSITION) {
-          // We must bypass the currently-connected server when forwarding Forge packets.
+          // We must bypass the currently connected server when forwarding Forge packets.
           VelocityServerConnection inFlight = player.getConnectionInFlight();
           if (inFlight != null) {
             player.getPhase().handle(player, packet, inFlight);

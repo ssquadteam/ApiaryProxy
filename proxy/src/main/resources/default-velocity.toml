@@ -64,7 +64,7 @@ announce-forge = false
 # If true, disables handling of inbound Forge handshakes.
 disable-forge = false
 
-# If enabled (default is false) and the proxy is in online mode, Velocity will kick
+# If enabled (default is false), and the proxy is in online mode, Velocity will kick
 # any existing player who is online if a duplicate connection attempt is made.
 kick-existing-players = false
 
@@ -134,7 +134,7 @@ minigames = "127.0.0.1:30068"
 # If you need a different forwarding mode, specify as shown:
 modern = { address = "127.0.0.1:30068", forwarding-mode = "MODERN" }
 
-# In what order we should try servers when a player logs in or is kicked from a server.
+# In what order, we should try servers when a player logs in or is kicked from a server.
 try = [
     "lobby"
 ]
@@ -143,7 +143,7 @@ try = [
 # Keep this false if you only have one fallback server.
 enable-dynamic-fallbacks = false
 
-# Instead sends the user to the most populated fallback server, rather than the least populated fallback server.
+# Instead, sends the user to the most populated fallback server, rather than the least populated fallback server.
 # Requires enable-dynamic-fallbacks as true to function. Keep this false if you want users to be sent to the least
 # populated server.
 enable-most-populated-fallbacks = false
@@ -212,14 +212,60 @@ accepts-transfers = false
 # or denies illegal characters that are executed through the proxy.
 allow-illegal-characters-in-chat = false
 
-# Modifies the server brand that displays in your debug menu.
-server-brand = "{0} ({1})"
+# Modifies the server brand that displays in your debug menu
+# Available options:
+# - "{protocol-min}":          Returns the lowest compatible version from the
+#                              minimum-version key within this configuration.
+# - "{protocol-max}":          Returns the highest compatible version from the
+#                              ProtocolVersion class within Velocity's code.
+# - "{protocol}":              Returns the lowest, highest compatible version from the
+#                              ProtocolVersion class within Velocity's code.
+#                              E.g., if a protocol shares two versions, it will output
+#                              the lowest version from the list.
+# - "{backend-brand}"          Returns the brand of the server you are connected to. E.g.,
+#                              "Paper," "Pufferfish," or "Purpur" would be valid brands.
+# - "{backend-brand-custom}":  Returns your custom proxy brand defined as "custom-brand-backend" in this
+#                              configuration to maintain brand reformatting for internal pingers. To use
+#                              this configuration option, replace "{backend-brand}" with "{backend-brand-custom}."
+# - "{proxy-brand}":           Returns the proxy brand from Velocity, which is
+#                              used to identify the name of the project or proxy.
+# - "{proxy-brand-custom}":    Returns your custom proxy brand defined as "custom-brand-proxy" in this
+#                              configuration to maintain brand reformatting from external pingers. To use
+#                              this configuration option, replace "{proxy-brand}" with "{proxy-brand-custom}."
+# - "{proxy-version}":         Returns the version of your proxy and git-hash that your
+#                              proxy is currently on. Build numbers in regular Velocity
+#                              would be shown with this specific assignment.
+# - "{proxy-vendor}":          Returns the group or association (vendor) of your proxy
+#                              that by default would display "Velocity Contributors."
+server-brand = "{backend-brand} ({proxy-brand})"
 
-# Modifies the server version that displays in some server status pinging sites.
-outdated-version-ping = "{proxy-brand} {protocol-min}-{protocol-max}"
+# Modifies the brand and server version that displays in the multiplayer menu and status pingers.
+# Available options:
+# - "{protocol-min}":          Returns the lowest compatible version from the
+#                              minimum-version key within this configuration.
+# - "{protocol-max}":          Returns the highest compatible version from the
+#                              ProtocolVersion class within Velocity's code.
+# - "{protocol}":              Returns the lowest, highest compatible version from the
+#                              ProtocolVersion class within Velocity's code.
+#                              E.g., if a protocol shares two versions, it will output
+#                              the lowest version from the list.
+# - "{proxy-brand}":           Returns the proxy brand from Velocity's Implementation-Title,
+#                              which is used to identify the name of the project or proxy.
+# - "{proxy-brand-custom}":    Returns your custom proxy brand defined as "custom-brand-proxy" in this
+#                              configuration to maintain brand reformatting from external pingers. To use
+#                              this configuration option, replace "{proxy-brand}" with "{proxy-brand-custom}."
+# - "{proxy-version}":         Returns the version of your proxy and git-hash that your
+#                              proxy is currently on. Build numbers in regular Velocity
+#                              would be shown with this specific assignment.
+# - "{proxy-vendor}":          Returns the group or association (vendor) of your proxy
+#                              that by default would display "Velocity Contributors."
+fallback-version-ping = "{proxy-brand} {protocol-min}-{protocol-max}"
 
-# Modifies the server version that displays in the multiplayer menu when no passthrough occurs.
-fallback-version-ping = "{protocol-min}-{protocol-max} ({proxy-brand})"
+# Replaces what is returned for both the server brand and fallback version pinger.
+custom-brand-proxy = "Velocity"
+
+# Replaces what is returned as the server brand for the user's client.
+custom-brand-backend = "Paper"
 
 [query]
 # Whether to enable responding to GameSpy 4 query responses or not.
@@ -228,7 +274,7 @@ enabled = false
 # If query is enabled, on what port should the query protocol listen on?
 port = 25565
 
-# This is the map name that is reported to the query services.
+# This is the map name reported to the query services.
 map = "Velocity"
 
 # Whether plugins should be shown in query response by default or not

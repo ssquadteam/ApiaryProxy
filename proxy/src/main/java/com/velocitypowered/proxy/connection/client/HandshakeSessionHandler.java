@@ -60,10 +60,22 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
 
   private final MinecraftConnection connection;
   private final VelocityServer server;
+  private final String minimumVersion;
 
+  /**
+   * Constructs a new {@link HandshakeSessionHandler} for managing the initial phase of a client
+   * connection to the proxy. It validates the client connection and performs actions based on
+   * protocol requirements.
+   *
+   * @param connection the {@link MinecraftConnection} instance representing the client connection.
+   * @param server the {@link VelocityServer} instance managing the proxy server configuration
+   *               and event handling.
+   * @throws NullPointerException if either {@code connection} or {@code server} is {@code null}.
+   */
   public HandshakeSessionHandler(final MinecraftConnection connection, final VelocityServer server) {
     this.connection = Preconditions.checkNotNull(connection, "connection");
     this.server = Preconditions.checkNotNull(server, "server");
+    this.minimumVersion = server.getConfiguration().getMinimumVersion();
   }
 
   @Override
@@ -126,11 +138,13 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
   private void handleLogin(final HandshakePacket handshake, final InitialInboundConnection ic) {
     if (!handshake.getProtocolVersion().isSupported()) {
       // Bump connection into correct protocol state so that we can send the disconnect packet.
+      // By choice, instead of returning the standard disconnection message, we return the modern
+      // forwarder. This particular value cannot adequately log the user's username; thus, forcing
+      // us to deactivate logging altogether, unlike in the AuthSessionHandler, where logging is by choice.
       connection.setState(StateRegistry.LOGIN);
-      ic.disconnectQuietly(Component.translatable()
-              .key("multiplayer.disconnect.outdated_client")
-              .arguments(Component.text(ProtocolVersion.SUPPORTED_VERSION_STRING))
-              .build());
+      ic.disconnectQuietly(
+          Component.translatable("velocity.error.modern-forwarding-needs-new-client")
+              .arguments(Component.text(minimumVersion), Component.text(ProtocolVersion.MAXIMUM_VERSION.getMostRecentSupportedVersion())));
       return;
     }
 
@@ -145,7 +159,7 @@ public class HandshakeSessionHandler implements MinecraftSessionHandler {
     connection.setType(this.getHandshakeConnectionType(handshake));
 
     // If the proxy is configured for modern forwarding, we must deny connections from 1.12.2
-    // and lower, otherwise IP information will never get forwarded.
+    // and lower otherwise IP information will never get forwarded.
     if (server.getConfiguration().getPlayerInfoForwardingMode() == PlayerInfoForwarding.MODERN
         && handshake.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_13)) {
       // Bump connection into correct protocol state so that we can send the disconnect packet.

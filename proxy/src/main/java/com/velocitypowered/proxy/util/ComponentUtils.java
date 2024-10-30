@@ -36,9 +36,9 @@ public final class ComponentUtils {
 
   // MiniMessage default: <#FFFFFF>
   private static final Pattern BOXED_HEX_PATTERN = Pattern.compile("<#([A-Fa-f0-9]){6}>");     // <#FFFFFF>
-  private static final Pattern BOXED_MOJANG_PATTERN = Pattern.compile("<&#([A-Fa-f0-9]){6}>"); // &#FFFFFF
-  private static final Pattern UNBOXED_HEX_PATTERN = Pattern.compile("#([A-Fa-f0-9]){6}");     // <&#FFFFFF>
-  private static final Pattern UNBOXED_MOJANG_PATTERN = Pattern.compile("&#([A-Fa-f0-9]){6}"); // #FFFFFF
+  private static final Pattern BOXED_MOJANG_PATTERN = Pattern.compile("<&#([A-Fa-f0-9]){6}>"); // <&#FFFFFF>
+  private static final Pattern UNBOXED_HEX_PATTERN = Pattern.compile("#([A-Fa-f0-9]){6}");     // #FFFFFF
+  private static final Pattern UNBOXED_MOJANG_PATTERN = Pattern.compile("&#([A-Fa-f0-9]){6}"); // &#FFFFFF
 
   private static final List<Pattern> ODD_HEX_PATTERNS = Arrays.asList(
       BOXED_MOJANG_PATTERN,   // <&#FFFFFF>

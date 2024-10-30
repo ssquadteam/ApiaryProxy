@@ -38,6 +38,7 @@ public final class SimpleCommandInvocation extends AbstractCommandInvocation<Str
 
   /**
    * Factory class for creating instances of {@link SimpleCommand.Invocation}.
+   *
    * <p>
    * This class implements the {@link CommandInvocationFactory} interface and provides
    * a method to create new {@link SimpleCommand.Invocation} instances. It is responsible

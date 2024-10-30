@@ -90,7 +90,7 @@ public interface TabListEntry extends KeyIdentifiable {
   /**
    * Sets the latency for {@code this} entry to the specified value.
    *
-   * @param latency to changed to
+   * @param latency to change to
    * @return {@code this}, for chaining
    * @see #getLatency()
    */
@@ -193,8 +193,11 @@ public interface TabListEntry extends KeyIdentifiable {
 
     /**
      * Sets the {@link IdentifiedKey} of the {@link TabListEntry}.
+     *
      * <p>This only works for players currently <b>not</b> connected to this proxy.</p>
+     *
      * <p>For any player currently connected to this proxy this will be filled automatically.</p>
+     *
      * <p>Will ignore mismatching key revisions data.</p>
      *
      * @param chatSession session to set

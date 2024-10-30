@@ -28,7 +28,6 @@ import com.velocitypowered.proxy.protocol.packet.PluginMessagePacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -128,19 +127,32 @@ public final class PluginMessageUtil {
    *
    * @param message the plugin message
    * @param version the proxy version
-   * @param brand the initial brand format
+   * @param brand the brand format
    * @return the rewritten plugin message
    */
   public static PluginMessagePacket rewriteMinecraftBrand(final PluginMessagePacket message,
                                                           final ProxyVersion version,
                                                           final ProtocolVersion protocolVersion,
-                                                          final String brand) {
+                                                          final String brand,
+                                                          final String proxyBrandCustom,
+                                                          final String backendBrandCustom,
+                                                          final String minimumVersion) {
     checkNotNull(message, "message");
     checkNotNull(version, "version");
+    checkNotNull(brand, "brand");
     checkArgument(isMcBrand(message), "message is not a brand plugin message");
 
-    String currentBrand = readBrandMessage(message.content());
-    String rewrittenBrand = MessageFormat.format(brand, currentBrand, version.getName());
+    final String currentBrand = readBrandMessage(message.content());
+    final String rewrittenBrand = brand
+        .replaceAll("\\{protocol-min}", minimumVersion)
+        .replaceAll("\\{protocol-max}", ProtocolVersion.MAXIMUM_VERSION.getMostRecentSupportedVersion())
+        .replaceAll("\\{protocol}", ProtocolVersion.MAXIMUM_VERSION.getVersionIntroducedIn())
+        .replaceAll("\\{backend-brand}", currentBrand)
+        .replaceAll("\\{backend-brand-custom}", backendBrandCustom)
+        .replaceAll("\\{proxy-brand}", version.getName())
+        .replaceAll("\\{proxy-brand-custom}", proxyBrandCustom)
+        .replaceAll("\\{proxy-version}", version.getVersion())
+        .replaceAll("\\{proxy-vendor}", version.getVendor());
 
     ByteBuf rewrittenBuf = Unpooled.buffer();
     if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
@@ -153,8 +165,8 @@ public final class PluginMessageUtil {
   }
 
   /**
-   * Some clients (mostly poorly-implemented bots) do not send validly-formed brand messages. In
-   * order to accommodate their broken behavior, we'll first try to read in the 1.8 format, and if
+   * Some clients (mostly poorly implemented bots) do not send validly formed brand messages.
+   * To accommodate their broken behavior, we'll first try to read in the 1.8 format, and if
    * that fails, treat it as a 1.7-format message (which has no prefixed length). (The message
    * Velocity sends will be in the correct format depending on the protocol.)
    *
