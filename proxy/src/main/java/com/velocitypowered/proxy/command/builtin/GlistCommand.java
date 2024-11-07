@@ -29,13 +29,16 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
+import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
+import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
@@ -45,9 +48,9 @@ public class GlistCommand {
 
   private static final String SERVER_ARG = "server";
 
-  private final ProxyServer server;
+  private final VelocityServer server;
 
-  public GlistCommand(final ProxyServer server) {
+  public GlistCommand(final VelocityServer server) {
     this.server = server;
   }
 
@@ -123,7 +126,14 @@ public class GlistCommand {
   }
 
   private void sendTotalProxyCount(final CommandSource target) {
-    final int online = server.getPlayerCount();
+    final int online;
+
+    if (server.getMultiProxyHandler().isEnabled()) {
+      online = server.getMultiProxyHandler().getTotalPlayerCount();
+    } else {
+      online = server.getPlayerCount();
+    }
+
     final TranslatableComponent.Builder msg = Component.translatable()
             .key(online == 1
                   ? "velocity.command.glist-player-singular"
@@ -135,21 +145,47 @@ public class GlistCommand {
 
   private void sendServerPlayers(final CommandSource target,
                                  final RegisteredServer server, final boolean fromAll) {
-    final List<Player> onServer = ImmutableList.copyOf(server.getPlayersConnected());
-    if (onServer.isEmpty() && fromAll) {
-      return;
+    int totalPlayers = 0;
+    List<Component> players = new ArrayList<>();
+    MultiProxyHandler multiProxyHandler = this.server.getMultiProxyHandler();
+
+    if (multiProxyHandler.isEnabled()) {
+      for (String proxyId : multiProxyHandler.getAllProxyIds()) {
+        for (MultiProxyHandler.RemotePlayerInfo player : multiProxyHandler.getPlayers(proxyId)) {
+          if (player.serverName == null || !player.serverName.equals(server.getServerInfo().getName())) {
+            continue;
+          }
+
+          String key = "velocity.command.glist.proxy-"
+              + (proxyId.equals(multiProxyHandler.getOwnProxyId()) ? "self" : "other");
+          Component hover = Component.translatable(key).arguments(Component.text(proxyId));
+          players.add(Component.text(player.name).hoverEvent(HoverEvent.showText(hover)));
+          totalPlayers += 1;
+        }
+      }
+    } else {
+      final List<Player> onServer = ImmutableList.copyOf(server.getPlayersConnected());
+      if (onServer.isEmpty() && fromAll) {
+        return;
+      }
+      totalPlayers = onServer.size();
+
+      for (Player player : onServer) {
+        Component hover = Component.translatable("velocity.command.glist.proxy-self");
+        players.add(Component.text(player.getUsername()).hoverEvent(HoverEvent.showText(hover)));
+      }
     }
 
-    onServer.stream()
-        .map(Player::getUsername)
-        .reduce((a, b) -> a + ", " + b)
+    int finalTotalPlayers = totalPlayers;
+    players.stream()
+        .reduce((a, b) -> a.append(Component.text(", ")).append(b))
         .ifPresent(playerList -> {
           final TranslatableComponent.Builder builder = Component.translatable()
               .key("velocity.command.glist-server")
               .arguments(
                   Component.text(server.getServerInfo().getName()),
-                  Component.text(onServer.size()),
-                  Component.text(playerList)
+                  Component.text(finalTotalPlayers),
+                  playerList
               );
           target.sendMessage(builder.build());
         });

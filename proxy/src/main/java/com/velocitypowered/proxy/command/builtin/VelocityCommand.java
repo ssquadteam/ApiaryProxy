@@ -208,10 +208,10 @@ public final class VelocityCommand {
       if (version.getName().equals("Velocity")) {
         final TextComponent embellishment = Component.text()
             .append(Component.text()
-                .content("discord.gg/themegahivemc")
+                .content("discord.gg/themegahive")
                 .color(NamedTextColor.GOLD)
                 .clickEvent(
-                    ClickEvent.openUrl("https://discord.gg/themegahivemc"))
+                    ClickEvent.openUrl("https://discord.gg/themegahive"))
                 .build())
             .append(Component.text(" - "))
             .append(Component.text()

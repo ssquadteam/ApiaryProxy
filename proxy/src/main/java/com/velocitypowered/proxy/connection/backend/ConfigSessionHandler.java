@@ -257,9 +257,12 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   public boolean handle(final PluginMessagePacket packet) {
     if (PluginMessageUtil.isMcBrand(packet)) {
       serverConn.getPlayer().getConnection().write(
-          PluginMessageUtil.rewriteMinecraftBrand(packet, server.getVersion(),
-              serverConn.getPlayer().getProtocolVersion(), server.getConfiguration().getServerBrand(),
-              server.getConfiguration().getProxyBrandCustom(), server.getConfiguration().getBackendBrandCustom(),
+          PluginMessageUtil.rewriteMinecraftBrand(packet,
+              server.getVersion(),
+              serverConn.getPlayer().getProtocolVersion(),
+              server.getConfiguration().getServerBrand(),
+              server.getConfiguration().getProxyBrandCustom(),
+              server.getConfiguration().getBackendBrandCustom(),
               ProtocolVersion.getVersionByName(server.getConfiguration().getMinimumVersion()).getVersionIntroducedIn()));
     } else {
       serverConn.getPlayer().getConnection().write(packet.retain());

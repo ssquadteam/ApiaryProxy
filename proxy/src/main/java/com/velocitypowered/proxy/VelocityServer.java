@@ -45,7 +45,11 @@ import com.velocitypowered.proxy.command.builtin.CallbackCommand;
 import com.velocitypowered.proxy.command.builtin.FindCommand;
 import com.velocitypowered.proxy.command.builtin.GlistCommand;
 import com.velocitypowered.proxy.command.builtin.HubCommand;
+import com.velocitypowered.proxy.command.builtin.LeaveQueueCommand;
 import com.velocitypowered.proxy.command.builtin.PingCommand;
+import com.velocitypowered.proxy.command.builtin.PlistCommand;
+import com.velocitypowered.proxy.command.builtin.QueueAdminCommand;
+import com.velocitypowered.proxy.command.builtin.QueueCommand;
 import com.velocitypowered.proxy.command.builtin.SendCommand;
 import com.velocitypowered.proxy.command.builtin.ServerCommand;
 import com.velocitypowered.proxy.command.builtin.ShowAllCommand;
@@ -66,6 +70,9 @@ import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.util.FaviconSerializer;
 import com.velocitypowered.proxy.protocol.util.GameProfileSerializer;
+import com.velocitypowered.proxy.queue.QueueManagerImpl;
+import com.velocitypowered.proxy.redis.RedisManagerImpl;
+import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
 import com.velocitypowered.proxy.scheduler.VelocityScheduler;
 import com.velocitypowered.proxy.server.ServerMap;
 import com.velocitypowered.proxy.util.AddressUtil;
@@ -131,7 +138,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public class VelocityServer implements ProxyServer, ForwardingAudience {
 
-  public static final String VELOCITY_URL = "https://github.com/GemstoneGG/Velocity-CTD";
+  public static final String VELOCITY_URL = "https://github.com/ssquadteam/ApiaryProxy";
 
   private static final Logger logger = LogManager.getLogger(VelocityServer.class);
   public static final Gson GENERAL_GSON = new GsonBuilder()
@@ -183,6 +190,9 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   private final ServerListPingHandler serverListPingHandler;
   private final long startTime;
   private final Key translationRegistryKey = Key.key("velocity", "translations");
+  private RedisManagerImpl redisManager;
+  private MultiProxyHandler multiProxyHandler;
+  private QueueManagerImpl queueManager;
 
   VelocityServer(final ProxyOptions options) {
     pluginManager = new VelocityPluginManager(this);
@@ -199,6 +209,18 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
 
   public KeyPair getServerKeyPair() {
     return serverKeyPair;
+  }
+
+  public RedisManagerImpl getRedisManager() {
+    return redisManager;
+  }
+
+  public MultiProxyHandler getMultiProxyHandler() {
+    return multiProxyHandler;
+  }
+
+  public QueueManagerImpl getQueueManager() {
+    return queueManager;
   }
 
   @Override
@@ -333,6 +355,10 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     } else {
       logger.warn("debug environment, metrics is disabled!");
     }
+
+    redisManager = new RedisManagerImpl(this);
+    multiProxyHandler = new MultiProxyHandler(this);
+    queueManager = new QueueManagerImpl(this);
   }
 
   private void unregisterTranslations() {
@@ -608,6 +634,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     unregisterCommand("alertraw");
     unregisterCommand("find");
     unregisterCommand("glist");
+    unregisterCommand("plist");
     unregisterCommand("ping");
     unregisterCommand("send");
     unregisterCommand("showall");
@@ -640,6 +667,10 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       new GlistCommand(this).register(configuration.isGlistEnabled());
     }
 
+    if (!commandManager.hasCommand("plist")) {
+      new PlistCommand(this).register(configuration.isPlistEnabled());
+    }
+
     if (!commandManager.hasCommand("ping")) {
       new PingCommand(this).register(configuration.isPingEnabled());
     }
@@ -650,6 +681,18 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
 
     if (!commandManager.hasCommand("showall")) {
       new ShowAllCommand(this).register(configuration.isShowAllEnabled());
+    }
+
+    if (!commandManager.hasCommand("queueadmin")) {
+      new QueueAdminCommand(this).register(configuration.getQueue().isEnabled());
+    }
+
+    if (!commandManager.hasCommand("leavequeue")) {
+      new LeaveQueueCommand(this).register(configuration.getQueue().isEnabled());
+    }
+
+    if (!commandManager.hasCommand("queue")) {
+      new QueueCommand(this).register(configuration.getQueue().isEnabled());
     }
 
     final BrigadierCommand serverCommand = ServerCommand.create(this, configuration.isServerEnabled());
@@ -674,11 +717,9 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   /**
    * Reloads the list of servers based on the updated configuration.
    *
-   * <p>
-   * This is exclusively implemented within VelocityServer as it
+   * <p>This is exclusively implemented within VelocityServer as it
    * is not a function necessary and present for generic purposes
-   * within ServerCommand and is exclusive to reload's functionality.
-   * </p>
+   * within ServerCommand and is exclusive to reload's functionality.</p>
    */
   public void reloadServerList() {
     VelocityConfiguration config = getConfiguration();
@@ -731,6 +772,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       // Shutdown the connection manager, this should be
       // done first to refuse new connections
       cm.shutdown();
+      multiProxyHandler.shutdown();
 
       ImmutableList<ConnectedPlayer> players = ImmutableList.copyOf(connectionsByUuid.values());
       for (ConnectedPlayer player : players) {

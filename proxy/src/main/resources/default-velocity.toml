@@ -1,4 +1,4 @@
-# Config version. Do not change this
+# Config version. Do not change this.
 config-version = "2.7"
 
 # What port should the proxy be bound to? By default, we'll bind to all addresses on port 25565.
@@ -9,7 +9,7 @@ bind = "0.0.0.0:25565"
 motd = "<#ff3a4c>A Velocity Server"
 
 # What should we display for the maximum number of players? (Velocity does not support a cap
-# on the number of players online.)
+# on the number of players online).
 show-max-players = 500
 
 # Should we authenticate players with Mojang? By default, this is on.
@@ -83,7 +83,7 @@ kick-existing-players = false
 #                  configuration is used if no servers could be contacted.
 ping-passthrough = "disabled"
 
-# If not enabled (default is true) player IP addresses will be replaced by <ip address withheld> in logs
+# If not enabled (default is true) player IP addresses will be replaced by <ip address withheld> in logs.
 enable-player-address-logging = true
 
 # If false, disables logging for offline player connections.
@@ -116,12 +116,13 @@ server-enabled = true
 glist-enabled = true
 send-enabled = true
 
-# Velocity-CTD Command Registration
+# ApiaryProxy Command Registration
 alert-enabled = true
 alertraw-enabled = true
 find-enabled = true
 hub-enabled = true
 ping-enabled = true
+plist-enabled = true
 showall-enabled = true
 
 [servers]
@@ -201,7 +202,7 @@ failover-on-unexpected-server-disconnect = true
 # Declares the proxy commands to 1.13+ clients.
 announce-proxy-commands = true
 
-# Enables the logging of commands
+# Enables the logging of commands.
 log-command-executions = false
 
 # Allows players transferred from other hosts via the
@@ -212,7 +213,7 @@ accepts-transfers = false
 # or denies illegal characters that are executed through the proxy.
 allow-illegal-characters-in-chat = false
 
-# Modifies the server brand that displays in your debug menu
+# Modifies the server brand that displays in your debug menu.
 # Available options:
 # - "{protocol-min}":          Returns the lowest compatible version from the
 #                              minimum-version key within this configuration.
@@ -277,5 +278,90 @@ port = 25565
 # This is the map name reported to the query services.
 map = "Velocity"
 
-# Whether plugins should be shown in query response by default or not
+# Whether plugins should be shown in query response by default or not.
 show-plugins = false
+
+[redis]
+# Should Redis be used to communicate between multiple Velocity proxies?
+enabled = false
+
+# What address, port, and other credentials should be used to link all Velocity functions to Redis?
+# Leave the username blank if you do not have a defined username for your Redis database.
+host = "127.0.0.1"
+port = 6379
+username = ""
+password = ""
+use-ssl = false
+
+# Maximum number of maintained connections to the Redis server.
+#
+# We encourage leaving this at "10," as having an absurd number
+# of connections to your Redis instance will massively depreciate performance.
+max-concurrent-connections = 10
+
+# The ID of this proxy (only needed for multi-proxy setups - leave blank otherwise)
+proxy-id = ""
+
+# How often to send a ping over the Redis.
+ping-interval-ms = 30000
+
+# How long until a proxy is marked as being timed out if we don't see a ping from it.
+other-proxy-timeout-ms = 90000
+
+[queue]
+# Whether the queue system is active or not. This will fully unregister all permissions, commands, and this feature as
+# a whole.
+enabled = false
+
+# The list of aliases for the `/queue` command.
+queue-aliases = [
+    "joinqueue",
+    "server"
+]
+
+# The list of servers that should not have the queue system enabled.
+no-queue-servers = [
+    "lobby"
+]
+
+# Whether the user should be capable of entering multiple queues at once.
+allow-multi-queue = false
+
+# Determines which server should be prioritized for action bars and placeholders.
+# Options: "first" or "last"
+multiple-server-messaging-selection = "last"
+
+# How long the queue system should wait before sending each user to a server (in seconds).
+send-delay = 1.0
+
+# How long the queue system should wait before updating or sending a new action bar, chat message, or title/subtitle.
+message-delay = 1.0
+
+# The number tries should a user be sent to a server before it removes the user from a queue.
+max-send-retries = 5
+
+# Whether the player should be removed from their previous queue when switching servers.
+remove-player-on-server-switch = true
+
+# Whether the kick message or indicator should be shown when you have failed to queue and join a specific server.
+forward-kick-reason = true
+
+# Regexes for reasons the user should be removed from the queue when kicked from their previous server.
+kick-reasons-blacklist = [
+    "banned", "blacklisted"
+]
+
+# Amount of time before a user can be sent to a server, after coming back online.
+return-online-send-delay = 0.0
+
+# Whether users can enter a queue that is paused.
+allow-paused-queue-joining = false
+
+# Whether users should be automatically sent back to a server when it returns online. This feature only applies when
+# enabled. By default, the user is re-added to the queue and must wait the duration before being re-sent to their
+# previous destination.
+send-all-users-back-when-online = false
+
+# If true, players that are sent via the BungeeCord Messaging channels are queued if the server has queueing enabled.
+# If false, they will bypass the queue and be sent directly to the backend.
+override-bungee-messaging = true
