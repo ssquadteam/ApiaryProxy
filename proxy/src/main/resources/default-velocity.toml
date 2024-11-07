@@ -263,7 +263,7 @@ server-brand = "{backend-brand} ({proxy-brand})"
 fallback-version-ping = "{proxy-brand} {protocol-min}-{protocol-max}"
 
 # Replaces what is returned for both the server brand and fallback version pinger.
-custom-brand-proxy = "Velocity"
+custom-brand-proxy = "Apiary Proxy"
 
 # Replaces what is returned as the server brand for the user's client.
 custom-brand-backend = "Paper"
