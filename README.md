@@ -63,7 +63,6 @@
 ## Contact
 
 - 📫 Discord: `iamcxv7`
-- 📫 Support Server: `https://discord.gg/themegahive`
 
 
 ## Downloads
