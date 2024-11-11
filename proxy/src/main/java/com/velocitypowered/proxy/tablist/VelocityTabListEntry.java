@@ -17,6 +17,7 @@
 
 package com.velocitypowered.proxy.tablist;
 
+import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.player.ChatSession;
 import com.velocitypowered.api.proxy.player.TabList;
 import com.velocitypowered.api.proxy.player.TabListEntry;
@@ -38,14 +39,15 @@ public class VelocityTabListEntry implements TabListEntry {
   private int latency;
   private int gameMode;
   private boolean listed;
+  private int listOrder;
   private @Nullable ChatSession session;
 
   /**
    * Constructs the instance.
    */
   public VelocityTabListEntry(final VelocityTabList tabList, final GameProfile profile, final Component displayName,
-                              final int latency,
-                              final int gameMode, @Nullable final ChatSession session, final boolean listed) {
+                              final int latency, final int gameMode, @Nullable final ChatSession session,
+                              final boolean listed, final int listOrder) {
     this.tabList = tabList;
     this.profile = profile;
     this.displayName = displayName;
@@ -53,6 +55,7 @@ public class VelocityTabListEntry implements TabListEntry {
     this.gameMode = gameMode;
     this.session = session;
     this.listed = listed;
+    this.listOrder = listOrder;
   }
 
   @Override
@@ -81,9 +84,7 @@ public class VelocityTabListEntry implements TabListEntry {
     UpsertPlayerInfoPacket.Entry upsertEntry = this.tabList.createRawEntry(this);
     upsertEntry.setDisplayName(
             displayName == null
-                    ?
-                    null :
-                    new ComponentHolder(this.tabList.getPlayer().getProtocolVersion(), displayName)
+                ? null : new ComponentHolder(this.tabList.getPlayer().getProtocolVersion(), displayName)
     );
     this.tabList.emitActionRaw(UpsertPlayerInfoPacket.Action.UPDATE_DISPLAY_NAME, upsertEntry);
     return this;
@@ -149,5 +150,25 @@ public class VelocityTabListEntry implements TabListEntry {
 
   void setListedWithoutUpdate(final boolean listed) {
     this.listed = listed;
+  }
+
+  @Override
+  public int getListOrder() {
+    return listOrder;
+  }
+
+  @Override
+  public VelocityTabListEntry setListOrder(final int listOrder) {
+    this.listOrder = listOrder;
+    if (tabList.getPlayer().getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_21_2)) {
+      UpsertPlayerInfoPacket.Entry upsertEntry = this.tabList.createRawEntry(this);
+      upsertEntry.setListOrder(listOrder);
+      tabList.emitActionRaw(UpsertPlayerInfoPacket.Action.UPDATE_LIST_ORDER, upsertEntry);
+    }
+    return this;
+  }
+
+  void setListOrderWithoutUpdate(int listOrder) {
+    this.listOrder = listOrder;
   }
 }

@@ -49,11 +49,11 @@ import com.velocitypowered.proxy.command.builtin.LeaveQueueCommand;
 import com.velocitypowered.proxy.command.builtin.PingCommand;
 import com.velocitypowered.proxy.command.builtin.PlistCommand;
 import com.velocitypowered.proxy.command.builtin.QueueAdminCommand;
-import com.velocitypowered.proxy.command.builtin.QueueCommand;
 import com.velocitypowered.proxy.command.builtin.SendCommand;
 import com.velocitypowered.proxy.command.builtin.ServerCommand;
 import com.velocitypowered.proxy.command.builtin.ShowAllCommand;
 import com.velocitypowered.proxy.command.builtin.ShutdownCommand;
+import com.velocitypowered.proxy.command.builtin.SlashServerCommand;
 import com.velocitypowered.proxy.command.builtin.VelocityCommand;
 import com.velocitypowered.proxy.config.VelocityConfiguration;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
@@ -306,9 +306,6 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
             .build(),
         shutdownCommand
     );
-    registerCommands();
-
-    registerTranslations(true);
 
     for (ServerInfo cliServer : options.getServers()) {
       servers.register(cliServer);
@@ -319,6 +316,9 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
         servers.register(new ServerInfo(entry.getKey(), AddressUtil.parseAddress(entry.getValue())));
       }
     }
+
+    registerCommands();
+    registerTranslations(true);
 
     ipAttemptLimiter = Ratelimiters.createWithMilliseconds(configuration.getLoginRatelimit());
     loadPlugins();
@@ -625,6 +625,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     ipAttemptLimiter = Ratelimiters.createWithMilliseconds(newConfiguration.getLoginRatelimit());
     this.configuration = newConfiguration;
     eventManager.fireAndForget(new ProxyReloadEvent());
+    queueManager.reloadConfig();
     return true;
   }
 
@@ -691,18 +692,8 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       new LeaveQueueCommand(this).register(configuration.getQueue().isEnabled());
     }
 
-    if (!commandManager.hasCommand("queue")) {
-      new QueueCommand(this).register(configuration.getQueue().isEnabled());
-    }
-
-    final BrigadierCommand serverCommand = ServerCommand.create(this, configuration.isServerEnabled());
-    if (serverCommand != null && !commandManager.hasCommand("server")) {
-      commandManager.register(
-          commandManager.metaBuilder(serverCommand)
-              .plugin(VelocityVirtualPlugin.INSTANCE)
-              .build(),
-          serverCommand
-      );
+    if (!commandManager.hasCommand("server")) {
+      new ServerCommand(this).register(configuration.isServerEnabled());
     }
 
     if (configuration.isHubEnabled() && !commandManager.hasCommand("hub")) {
@@ -711,6 +702,12 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
               .aliases("lobby")
               .build(),
           new HubCommand(this).register(configuration.isHubEnabled()));
+    }
+
+    for (Map.Entry<String, List<String>> entry : configuration.getSlashServers().entrySet()) {
+      for (String alias : entry.getValue()) {
+        new SlashServerCommand(this, entry.getKey()).register(alias);
+      }
     }
   }
 

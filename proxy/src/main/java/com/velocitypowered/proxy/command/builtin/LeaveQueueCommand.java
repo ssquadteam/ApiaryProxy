@@ -27,8 +27,10 @@ import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.command.VelocityCommands;
 import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
 import com.velocitypowered.proxy.server.VelocityRegisteredServer;
+import java.util.List;
 import net.kyori.adventure.text.Component;
 
 /**
@@ -50,17 +52,25 @@ public class LeaveQueueCommand {
       return;
     }
 
-    final LiteralArgumentBuilder<CommandSource> rootNode = BrigadierCommand.literalArgumentBuilder("leavequeue")
+    final List<String> aliases = server.getConfiguration().getQueue().getLeaveQueueAliases();
+
+    if (aliases.isEmpty()) {
+      return;
+    }
+
+    final LiteralArgumentBuilder<CommandSource> rootNode = BrigadierCommand.literalArgumentBuilder(aliases.remove(0))
         .requires(source -> source.getPermissionValue("velocity.queue.leave") == Tristate.TRUE)
         .then(BrigadierCommand
             .requiredArgumentBuilder("server", StringArgumentType.word())
-            .suggests(QueueAdminCommand.suggestServer(server, "server"))
+            .suggests(VelocityCommands.suggestServer(server, "server", false))
             .executes(this::leaveQueue)
         )
         .executes(this::leaveAllQueues);
+
     final BrigadierCommand command = new BrigadierCommand(rootNode);
     server.getCommandManager().register(
         server.getCommandManager().metaBuilder(command)
+            .aliases(aliases.toArray(new String[0]))
             .plugin(VelocityVirtualPlugin.INSTANCE)
             .build(),
         command
@@ -92,7 +102,7 @@ public class LeaveQueueCommand {
   }
 
   private int leaveQueue(final CommandContext<CommandSource> ctx) {
-    VelocityRegisteredServer server = QueueAdminCommand.getServer(this.server, ctx, "server");
+    VelocityRegisteredServer server = VelocityCommands.getServer(this.server, ctx, "server", false);
 
     if (server == null) {
       return -1;

@@ -20,16 +20,16 @@ package com.velocitypowered.proxy.redis.multiproxy;
 import com.velocitypowered.proxy.redis.RedisPacket;
 
 /**
- * Represents a packet sent when a proxy in a multi-proxy setup is shutting down.
+ * Represents a packet sent when a player joins a proxy in a multi-proxy setup.
  *
- * <p>This packet notifies other proxies in the network that a specific proxy instance
- * is shutting down, allowing them to handle the shutdown event accordingly, such as
- * updating the status of the proxy or re-balancing players.</p>
+ * <p>This packet is used to inform other proxies in the network about the new player
+ * and includes details such as the player's unique identifier (UUID), name, and
+ * the ID of the proxy where the player joined.</p>
  *
- * @param proxyId the identifier of the proxy that is shutting down
+ * @param player the joining player
  */
-public record ShuttingDown(String proxyId) implements RedisPacket {
-  public static final String ID = "shutting-down";
+public record RedisPlayerJoinUpdate(MultiProxyHandler.RemotePlayerInfo player) implements RedisPacket {
+  public static final String ID = "player-join";
 
   @Override
   public String getId() {

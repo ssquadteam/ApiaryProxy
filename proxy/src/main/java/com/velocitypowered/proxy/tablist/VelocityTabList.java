@@ -19,6 +19,7 @@ package com.velocitypowered.proxy.tablist;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.player.ChatSession;
 import com.velocitypowered.api.proxy.player.TabListEntry;
@@ -89,7 +90,7 @@ public class VelocityTabList implements InternalTabList {
     } else {
       entry = new VelocityTabListEntry(this, entry1.getProfile(),
           entry1.getDisplayNameComponent().orElse(null),
-          entry1.getLatency(), entry1.getGameMode(), entry1.getChatSession(), entry1.isListed());
+          entry1.getLatency(), entry1.getGameMode(), entry1.getChatSession(), entry1.isListed(), entry1.getListOrder());
     }
 
     EnumSet<UpsertPlayerInfoPacket.Action> actions = EnumSet
@@ -102,18 +103,16 @@ public class VelocityTabList implements InternalTabList {
 
     this.entries.compute(entry.getProfile().getId(), (uuid, previousEntry) -> {
       if (previousEntry != null) {
-        // we should merge entries here
+        // We should merge entries here
         if (previousEntry.equals(entry)) {
-          return previousEntry; // nothing else to do, this entry is perfect
+          return previousEntry; // Nothing else to do, this entry is perfect
         }
         if (!Objects.equals(previousEntry.getDisplayNameComponent().orElse(null),
                 entry.getDisplayNameComponent().orElse(null))) {
           actions.add(UpsertPlayerInfoPacket.Action.UPDATE_DISPLAY_NAME);
           playerInfoEntry.setDisplayName(entry.getDisplayNameComponent().isEmpty()
-                  ?
-                  null :
-                  new ComponentHolder(player.getProtocolVersion(),
-                          entry.getDisplayNameComponent().get())
+                  ? null : new ComponentHolder(player.getProtocolVersion(),
+                      entry.getDisplayNameComponent().get())
           );
         }
         if (!Objects.equals(previousEntry.getLatency(), entry.getLatency())) {
@@ -127,6 +126,11 @@ public class VelocityTabList implements InternalTabList {
         if (!Objects.equals(previousEntry.isListed(), entry.isListed())) {
           actions.add(UpsertPlayerInfoPacket.Action.UPDATE_LISTED);
           playerInfoEntry.setListed(entry.isListed());
+        }
+        if (!Objects.equals(previousEntry.getListOrder(), entry.getListOrder())
+            && player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_21_2)) {
+          actions.add(UpsertPlayerInfoPacket.Action.UPDATE_LIST_ORDER);
+          playerInfoEntry.setListOrder(entry.getListOrder());
         }
         if (!Objects.equals(previousEntry.getChatSession(), entry.getChatSession())) {
           ChatSession from = entry.getChatSession();
@@ -144,10 +148,7 @@ public class VelocityTabList implements InternalTabList {
         if (entry.getDisplayNameComponent().isPresent()) {
           actions.add(UpsertPlayerInfoPacket.Action.UPDATE_DISPLAY_NAME);
           playerInfoEntry.setDisplayName(entry.getDisplayNameComponent().isEmpty()
-                  ?
-                  null :
-                  new ComponentHolder(player.getProtocolVersion(),
-                          entry.getDisplayNameComponent().get())
+              ? null : new ComponentHolder(player.getProtocolVersion(), entry.getDisplayNameComponent().get())
           );
         }
         if (entry.getChatSession() != null) {
@@ -162,6 +163,11 @@ public class VelocityTabList implements InternalTabList {
         }
         playerInfoEntry.setLatency(entry.getLatency());
         playerInfoEntry.setListed(entry.isListed());
+        if (entry.getListOrder() != 0
+            && player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_21_2)) {
+          actions.add(UpsertPlayerInfoPacket.Action.UPDATE_LIST_ORDER);
+          playerInfoEntry.setListOrder(entry.getListOrder());
+        }
       }
       return entry;
     });
@@ -206,10 +212,8 @@ public class VelocityTabList implements InternalTabList {
 
   @Override
   public TabListEntry buildEntry(final GameProfile profile, @Nullable final Component displayName, final int latency,
-      final int gameMode,
-      @Nullable final ChatSession chatSession, final boolean listed) {
-    return new VelocityTabListEntry(this, profile, displayName, latency, gameMode, chatSession,
-        listed);
+      final int gameMode, @Nullable final ChatSession chatSession, final boolean listed, final int listOrder) {
+    return new VelocityTabListEntry(this, profile, displayName, latency, gameMode, chatSession, listed, listOrder);
   }
 
   @Override
@@ -246,7 +250,8 @@ public class VelocityTabList implements InternalTabList {
                 0,
                 -1,
                 null,
-                false
+                false,
+                0
             )
         );
       } else {
@@ -273,6 +278,9 @@ public class VelocityTabList implements InternalTabList {
     }
     if (actions.contains(UpsertPlayerInfoPacket.Action.UPDATE_LISTED)) {
       currentEntry.setListedWithoutUpdate(entry.isListed());
+    }
+    if (actions.contains(UpsertPlayerInfoPacket.Action.UPDATE_LIST_ORDER)) {
+      currentEntry.setListOrderWithoutUpdate(entry.getListOrder());
     }
   }
 

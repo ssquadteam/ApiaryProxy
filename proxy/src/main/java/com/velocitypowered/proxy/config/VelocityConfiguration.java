@@ -55,6 +55,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Velocity's configuration.
@@ -117,6 +118,8 @@ public final class VelocityConfiguration implements ProxyConfig {
   private boolean logMinimumVersion = false;
   @Expose
   private String minimumVersion = "1.7.2";
+  @Expose
+  private Map<String, List<String>> slashServers = new HashMap<>();
 
   private VelocityConfiguration(final Servers servers, final ForcedHosts forcedHosts, final Commands commands,
       final Advanced advanced, final Query query, final Metrics metrics, final Redis redis, final Queue queue) {
@@ -139,7 +142,7 @@ public final class VelocityConfiguration implements ProxyConfig {
       final boolean logPlayerConnections, final boolean logPlayerDisconnections,
       final boolean logOfflineConnections, final boolean disableForge, final boolean enforceChatSigning,
       final boolean translateHeaderFooter, final boolean logMinimumVersion, final String minimumVersion,
-      final Redis redis, final Queue queue) {
+      final Redis redis, final Queue queue, final Map<String, List<String>> slashServers) {
     this.bind = bind;
     this.motd = motd;
     this.showMaxPlayers = showMaxPlayers;
@@ -168,6 +171,7 @@ public final class VelocityConfiguration implements ProxyConfig {
     this.minimumVersion = minimumVersion;
     this.redis = redis;
     this.queue = queue;
+    this.slashServers = slashServers;
   }
 
   /**
@@ -262,6 +266,19 @@ public final class VelocityConfiguration implements ProxyConfig {
           logger.error("Server '{}' for forced host '{}' does not exist", server, entry.getKey());
           valid = false;
         }
+      }
+    }
+
+    for (Map.Entry<String, List<String>> entry : slashServers.entrySet()) {
+      if (entry.getValue().isEmpty()) {
+        logger.error("/server alias '{}' does not contain any servers", entry.getKey());
+        valid = false;
+        continue;
+      }
+
+      if (!servers.getServers().containsKey(entry.getKey())) {
+        logger.error("Server '{}' does not exist (in /server aliases)", entry.getKey());
+        valid = false;
       }
     }
 
@@ -453,6 +470,10 @@ public final class VelocityConfiguration implements ProxyConfig {
     return commands.isShowAllEnabled();
   }
 
+  public boolean isOverrideServerCommandUsage() {
+    return commands.isOverrideServerCommandUsage();
+  }
+
   @Override
   public int getReadTimeout() {
     return advanced.getReadTimeout();
@@ -538,12 +559,16 @@ public final class VelocityConfiguration implements ProxyConfig {
     return forceKeyAuthentication;
   }
 
-  public Redis getRedis() {
+  public @NotNull Redis getRedis() {
     return redis;
   }
 
-  public Queue getQueue() {
+  public @NotNull Queue getQueue() {
     return queue;
+  }
+
+  public Map<String, List<String>> getSlashServers() {
+    return slashServers;
   }
 
   @Override
@@ -574,6 +599,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         .add("translateHeaderFooter", translateHeaderFooter)
         .add("logMinimumVersion", logMinimumVersion)
         .add("minimumVersion", minimumVersion)
+        .add("slashServers", slashServers)
         .toString();
   }
 
@@ -681,6 +707,24 @@ public final class VelocityConfiguration implements ProxyConfig {
       final boolean logMinimumVersion = config.getOrElse(
               "log-minimum-version", false);
       final String minimumVersion = config.getOrElse("minimum-version", "1.7.2");
+      final CommentedConfig slashServersConfig = config.getOrElse("slash-servers", (CommentedConfig) null);
+
+      final Map<String, List<String>> slashServers = new HashMap<>();
+
+      if (slashServersConfig != null) {
+        for (UnmodifiableConfig.Entry entry : slashServersConfig.entrySet()) {
+          if (entry.getValue() instanceof String) {
+            slashServers.put(entry.getKey().toLowerCase(Locale.ROOT), ImmutableList.of(entry.getValue()));
+          } else if (entry.getValue() instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<String> value = ImmutableList.copyOf((List<String>) entry.getValue());
+            slashServers.put(entry.getKey().toLowerCase(Locale.ROOT), value);
+          } else {
+            throw new IllegalStateException(
+                "Invalid value of type " + entry.getValue().getClass() + " in slash servers!");
+          }
+        }
+      }
 
       // Throw an exception if the forwarding-secret file is empty and the proxy is using a
       // forwarding mode that requires it.
@@ -718,7 +762,8 @@ public final class VelocityConfiguration implements ProxyConfig {
               logMinimumVersion,
               minimumVersion,
               new Redis(redisConfig),
-              new Queue(queueConfig)
+              new Queue(queueConfig),
+              slashServers
       );
     }
   }
@@ -812,7 +857,7 @@ public final class VelocityConfiguration implements ProxyConfig {
               serverForwardingModes.put(name, mode);
             }
 
-            servers.put(name, address);
+            servers.put(cleanServerName(name), address);
           } else {
             if (!entry.getKey().equalsIgnoreCase("try")
                 && !entry.getKey().equalsIgnoreCase("enable-dynamic-fallbacks")
@@ -824,7 +869,10 @@ public final class VelocityConfiguration implements ProxyConfig {
         }
         this.servers = ImmutableMap.copyOf(servers);
         this.serverForwardingModes = ImmutableMap.copyOf(serverForwardingModes);
-        this.attemptConnectionOrder = config.getOrElse("try", attemptConnectionOrder);
+        this.attemptConnectionOrder = config.getOrElse("try", attemptConnectionOrder)
+            .stream()
+            .map(s -> s.toLowerCase(Locale.ROOT))
+            .toList();
         this.enableDynamicFallbacks = config.getOrElse("enable-dynamic-fallbacks", false);
         this.enableMostPopulatedFallbacks = config.getOrElse("enable-most-populated-fallbacks", false);
       }
@@ -878,7 +926,7 @@ public final class VelocityConfiguration implements ProxyConfig {
      * @return the cleaned server name
      */
     private String cleanServerName(final String name) {
-      return name.replace("\"", "");
+      return name.replace("\"", "").toLowerCase(Locale.ROOT);
     }
 
     @Override
@@ -962,6 +1010,8 @@ public final class VelocityConfiguration implements ProxyConfig {
     private boolean sendCommand = true;
     @Expose
     private boolean showAllCommand = true;
+    @Expose
+    private boolean overrideServerCommandUsage = false;
 
     private Commands() {
     }
@@ -978,6 +1028,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.pingCommand = config.getOrElse("ping-enabled", true);
         this.sendCommand = config.getOrElse("send-enabled", true);
         this.showAllCommand = config.getOrElse("showall-enabled", true);
+        this.overrideServerCommandUsage = config.getOrElse("override-server-command-usage", false);
       }
     }
 
@@ -1021,6 +1072,10 @@ public final class VelocityConfiguration implements ProxyConfig {
       return showAllCommand;
     }
 
+    public boolean isOverrideServerCommandUsage() {
+      return overrideServerCommandUsage;
+    }
+
     @Override
     public String toString() {
       return "Commands{"
@@ -1034,6 +1089,7 @@ public final class VelocityConfiguration implements ProxyConfig {
           + ", pingCommand=" + pingCommand
           + ", sendCommand=" + sendCommand
           + ", showAllCommand=" + showAllCommand
+          + ", overrideServerCommandUsage=" + overrideServerCommandUsage
           + '}';
     }
   }
@@ -1430,6 +1486,8 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private double messageDelay;
     @Expose
+    private double backendPingInterval;
+    @Expose
     private int maxSendRetries;
     @Expose
     private boolean removePlayerOnServerSwitch;
@@ -1445,6 +1503,10 @@ public final class VelocityConfiguration implements ProxyConfig {
     private boolean sendAllUsersWhenBackOnline;
     @Expose
     private boolean overrideBungeeMessaging;
+    @Expose
+    private List<String> leaveQueueAliases;
+    @Expose
+    private List<String> queueAdminAliases;
 
     private Queue(final CommentedConfig config) {
       if (config == null) {
@@ -1458,6 +1520,7 @@ public final class VelocityConfiguration implements ProxyConfig {
       this.multipleServerMessagingSelection = config.getOrElse("multiple-server-messaging-selection", "last");
       this.sendDelay = config.getOrElse("send-delay", 1.0);
       this.messageDelay = config.getOrElse("message-delay", 1.0);
+      this.backendPingInterval = config.getOrElse("backend-ping-interval", 1.0);
       this.maxSendRetries = config.getOrElse("max-send-retries", 5);
       this.removePlayerOnServerSwitch = config.getOrElse("remove-player-on-server-switch", true);
       this.forwardKickReason = config.getOrElse("forward-kick-reason", true);
@@ -1477,6 +1540,8 @@ public final class VelocityConfiguration implements ProxyConfig {
       this.allowPausedQueueJoining = config.getOrElse("allow-paused-queue-joining", false);
       this.sendAllUsersWhenBackOnline = config.getOrElse("send-all-users-when-back-online", false);
       this.overrideBungeeMessaging = config.getOrElse("override-bungee-messaging", true);
+      this.leaveQueueAliases = config.getOrElse("leave-queue-aliases", new ArrayList<>());
+      this.queueAdminAliases = config.getOrElse("queue-admin-aliases", new ArrayList<>());
     }
 
     public boolean isEnabled() {
@@ -1519,6 +1584,10 @@ public final class VelocityConfiguration implements ProxyConfig {
       return sendDelay;
     }
 
+    public double getBackendPingInterval() {
+      return backendPingInterval;
+    }
+
     public String getMultipleServerMessagingSelection() {
       return multipleServerMessagingSelection;
     }
@@ -1539,6 +1608,14 @@ public final class VelocityConfiguration implements ProxyConfig {
       return overrideBungeeMessaging;
     }
 
+    public List<String> getLeaveQueueAliases() {
+      return leaveQueueAliases;
+    }
+
+    public List<String> getQueueAdminAliases() {
+      return queueAdminAliases;
+    }
+
     @Override
     public String toString() {
       return "Queue{"
@@ -1557,6 +1634,8 @@ public final class VelocityConfiguration implements ProxyConfig {
           + ", noQueueServers=" + noQueueServers
           + ", queueAliases=" + queueAliases
           + ", overrideBungeeMessaging" + overrideBungeeMessaging
+          + ", leaveQueueAliases" + leaveQueueAliases
+          + ", queueAdminAliases" + queueAdminAliases
           + '}';
     }
   }

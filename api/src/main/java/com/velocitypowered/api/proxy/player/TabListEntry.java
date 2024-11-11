@@ -140,6 +140,27 @@ public interface TabListEntry extends KeyIdentifiable {
   }
 
   /**
+   * Returns the order/priority of this entry in the tab list.
+   *
+   * @return order of this entry
+   * @since Minecraft 1.21.2
+   */
+  default int getListOrder() {
+    return 0;
+  }
+
+  /**
+   * Sets the order/priority of this entry in the tab list.
+   *
+   * @param order order of this entry
+   * @return {@code this}, for chaining
+   * @since Minecraft 1.21.2
+   */
+  default TabListEntry setListOrder(int order) {
+    return this;
+  }
+
+  /**
    * Returns a {@link Builder} to create a {@link TabListEntry}.
    *
    * @return {@link TabListEntry} builder
@@ -161,6 +182,7 @@ public interface TabListEntry extends KeyIdentifiable {
     private int latency = 0;
     private int gameMode = 0;
     private boolean listed = true;
+    private int listOrder = 0;
 
     private @Nullable ChatSession chatSession;
 
@@ -258,6 +280,19 @@ public interface TabListEntry extends KeyIdentifiable {
     }
 
     /**
+     * Sets the order/priority of this entry in the tab list.
+     *
+     * @param order to set
+     * @return ${code this}, for chaining
+     * @since Minecraft 1.21.2
+     * @see TabListEntry#getListOrder()
+     */
+    public Builder listOrder(final int order) {
+      this.listOrder = order;
+      return this;
+    }
+
+    /**
      * Constructs the {@link TabListEntry} specified by {@code this} {@link Builder}.
      *
      * @return the constructed {@link TabListEntry}
@@ -269,7 +304,7 @@ public interface TabListEntry extends KeyIdentifiable {
       if (profile == null) {
         throw new IllegalStateException("The GameProfile must be set when building a TabListEntry");
       }
-      return tabList.buildEntry(profile, displayName, latency, gameMode, chatSession, listed);
+      return tabList.buildEntry(profile, displayName, latency, gameMode, chatSession, listed, listOrder);
     }
   }
 }

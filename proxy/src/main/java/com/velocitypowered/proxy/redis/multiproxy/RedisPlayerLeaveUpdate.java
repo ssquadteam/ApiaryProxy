@@ -21,18 +21,16 @@ import com.velocitypowered.proxy.redis.RedisPacket;
 import java.util.UUID;
 
 /**
- * Represents a packet sent when a player joins a proxy in a multi-proxy setup.
+ * Represents a packet sent when a player leaves a proxy in a multi-proxy setup.
  *
- * <p>This packet is used to inform other proxies in the network about the new player
- * and includes details such as the player's unique identifier (UUID), name, and
- * the ID of the proxy where the player joined.</p>
+ * <p>This packet informs other proxies in the network that a player has disconnected
+ * and includes the player’s unique identifier (UUID) and the ID of the proxy they left.</p>
  *
- * @param proxyId the identifier of the proxy the player joined
+ * @param proxyId the identifier of the proxy the player left
  * @param uuid the unique identifier of the player
- * @param name the name of the player
  */
-public record PlayerJoinUpdate(String proxyId, UUID uuid, String name) implements RedisPacket {
-  public static final String ID = "player-join";
+public record RedisPlayerLeaveUpdate(String proxyId, UUID uuid) implements RedisPacket {
+  public static final String ID = "player-leave";
 
   @Override
   public String getId() {

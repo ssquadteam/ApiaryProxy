@@ -37,8 +37,7 @@ public final class SerializedPluginDescription {
   private final String main;
 
   private SerializedPluginDescription(final String id, final String name, final String version, final String description,
-      final String url,
-      final List<String> authors, final List<Dependency> dependencies, final String main) {
+      final String url, final List<String> authors, final List<Dependency> dependencies, final String main) {
     Preconditions.checkNotNull(id, "id");
     Preconditions.checkArgument(ID_PATTERN.matcher(id).matches(), "id is not valid");
     this.id = id;

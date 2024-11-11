@@ -19,21 +19,17 @@ package com.velocitypowered.proxy.redis.multiproxy;
 
 import com.velocitypowered.proxy.redis.RedisPacket;
 import java.util.UUID;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Represents a packet sent when a player switches servers within a proxy in a multi-proxy setup.
+ * Executes a command or sends a message as a target player on a remote proxy.
  *
- * <p>This packet notifies other proxies in the network about the server change for a player, including
- * the player's unique identifier (UUID), the ID of the proxy, and the name of the server the player joined.
- * The {@code server} field may be {@code null} if the server information is unavailable.</p>
- *
- * @param proxyId the identifier of the proxy where the server change occurred
- * @param uuid the unique identifier of the player
- * @param server the name of the new server the player joined, or {@code null} if not specified
+ * @param targetProxy the target proxy ID
+ * @param playerUuid the UUID of the player to execute as
+ * @param replySource the encoded command source to send replies to
+ * @param message the message to force the target to send (will run a command if the message begins with a forward slash)
  */
-public record PlayerServerChange(String proxyId, UUID uuid, @Nullable String server) implements RedisPacket {
-  public static final String ID = "player-server-change";
+public record RedisSudo(String targetProxy, UUID playerUuid, EncodedCommandSource replySource, String message) implements RedisPacket {
+  public static final String ID = "sudo";
 
   @Override
   public String getId() {

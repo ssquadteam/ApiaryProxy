@@ -125,6 +125,9 @@ ping-enabled = true
 plist-enabled = true
 showall-enabled = true
 
+# Whether to use the default `/server` output, or whether to override it with the `velocity.command.server.usage` key.
+override-server-command-usage = false
+
 [servers]
 # Configure your servers here. Each key represents the server's name, and the value
 # represents the IP address of the server to connect to.
@@ -268,6 +271,12 @@ custom-brand-proxy = "Apiary Proxy"
 # Replaces what is returned as the server brand for the user's client.
 custom-brand-backend = "Paper"
 
+[slash-servers]
+# Defines `/<name>` aliases for servers - here `/faction` and `/factions` would both send you to the server named
+# `factions`, for example.
+factions = ["faction", "factions"]
+minigames = ["minigames", "arcade"]
+
 [query]
 # Whether to enable responding to GameSpy 4 query responses or not.
 enabled = false
@@ -313,11 +322,17 @@ other-proxy-timeout-ms = 90000
 # a whole.
 enabled = false
 
-# The list of aliases for the `/queue` command.
+# The list of aliases for the `/server` command when the queue system is enabled.
 queue-aliases = [
     "joinqueue",
-    "server"
+    "queue"
 ]
+
+# The list of aliases for the `/leavequeue` command. The command will not be registered if this list is empty.
+leave-queue-aliases = ["leavequeue", "dequeue"]
+
+# The list of aliases for the `/queueadmin` command. The command will not be registered if this list is empty.
+queue-admin-aliases = ["queueadmin", "qadmin"]
 
 # The list of servers that should not have the queue system enabled.
 no-queue-servers = [
@@ -336,6 +351,9 @@ send-delay = 1.0
 
 # How long the queue system should wait before updating or sending a new action bar, chat message, or title/subtitle.
 message-delay = 1.0
+
+# How often to ping backend servers to check if they're online.
+backend-ping-interval = 1.0
 
 # The number tries should a user be sent to a server before it removes the user from a queue.
 max-send-retries = 5
