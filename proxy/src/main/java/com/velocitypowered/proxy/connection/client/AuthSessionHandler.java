@@ -44,6 +44,8 @@ import com.velocitypowered.proxy.protocol.packet.LoginAcknowledgedPacket;
 import com.velocitypowered.proxy.protocol.packet.ServerLoginSuccessPacket;
 import com.velocitypowered.proxy.protocol.packet.ServerboundCookieResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.SetCompressionPacket;
+import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.redis.multiproxy.RedisPlayerSetTransferringRequest;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import java.util.Optional;
@@ -221,6 +223,11 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
       loginState = State.ACKNOWLEDGED;
       mcConnection.setActiveSessionHandler(StateRegistry.CONFIG, new ClientConfigSessionHandler(server, connectedPlayer));
 
+      if (!this.server.getConfiguration().getServerLinks().isEmpty()) {
+        if (connectedPlayer.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_21)) {
+          connectedPlayer.setServerLinks(this.server.getConfiguration().getServerLinks());
+        }
+      }
       server.getEventManager()
           .fire(new PostLoginEvent(connectedPlayer))
           .thenCompose(ignored -> connectToInitialServer(connectedPlayer))
@@ -270,7 +277,8 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
           return;
         }
 
-        if (this.server.getMultiProxyHandler().onPlayerJoin(player)) {
+        MultiProxyHandler.RemotePlayerInfo info = this.server.getMultiProxyHandler().getPlayerInfo(player.getUniqueId());
+        if (this.server.getMultiProxyHandler().onPlayerJoin(player) && info != null && !info.isBeingTransferred()) {
           player.disconnect0(Component.translatable("velocity.error.already-connected-proxy.remote"), true);
           return;
         }
@@ -311,6 +319,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
         return;
       }
       player.createConnectionRequest(toTry.get()).fireAndForget();
+      this.server.getRedisManager().send(new RedisPlayerSetTransferringRequest(player.getUniqueId(), false, null));
     }, mcConnection.eventLoop());
   }
 

@@ -21,11 +21,28 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.config.VelocityConfiguration;
+import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
+import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
+import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.redis.multiproxy.RedisGetPlayerPingRequest;
+import com.velocitypowered.proxy.redis.multiproxy.RedisPlayerSetTransferringRequest;
+import com.velocitypowered.proxy.redis.multiproxy.RedisSendMessage;
+import com.velocitypowered.proxy.redis.multiproxy.RedisSendMessageToUuidRequest;
+import com.velocitypowered.proxy.redis.multiproxy.RedisServerAlertRequest;
+import com.velocitypowered.proxy.redis.multiproxy.RedisSwitchServerRequest;
+import com.velocitypowered.proxy.redis.multiproxy.RedisTransferCommandRequest;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,13 +86,137 @@ public class RedisManagerImpl {
     if (redisConfig.isEnabled()) {
       this.start(redisConfig);
     }
+
+    registerListeners(velocityServer);
+  }
+
+  private void registerListeners(final VelocityServer proxy) {
+    listen(RedisServerAlertRequest.ID, RedisServerAlertRequest.class, it -> {
+      Component component = it.component();
+
+      if (component != null) {
+        proxy.sendMessage(component);
+      }
+    });
+
+    listen(RedisGetPlayerPingRequest.ID, RedisGetPlayerPingRequest.class, it -> {
+      proxy.getPlayer(it.playerToCheck()).ifPresent(player -> {
+        Component component = Component.translatable("velocity.command.ping.other",
+                        NamedTextColor.GREEN)
+                        .arguments(Component.text(player.getUsername()),
+                                Component.text(player.getPing()));
+
+        send(new RedisSendMessage(it.commandSender(), component));
+      });
+    });
+
+    listen(RedisSwitchServerRequest.ID, RedisSwitchServerRequest.class, it -> {
+      proxy.getPlayer(it.username()).ifPresent(player -> {
+        proxy.getServer(it.server()).ifPresent(server -> {
+          player.createConnectionRequest(server).connectWithIndication();
+        });
+      });
+    });
+
+    listen(RedisPlayerSetTransferringRequest.ID, RedisPlayerSetTransferringRequest.class, it -> {
+      MultiProxyHandler.RemotePlayerInfo info = proxy.getMultiProxyHandler().getPlayerInfo(it.uuid());
+      if (info != null) {
+        info.setBeingTransferred(it.transferring());
+      }
+
+      if (!it.transferring()) {
+        proxy.getMultiProxyHandler().getTransferringServers().remove(it.uuid());
+      } else {
+        proxy.getMultiProxyHandler().getTransferringServers().put(it.uuid(), it.currentlyConnectedServer());
+        proxy.getScheduler().buildTask(VelocityVirtualPlugin.INSTANCE, () -> {
+          proxy.getMultiProxyHandler().getTransferringServers().remove(it.uuid());
+        }).delay(10, TimeUnit.SECONDS).schedule();
+      }
+    });
+
+    listen(RedisTransferCommandRequest.ID, RedisTransferCommandRequest.class, it -> {
+      ConnectedPlayer connectedPlayer = (ConnectedPlayer) proxy.getPlayer(it.player()).orElse(null);
+      if (connectedPlayer == null) {
+        return;
+      }
+
+      if (connectedPlayer.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_20_5)) {
+        String connectedServer = connectedPlayer.getConnectedServer() != null ? connectedPlayer.getConnectedServer().getServerInfo().getName() : null;
+        send(new RedisPlayerSetTransferringRequest(connectedPlayer.getUniqueId(), true,
+                connectedServer));
+      }
+
+      proxy.getScheduler().buildTask(VelocityVirtualPlugin.INSTANCE, () -> {
+        if (connectedPlayer.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_20_5)) {
+          connectedPlayer.transferToHost(new InetSocketAddress(it.ip(), it.port()));
+        } else {
+          send(new RedisSendMessageToUuidRequest(it.requester(), Component.translatable("velocity.command.transfer.invalid-version")
+              .arguments(Component.text(connectedPlayer.getUsername()))));
+        }
+      }).delay(1, TimeUnit.SECONDS).schedule();
+    });
+  }
+
+  /**
+   * Adds a proxy ID to the cache.
+   *
+   * @param id The ID of the proxy.
+   */
+  public void addProxyId(String id) {
+    if (this.jedisPool == null) {
+      return;
+    }
+
+    try (Jedis jedis = this.jedisPool.getResource()) {
+      jedis.sadd("PROXY_IDS", id);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * Removes a proxy ID from the cache.
+   *
+   * @param id The ID of the proxy.
+   */
+  public void removeProxyId(String id) {
+    if (this.jedisPool == null) {
+      return;
+    }
+
+    try (Jedis jedis = this.jedisPool.getResource()) {
+      jedis.srem("PROXY_IDS", id);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * Gets all proxy ids from the cache.
+   *
+   * @return all the proxy ids.
+   */
+  public List<String> getProxyIds() {
+    if (this.jedisPool == null) {
+      return new ArrayList<>();
+    }
+
+
+    try (Jedis jedis = this.jedisPool.getResource()) {
+      return new ArrayList<>(jedis.smembers("PROXY_IDS").stream().toList());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return new ArrayList<>();
   }
 
   private void start(final VelocityConfiguration.Redis redisConfig) {
     try {
       JedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
           .ssl(redisConfig.isUseSsl())
-          .credentials(new DefaultRedisCredentials(redisConfig.getUsername(), redisConfig.getPassword()))
+          .credentials(new DefaultRedisCredentials(redisConfig.getUsername(),
+                  redisConfig.getPassword()))
           .build();
 
       HostAndPort hostAndPort = new HostAndPort(redisConfig.getHost(), redisConfig.getPort());
@@ -136,6 +277,10 @@ public class RedisManagerImpl {
     this.pubSub.register(id, clazz, consumer);
   }
 
+  public boolean isEnabled() {
+    return jedisPool != null;
+  }
+
   /**
    * Manages subscriptions and incoming message handling on a Redis channel.
    *
@@ -161,13 +306,15 @@ public class RedisManagerImpl {
     }
 
     // second function for `T` parameter
-    private <T> void onMessage0(final ChannelRegistration<T> registration, final String channel, final JsonObject obj) {
+    private <T> void onMessage0(final ChannelRegistration<T> registration, final String channel,
+                                final JsonObject obj) {
       T instance;
 
       try {
         instance = gson.fromJson(obj, registration.clazz);
       } catch (JsonSyntaxException e) {
-        logger.error("received invalid JSON on channel {} for packet class {}", channel, registration.clazz, e);
+        logger.error("received invalid JSON on channel {} for packet class {}", channel,
+                registration.clazz, e);
         return;
       }
 
@@ -178,7 +325,8 @@ public class RedisManagerImpl {
       }
     }
 
-    private record ChannelRegistration<T>(Class<T> clazz, Consumer<T> consumer) {}
+    private record ChannelRegistration<T>(Class<T> clazz, Consumer<T> consumer) {
+    }
 
     private <T> void register(final String id, final Class<T> clazz, final Consumer<T> consumer) {
       this.listeners.put(id, new ChannelRegistration<>(clazz, consumer));

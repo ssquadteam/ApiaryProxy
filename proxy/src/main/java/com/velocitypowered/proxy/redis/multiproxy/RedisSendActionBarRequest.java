@@ -18,32 +18,31 @@
 package com.velocitypowered.proxy.redis.multiproxy;
 
 import com.velocitypowered.proxy.redis.RedisPacket;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Sends a message to a target.
+ * Packet that sends an actionbar message to a player.
  *
- * @param target the target
- * @param componentJson the message to send, encoded as JSON
+ * @param playerUuid The UUID of the player.
+ * @param componentJson The actionbar message to send.
  */
-public record RedisSendMessage(EncodedCommandSource target, String componentJson) implements RedisPacket {
-  private static final Logger logger = LoggerFactory.getLogger(RedisSendMessage.class);
+public record RedisSendActionBarRequest(UUID playerUuid, String componentJson) implements RedisPacket {
+  public static final String ID = "redis-send-actionbar-request";
   private static final GsonComponentSerializer SERIALIZER = GsonComponentSerializer.gson();
-  public static final String ID = "send-message";
 
   /**
-   * Sends a message to a target. Encodes the given component as JSON text.
+   * Sends an actionbar message to a target. Encodes the given component as JSON text.
    *
    * @param target the target
    * @param component the message to send
    */
-  public RedisSendMessage(final EncodedCommandSource target, final Component component) {
+  public RedisSendActionBarRequest(UUID target, Component component) {
     this(target, SERIALIZER.serialize(component));
   }
+
 
   @Override
   public String getId() {
@@ -59,7 +58,6 @@ public record RedisSendMessage(EncodedCommandSource target, String componentJson
     try {
       return SERIALIZER.deserialize(componentJson);
     } catch (Exception e) {
-      logger.warn("invalid component sent in `RedisSendMessage` packet", e);
       return null;
     }
   }

@@ -32,6 +32,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.PluginDescription;
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.util.ProxyVersion;
@@ -104,18 +105,55 @@ public final class VelocityCommand {
         .literalArgumentBuilder("reload")
         .requires(source -> source.getPermissionValue("velocity.command.reload") == Tristate.TRUE)
         .executes(new Reload(server));
-
     final LiteralCommandNode<CommandSource> sudo = BrigadierCommand
         .literalArgumentBuilder("sudo")
         .requires(source -> source.getPermissionValue("velocity.command.sudo") == Tristate.TRUE)
-        .executes(ctx -> VelocityCommands.emitUsage(ctx, "sudo"))
+        .executes(ctx -> {
+          ctx.getSource().sendMessage(
+              Component.translatable("velocity.command.sudo.usage", NamedTextColor.YELLOW)
+                  .arguments(Component.text("velocity sudo"))
+          );
+          return Command.SINGLE_SUCCESS;
+        })
         .then(BrigadierCommand.requiredArgumentBuilder("player", StringArgumentType.word())
-        .suggests((ctx, builder) -> VelocityCommands.suggestPlayer(server, ctx, builder, true))
-        .executes(ctx -> VelocityCommands.emitUsage(ctx, "sudo"))
+        .suggests((ctx, builder) -> {
+          final String argument = ctx.getArguments().containsKey("player")
+              ? ctx.getArgument("player", String.class)
+              : "";
+
+          if ("all".regionMatches(true, 0, argument, 0, argument.length())) {
+            builder.suggest("all");
+          }
+
+          if (server.getMultiProxyHandler().isEnabled()) {
+            for (MultiProxyHandler.RemotePlayerInfo i : server.getMultiProxyHandler().getAllPlayers()) {
+              if (i.getName().regionMatches(true, 0, argument, 0, argument.length())) {
+                builder.suggest(i.getName());
+              }
+            }
+
+            return builder.buildFuture();
+          }
+
+          for (final Player player : server.getAllPlayers()) {
+            final String playerName = player.getUsername();
+            if (playerName.regionMatches(true, 0, argument, 0, argument.length())) {
+              builder.suggest(playerName);
+            }
+          }
+
+          return builder.buildFuture();
+        })
+        .executes(ctx -> {
+          ctx.getSource().sendMessage(
+              Component.translatable("velocity.command.sudo.usage", NamedTextColor.YELLOW)
+                  .arguments(Component.text("velocity sudo"))
+          );
+          return Command.SINGLE_SUCCESS;
+        })
         .then(BrigadierCommand.requiredArgumentBuilder("message/command", StringArgumentType.greedyString())
         .executes(new Sudo(server))))
         .build();
-
     LiteralArgumentBuilder<CommandSource> uptime = BrigadierCommand
         .literalArgumentBuilder("uptime")
         .requires(source -> source.getPermissionValue("velocity.command.uptime") == Tristate.TRUE)
@@ -230,32 +268,93 @@ public final class VelocityCommand {
             continue;
           }
 
-          for (MultiProxyHandler.RemotePlayerInfo player : multiProxyHandler.getPlayers(proxyId)) {
-            if (player.name.equalsIgnoreCase(playerName)) {
-              source.sendMessage(Component.translatable(
-                  "velocity.command.sudo.executed-remotely",
-                  NamedTextColor.GREEN,
-                  Component.text(proxyId),
-                  Component.text(playerName),
-                  Component.text(messageOrCommand)
-              ));
-
+          if (playerName.equalsIgnoreCase("all")) {
+            source.sendMessage(Component.translatable(
+                "velocity.command.sudo.executed-remotely-all",
+                NamedTextColor.GREEN,
+                Component.text(proxyId),
+                Component.text(playerName),
+                Component.text(messageOrCommand)
+            ));
+            for (MultiProxyHandler.RemotePlayerInfo player : multiProxyHandler.getPlayers(proxyId)) {
               multiProxyHandler.sudo(player, source, messageOrCommand);
-              return Command.SINGLE_SUCCESS;
+            }
+          } else {
+            for (MultiProxyHandler.RemotePlayerInfo player : multiProxyHandler.getPlayers(proxyId)) {
+              if (player.getName().equalsIgnoreCase(playerName)) {
+                source.sendMessage(Component.translatable(
+                    "velocity.command.sudo.executed-remotely",
+                    NamedTextColor.GREEN,
+                    Component.text(proxyId),
+                    Component.text(playerName),
+                    Component.text(messageOrCommand)
+                ));
+
+                multiProxyHandler.sudo(player, source, messageOrCommand);
+                return Command.SINGLE_SUCCESS;
+              }
             }
           }
         }
       }
 
-      server.getPlayer(playerName).ifPresentOrElse(player -> {
+      if (this.server.getPlayerCount() == 0) {
+        context.getSource().sendMessage(Component.translatable("velocity.command.sudo.no-players"));
+        return Command.SINGLE_SUCCESS;
+      }
+
+      if (playerName.equalsIgnoreCase("all")) {
         if (messageOrCommand.startsWith("/")) {
-          player.spoofChatInput(messageOrCommand);
           source.sendMessage(Component.translatable(
-              "velocity.command.sudo.command-executed",
+              "velocity.command.sudo.command-executed-all",
               NamedTextColor.GREEN,
-              Component.text(playerName),
               Component.text(messageOrCommand)
           ));
+        } else {
+          source.sendMessage(Component.translatable(
+              "velocity.command.sudo.message-sent-all",
+              NamedTextColor.GREEN,
+              Component.text(messageOrCommand)
+          ));
+        }
+        server.getAllPlayers().forEach(player -> {
+          if (messageOrCommand.startsWith("/")) {
+            String[] split = messageOrCommand.split(" ");
+            String command = split[0].substring(1);
+            if (this.server.getCommandManager().hasCommand(command)) {
+              this.server.getCommandManager().executeAsync(player, messageOrCommand.substring(1));
+            } else {
+              player.spoofChatInput(messageOrCommand);
+            }
+
+          } else {
+            player.spoofChatInput(messageOrCommand);
+          }
+        });
+        return Command.SINGLE_SUCCESS;
+      }
+
+      server.getPlayer(playerName).ifPresentOrElse(player -> {
+        if (messageOrCommand.startsWith("/")) {
+          String[] split = messageOrCommand.split(" ");
+          String command = split[0].substring(1);
+          if (this.server.getCommandManager().hasCommand(command)) {
+            source.sendMessage(Component.translatable(
+                "velocity.command.sudo.command-executed",
+                NamedTextColor.GREEN,
+                Component.text(playerName),
+                Component.text(messageOrCommand)
+            ));
+            this.server.getCommandManager().executeAsync(player, messageOrCommand.substring(1));
+          } else {
+            source.sendMessage(Component.translatable(
+                "velocity.command.sudo.command-executed",
+                NamedTextColor.GREEN,
+                Component.text(playerName),
+                Component.text(messageOrCommand)
+            ));
+            player.spoofChatInput(messageOrCommand);
+          }
         } else {
           player.spoofChatInput(messageOrCommand);
           source.sendMessage(Component.translatable(

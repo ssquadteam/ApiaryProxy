@@ -17,64 +17,107 @@
 
 package com.velocitypowered.proxy.queue;
 
-import com.velocitypowered.api.proxy.ConnectionRequestBuilder;
-import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
+import com.velocitypowered.api.proxy.server.RegisteredServer;
+import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.redis.multiproxy.RedisQueueSendRequest;
 import com.velocitypowered.proxy.server.VelocityRegisteredServer;
-import java.util.concurrent.CompletableFuture;
+import java.util.UUID;
 
 /**
  * Stores the status of a single server queue entry for a specific player.
  */
 public class ServerQueueEntry {
-  public final ConnectedPlayer player;
+  public final UUID player;
   public final VelocityRegisteredServer target;
-  public final CompletableFuture<ConnectionRequestBuilder.Result> future;
+  public final VelocityServer proxy;
   public int connectionAttempts = 0;
   public boolean waitingForConnection = false;
+  public int priority;
+  public boolean fullBypass;
 
   /**
    * Constructs a new {@link ServerQueueEntry} instance.
    *
    * @param player the player who is queueing
    * @param target the target server
-   * @param future a future that will be resolved when the player connects. If {@code null}, Velocity's default connection error handling will be used
    */
-  public ServerQueueEntry(final ConnectedPlayer player, final VelocityRegisteredServer target,
-                          final CompletableFuture<ConnectionRequestBuilder.Result> future) {
+  public ServerQueueEntry(final UUID player, final VelocityRegisteredServer target,
+                          final VelocityServer proxy, final int priority,
+                          final boolean fullBypass) {
     this.player = player;
     this.target = target;
-    this.future = future;
+    this.proxy = proxy;
+    this.priority = priority;
+    this.fullBypass = fullBypass;
   }
 
   /**
    * Executes this queue entry, sending the player to their target server.
    *
-   * @return a future that will complete when the player has been sent successfully.
    */
-  public CompletableFuture<Boolean> send() {
+  public void send() {
     waitingForConnection = true;
 
-    if (future == null) {
-      return player.createConnectionRequest(target)
-          .connectWithIndication()
-          .whenComplete((success, error) -> waitingForConnection = false);
+    if (proxy.getMultiProxyHandler().isEnabled()) {
+      proxy.getRedisManager().send(new RedisQueueSendRequest(player,
+          target.getServerInfo().getName()));
     } else {
-      CompletableFuture<Boolean> returnedFuture = new CompletableFuture<>();
-      player.createConnectionRequest(target)
-          .connect()
-          .whenComplete((result, error) -> {
-            if (error != null) {
-              this.future.completeExceptionally(error);
-              returnedFuture.complete(false);
-            } else {
-              this.future.complete(result);
-              returnedFuture.complete(result.isSuccessful());
-            }
+      proxy.getPlayer(player).ifPresent(p -> {
+        RegisteredServer foundServer = this.proxy.getServer(target.getServerInfo().getName()).orElse(null);
 
-            waitingForConnection = false;
-          });
+        if (foundServer == null) {
+          waitingForConnection = false;
+          connectionAttempts += 1;
 
-      return returnedFuture;
+          if (connectionAttempts == this.proxy.getConfiguration().getQueue().getMaxSendRetries()) {
+            proxy.getQueueManager().getQueue(target.getServerInfo().getName()).dequeue(player, true);
+          }
+        } else {
+          if (this.proxy.getConfiguration().getQueue().isForwardKickReason()) {
+            p.createConnectionRequest(foundServer).connectWithIndication().thenAccept(result -> {
+              if (result) {
+                proxy.getQueueManager().getQueue(target.getServerInfo().getName()).dequeue(player, false);
+              } else {
+                waitingForConnection = false;
+                connectionAttempts += 1;
+
+                if (connectionAttempts == this.proxy.getConfiguration().getQueue().getMaxSendRetries()) {
+                  proxy.getQueueManager().getQueue(target.getServerInfo().getName()).dequeue(player, true);
+                }
+              }
+            }).exceptionally(ex -> {
+              waitingForConnection = false;
+              connectionAttempts += 1;
+
+              if (connectionAttempts == this.proxy.getConfiguration().getQueue().getMaxSendRetries()) {
+                proxy.getQueueManager().getQueue(target.getServerInfo().getName()).dequeue(player, true);
+              }
+              return null;
+            });
+          } else {
+            p.createConnectionRequest(foundServer).connect().thenAccept(result -> {
+              if (result.isSuccessful()) {
+                proxy.getQueueManager().getQueue(target.getServerInfo().getName()).dequeue(player, false);
+              } else {
+                waitingForConnection = false;
+                connectionAttempts += 1;
+
+                if (connectionAttempts == this.proxy.getConfiguration().getQueue().getMaxSendRetries()) {
+                  proxy.getQueueManager().getQueue(target.getServerInfo().getName()).dequeue(player, true);
+                }
+              }
+            }).exceptionally(ex -> {
+              waitingForConnection = false;
+              connectionAttempts += 1;
+
+              if (connectionAttempts == this.proxy.getConfiguration().getQueue().getMaxSendRetries()) {
+                proxy.getQueueManager().getQueue(target.getServerInfo().getName()).dequeue(player, true);
+              }
+              return null;
+            });
+          }
+        }
+      });
     }
   }
 }

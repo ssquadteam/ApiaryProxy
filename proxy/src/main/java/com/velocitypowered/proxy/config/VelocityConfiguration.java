@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.annotations.Expose;
 import com.velocitypowered.api.proxy.config.ProxyConfig;
 import com.velocitypowered.api.util.Favicon;
+import com.velocitypowered.api.util.ServerLink;
 import com.velocitypowered.proxy.config.migration.ConfigurationMigration;
 import com.velocitypowered.proxy.config.migration.ForwardingMigration;
 import com.velocitypowered.proxy.config.migration.KeyAuthenticationMigration;
@@ -44,12 +45,9 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,6 +66,8 @@ public final class VelocityConfiguration implements ProxyConfig {
   private String bind = "0.0.0.0:25565";
   @Expose
   private String motd = "<aqua>A Velocity Server";
+  @Expose
+  private List<String> motdHover = List.of("");
   @Expose
   private int showMaxPlayers = 500;
   @Expose
@@ -120,6 +120,14 @@ public final class VelocityConfiguration implements ProxyConfig {
   private String minimumVersion = "1.7.2";
   @Expose
   private Map<String, List<String>> slashServers = new HashMap<>();
+  @Expose
+  private List<ServerLink> serverLinks = new ArrayList<>();
+  @Expose
+  private List<ProxyAddress> proxyAddresses = new ArrayList<>();
+  @Expose
+  private String dynamicProxyFilter;
+  @Expose
+  private Map<String, Integer> playerCaps;
 
   private VelocityConfiguration(final Servers servers, final ForcedHosts forcedHosts, final Commands commands,
       final Advanced advanced, final Query query, final Metrics metrics, final Redis redis, final Queue queue) {
@@ -133,7 +141,8 @@ public final class VelocityConfiguration implements ProxyConfig {
     this.queue = queue;
   }
 
-  private VelocityConfiguration(final String bind, final String motd, final int showMaxPlayers, final boolean onlineMode,
+  private VelocityConfiguration(final String bind, final String motd, final List<String> motdHover,
+                                final int showMaxPlayers, final boolean onlineMode,
       final boolean preventClientProxyConnections, final boolean announceForge,
       final PlayerInfoForwarding playerInfoForwardingMode, final byte[] forwardingSecret,
       final boolean onlineModeKickExistingPlayers, final PingPassthroughMode pingPassthrough,
@@ -142,9 +151,11 @@ public final class VelocityConfiguration implements ProxyConfig {
       final boolean logPlayerConnections, final boolean logPlayerDisconnections,
       final boolean logOfflineConnections, final boolean disableForge, final boolean enforceChatSigning,
       final boolean translateHeaderFooter, final boolean logMinimumVersion, final String minimumVersion,
-      final Redis redis, final Queue queue, final Map<String, List<String>> slashServers) {
+      final Redis redis, final Queue queue, final Map<String, List<String>> slashServers, List<ServerLink> serverLinks,
+                                List<ProxyAddress> proxyAddresses, String dynamicProxyFilter, Map<String, Integer> playerCaps) {
     this.bind = bind;
     this.motd = motd;
+    this.motdHover = motdHover;
     this.showMaxPlayers = showMaxPlayers;
     this.onlineMode = onlineMode;
     this.preventClientProxyConnections = preventClientProxyConnections;
@@ -172,6 +183,10 @@ public final class VelocityConfiguration implements ProxyConfig {
     this.redis = redis;
     this.queue = queue;
     this.slashServers = slashServers;
+    this.serverLinks = serverLinks;
+    this.proxyAddresses = proxyAddresses;
+    this.dynamicProxyFilter = dynamicProxyFilter;
+    this.playerCaps = playerCaps;
   }
 
   /**
@@ -254,17 +269,20 @@ public final class VelocityConfiguration implements ProxyConfig {
       }
     }
 
-    for (Map.Entry<String, List<String>> entry : forcedHosts.getForcedHosts().entrySet()) {
-      if (entry.getValue().isEmpty()) {
-        logger.error("Forced host '{}' does not contain any servers", entry.getKey());
-        valid = false;
-        continue;
-      }
-
-      for (String server : entry.getValue()) {
-        if (!servers.getServers().containsKey(server)) {
-          logger.error("Server '{}' for forced host '{}' does not exist", server, entry.getKey());
+    final Map<String, List<String>> configuredForcedHosts = forcedHosts.getForcedHosts();
+    if (!configuredForcedHosts.isEmpty()) {
+      for (Map.Entry<String, List<String>> entry : configuredForcedHosts.entrySet()) {
+        if (entry.getValue().isEmpty()) {
+          logger.error("Forced host '{}' does not contain any servers", entry.getKey());
           valid = false;
+          continue;
+        }
+
+        for (String server : entry.getValue()) {
+          if (!servers.getServers().containsKey(server)) {
+            logger.error("Server '{}' for forced host '{}' does not exist", server, entry.getKey());
+            valid = false;
+          }
         }
       }
     }
@@ -358,6 +376,10 @@ public final class VelocityConfiguration implements ProxyConfig {
     return motdAsComponent;
   }
 
+  public List<String> getMotdHover() {
+    return this.motdHover;
+  }
+
   @Override
   public int getShowMaxPlayers() {
     return showMaxPlayers;
@@ -444,6 +466,10 @@ public final class VelocityConfiguration implements ProxyConfig {
 
   public boolean isFindEnabled() {
     return commands.isFindEnabled();
+  }
+
+  public boolean isTransferEnabled() {
+    return commands.isTransferEnabled();
   }
 
   public boolean isGlistEnabled() {
@@ -539,6 +565,10 @@ public final class VelocityConfiguration implements ProxyConfig {
     return advanced.getFallbackVersionPing();
   }
 
+  public boolean getAlwaysFallBackPing() {
+    return advanced.getAlwaysFallBackPing();
+  }
+
   public String getProxyBrandCustom() {
     return advanced.getProxyBrandCustom();
   }
@@ -547,12 +577,8 @@ public final class VelocityConfiguration implements ProxyConfig {
     return advanced.getBackendBrandCustom();
   }
 
-  public boolean isEnableDynamicFallbacks() {
-    return servers.isEnableDynamicFallbacks();
-  }
-
-  public boolean isEnableMostPopulatedFallbacks() {
-    return servers.isEnableMostPopulatedFallbacks();
+  public String getDynamicFallbackFilter() {
+    return servers.getDynamicFallbackFilter();
   }
 
   public boolean isForceKeyAuthentication() {
@@ -571,11 +597,28 @@ public final class VelocityConfiguration implements ProxyConfig {
     return slashServers;
   }
 
+  public List<ServerLink> getServerLinks() {
+    return serverLinks;
+  }
+
+  public List<ProxyAddress> getProxyAddresses() {
+    return proxyAddresses;
+  }
+
+  public String getDynamicProxyFilter() {
+    return this.dynamicProxyFilter;
+  }
+
+  public Map<String, Integer> getPlayerCaps() {
+    return this.playerCaps;
+  }
+
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("bind", bind)
         .add("motd", motd)
+        .add("motdHover", motdHover)
         .add("showMaxPlayers", showMaxPlayers)
         .add("onlineMode", onlineMode)
         .add("playerInfoForwardingMode", playerInfoForwardingMode)
@@ -600,6 +643,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         .add("logMinimumVersion", logMinimumVersion)
         .add("minimumVersion", minimumVersion)
         .add("slashServers", slashServers)
+        .add("playerCaps", playerCaps)
         .toString();
   }
 
@@ -668,6 +712,7 @@ public final class VelocityConfiguration implements ProxyConfig {
       }
       final byte[] forwardingSecret = forwardingSecretString.getBytes(StandardCharsets.UTF_8);
       final String motd = config.getOrElse("motd", "<#09add3>A Velocity Server");
+      final List<String> motdHover = config.getOrElse("motd-hover", new ArrayList<>());
 
       // Read the rest of the config
       final CommentedConfig serversConfig = config.get("servers");
@@ -678,6 +723,10 @@ public final class VelocityConfiguration implements ProxyConfig {
       final CommentedConfig metricsConfig = config.get("metrics");
       final CommentedConfig redisConfig = config.get("redis");
       final CommentedConfig queueConfig = config.get("queue");
+      final CommentedConfig serverLinksConfig = config.get("server-links");
+      final CommentedConfig proxyAddressesConfig = config.get("proxy-addresses");
+      final CommentedConfig playerCapsConfig = config.get("playercaps");
+
       final PlayerInfoForwarding forwardingMode = config.getEnumOrElse(
               "player-info-forwarding-mode", PlayerInfoForwarding.NONE);
       final PingPassthroughMode pingPassthroughMode = config.getEnumOrElse("ping-passthrough",
@@ -714,15 +763,51 @@ public final class VelocityConfiguration implements ProxyConfig {
       if (slashServersConfig != null) {
         for (UnmodifiableConfig.Entry entry : slashServersConfig.entrySet()) {
           if (entry.getValue() instanceof String) {
-            slashServers.put(entry.getKey().toLowerCase(Locale.ROOT), ImmutableList.of(entry.getValue()));
+            slashServers.put(entry.getKey(), ImmutableList.of(entry.getValue()));
           } else if (entry.getValue() instanceof List) {
             @SuppressWarnings("unchecked")
             List<String> value = ImmutableList.copyOf((List<String>) entry.getValue());
-            slashServers.put(entry.getKey().toLowerCase(Locale.ROOT), value);
+            slashServers.put(entry.getKey(), value);
           } else {
             throw new IllegalStateException(
                 "Invalid value of type " + entry.getValue().getClass() + " in slash servers!");
           }
+        }
+      }
+
+      final List<ServerLink> links = new ArrayList<>();
+
+      if (serverLinksConfig != null) {
+        for (CommentedConfig.Entry entry : serverLinksConfig.entrySet()) {
+          CommentedConfig link = entry.getValue();
+          links.add(ServerLink.serverLink(MiniMessage.miniMessage().deserialize(link.get("label")),
+                  link.get("link")));
+
+        }
+      }
+
+      final List<ProxyAddress> addresses = new ArrayList<>();
+      String filter = "MOST_EMPTY";
+
+      if (proxyAddressesConfig != null) {
+        filter = proxyAddressesConfig.getOrElse("dynamic-proxy-filter", "MOST_EMPTY");
+        for (CommentedConfig.Entry entry : proxyAddressesConfig.entrySet()) {
+          if (entry.getKey().equalsIgnoreCase("dynamic-proxy-filter")) {
+            continue;
+          }
+
+          CommentedConfig link = entry.getValue();
+          addresses.add(new ProxyAddress(link.get("proxy-id"),
+                  link.get("ip"),
+                  link.get("port")));
+        }
+      }
+
+      final Map<String, Integer> playerCaps = new HashMap<>();
+
+      if (playerCapsConfig != null) {
+        for (CommentedConfig.Entry entry : playerCapsConfig.entrySet()) {
+          playerCaps.put(entry.getKey(), entry.getValue());
         }
       }
 
@@ -737,6 +822,7 @@ public final class VelocityConfiguration implements ProxyConfig {
       return new VelocityConfiguration(
               bind,
               motd,
+              motdHover,
               maxPlayers,
               onlineMode,
               preventClientProxyConnections,
@@ -763,7 +849,11 @@ public final class VelocityConfiguration implements ProxyConfig {
               minimumVersion,
               new Redis(redisConfig),
               new Queue(queueConfig),
-              slashServers
+              slashServers,
+              links,
+              addresses,
+              filter,
+              playerCaps
       );
     }
   }
@@ -820,6 +910,10 @@ public final class VelocityConfiguration implements ProxyConfig {
     return minimumVersion;
   }
 
+  public List<String> getServerAliases() {
+    return this.servers.getServerAliases();
+  }
+
   private static final class Servers {
 
     private Map<String, String> servers = ImmutableMap.of(
@@ -830,8 +924,9 @@ public final class VelocityConfiguration implements ProxyConfig {
     private List<String> attemptConnectionOrder = ImmutableList.of("lobby");
     private Map<String, PlayerInfoForwarding> serverForwardingModes = ImmutableMap.of();
 
-    private boolean enableDynamicFallbacks = false;
-    private boolean enableMostPopulatedFallbacks = false;
+    private String dynamicFallbackFilter;
+    @Expose
+    private List<String> serverAliases;
 
     private Servers() {
     }
@@ -841,7 +936,9 @@ public final class VelocityConfiguration implements ProxyConfig {
         Map<String, String> servers = new HashMap<>();
         Map<String, PlayerInfoForwarding> serverForwardingModes = new HashMap<>();
         for (UnmodifiableConfig.Entry entry : config.entrySet()) {
-          if (entry.getValue() instanceof String) {
+          if (entry.getKey().equalsIgnoreCase("dynamic-fallbacks-filter")) {
+            continue;
+          } else if (entry.getValue() instanceof String) {
             servers.put(cleanServerName(entry.getKey()), entry.getValue());
           } else if (entry.getValue() instanceof UnmodifiableConfig) {
             UnmodifiableConfig unmodifiableConfig = entry.getValue();
@@ -860,8 +957,8 @@ public final class VelocityConfiguration implements ProxyConfig {
             servers.put(cleanServerName(name), address);
           } else {
             if (!entry.getKey().equalsIgnoreCase("try")
-                && !entry.getKey().equalsIgnoreCase("enable-dynamic-fallbacks")
-                && !entry.getKey().equalsIgnoreCase("enable-most-populated-fallbacks")) {
+                && !entry.getKey().equalsIgnoreCase("dynamic-fallbacks-filter")
+                && !entry.getKey().equalsIgnoreCase("server-aliases")) {
               throw new IllegalArgumentException(
                   "Server entry " + entry.getKey() + " is not a string!");
             }
@@ -871,10 +968,9 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.serverForwardingModes = ImmutableMap.copyOf(serverForwardingModes);
         this.attemptConnectionOrder = config.getOrElse("try", attemptConnectionOrder)
             .stream()
-            .map(s -> s.toLowerCase(Locale.ROOT))
             .toList();
-        this.enableDynamicFallbacks = config.getOrElse("enable-dynamic-fallbacks", false);
-        this.enableMostPopulatedFallbacks = config.getOrElse("enable-most-populated-fallbacks", false);
+        this.dynamicFallbackFilter = config.getOrElse("dynamic-fallbacks-filter", "FIRST_AVAILABLE");
+        this.serverAliases = config.getOrElse("server-aliases", List.of("joinqueue", "queue", "server"));
       }
     }
 
@@ -882,6 +978,10 @@ public final class VelocityConfiguration implements ProxyConfig {
         final Map<String, PlayerInfoForwarding> serverForwardingModes) {
       this.servers = servers;
       this.attemptConnectionOrder = attemptConnectionOrder;
+    }
+
+    public List<String> getServerAliases() {
+      return serverAliases;
     }
 
     private Map<String, String> getServers() {
@@ -896,13 +996,10 @@ public final class VelocityConfiguration implements ProxyConfig {
       return attemptConnectionOrder;
     }
 
-    public boolean isEnableDynamicFallbacks() {
-      return enableDynamicFallbacks;
+    public String getDynamicFallbackFilter() {
+      return dynamicFallbackFilter;
     }
 
-    public boolean isEnableMostPopulatedFallbacks() {
-      return enableMostPopulatedFallbacks;
-    }
 
     public void setAttemptConnectionOrder(final List<String> attemptConnectionOrder) {
       this.attemptConnectionOrder = attemptConnectionOrder;
@@ -926,7 +1023,7 @@ public final class VelocityConfiguration implements ProxyConfig {
      * @return the cleaned server name
      */
     private String cleanServerName(final String name) {
-      return name.replace("\"", "").toLowerCase(Locale.ROOT);
+      return name.replace("\"", "");
     }
 
     @Override
@@ -941,11 +1038,7 @@ public final class VelocityConfiguration implements ProxyConfig {
 
   private static final class ForcedHosts {
 
-    private Map<String, List<String>> forcedHosts = ImmutableMap.of(
-        "lobby.example.com", ImmutableList.of("lobby"),
-        "factions.example.com", ImmutableList.of("factions"),
-        "minigames.example.com", ImmutableList.of("minigames")
-    );
+    private Map<String, List<String>> forcedHosts = ImmutableMap.of();
 
     private ForcedHosts() {
     }
@@ -955,10 +1048,10 @@ public final class VelocityConfiguration implements ProxyConfig {
         Map<String, List<String>> forcedHosts = new HashMap<>();
         for (UnmodifiableConfig.Entry entry : config.entrySet()) {
           if (entry.getValue() instanceof String) {
-            forcedHosts.put(entry.getKey().toLowerCase(Locale.ROOT),
+            forcedHosts.put(entry.getKey(),
                 ImmutableList.of(entry.getValue()));
           } else if (entry.getValue() instanceof List) {
-            forcedHosts.put(entry.getKey().toLowerCase(Locale.ROOT),
+            forcedHosts.put(entry.getKey(),
                 ImmutableList.copyOf((List<String>) entry.getValue()));
           } else {
             throw new IllegalStateException(
@@ -1012,6 +1105,8 @@ public final class VelocityConfiguration implements ProxyConfig {
     private boolean showAllCommand = true;
     @Expose
     private boolean overrideServerCommandUsage = false;
+    @Expose
+    private boolean transferEnabled = true;
 
     private Commands() {
     }
@@ -1029,6 +1124,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.sendCommand = config.getOrElse("send-enabled", true);
         this.showAllCommand = config.getOrElse("showall-enabled", true);
         this.overrideServerCommandUsage = config.getOrElse("override-server-command-usage", false);
+        this.transferEnabled = config.getOrElse("transfer-enabled", true);
       }
     }
 
@@ -1074,6 +1170,10 @@ public final class VelocityConfiguration implements ProxyConfig {
 
     public boolean isOverrideServerCommandUsage() {
       return overrideServerCommandUsage;
+    }
+
+    public boolean isTransferEnabled() {
+      return transferEnabled;
     }
 
     @Override
@@ -1129,6 +1229,8 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private String fallbackVersionPing = "{proxy-brand} {protocol-min}-{protocol-max}";
     @Expose
+    private boolean alwaysFallBackPing = true;
+    @Expose
     private String proxyBrandCustom = "Velocity";
     @Expose
     private String backendBrandCustom = "Paper";
@@ -1159,6 +1261,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.allowIllegalCharactersInChat = config.getOrElse("allow-illegal-characters-in-chat", false);
         this.serverBrand = config.getOrElse("server-brand", "{backend-brand} ({proxy-brand})");
         this.fallbackVersionPing = config.getOrElse("fallback-version-ping", "{proxy-brand} {protocol-min}-{protocol-max}");
+        this.alwaysFallBackPing = config.getOrElse("always-fallback-ping", false);
         this.proxyBrandCustom = config.getOrElse("custom-brand-proxy", "Velocity");
         this.backendBrandCustom = config.getOrElse("custom-brand-backend", "Paper");
       }
@@ -1231,6 +1334,11 @@ public final class VelocityConfiguration implements ProxyConfig {
     public String getFallbackVersionPing() {
       return this.fallbackVersionPing;
     }
+
+    public boolean getAlwaysFallBackPing() {
+      return this.alwaysFallBackPing;
+    }
+
 
     public String getProxyBrandCustom() {
       return this.proxyBrandCustom;
@@ -1380,10 +1488,6 @@ public final class VelocityConfiguration implements ProxyConfig {
     private int maxConcurrentConnections;
     @Expose
     private @Nullable String proxyId;
-    @Expose
-    private long pingIntervalMs;
-    @Expose
-    private long otherProxyTimeoutMs;
 
     private Redis(final CommentedConfig config) {
       if (config == null) {
@@ -1408,9 +1512,6 @@ public final class VelocityConfiguration implements ProxyConfig {
       if (this.proxyId == null || this.proxyId.isEmpty()) {
         this.proxyId = null;
       }
-
-      this.pingIntervalMs = config.getLongOrElse("ping-interval-ms", 30000);
-      this.otherProxyTimeoutMs = config.getLongOrElse("other-proxy-timeout-ms", 90000);
     }
 
     public boolean isEnabled() {
@@ -1445,13 +1546,6 @@ public final class VelocityConfiguration implements ProxyConfig {
       return proxyId;
     }
 
-    public long getPingIntervalMs() {
-      return pingIntervalMs;
-    }
-
-    public long getOtherProxyTimeoutMs() {
-      return otherProxyTimeoutMs;
-    }
 
     @Override
     public String toString() {
@@ -1474,8 +1568,6 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private boolean enabled;
     @Expose
-    private List<String> queueAliases;
-    @Expose
     private List<String> noQueueServers;
     @Expose
     private boolean allowMultiQueue;
@@ -1494,19 +1586,17 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private boolean forwardKickReason;
     @Expose
-    private List<Pattern> kickReasonsBlacklist;
-    @Expose
-    private double returnOnlineSendDelay;
-    @Expose
     private boolean allowPausedQueueJoining;
     @Expose
-    private boolean sendAllUsersWhenBackOnline;
+    private boolean queueOnShutdown;
     @Expose
     private boolean overrideBungeeMessaging;
     @Expose
     private List<String> leaveQueueAliases;
     @Expose
     private List<String> queueAdminAliases;
+    private List<String> masterProxyIds;
+    private List<String> bannedReason;
 
     private Queue(final CommentedConfig config) {
       if (config == null) {
@@ -1514,54 +1604,38 @@ public final class VelocityConfiguration implements ProxyConfig {
       }
 
       this.enabled = config.getOrElse("enabled", false);
-      this.queueAliases = config.getOrElse("queue-aliases", List.of("joinqueue", "queue", "server"));
       this.noQueueServers = config.getOrElse("no-queue-servers", List.of());
       this.allowMultiQueue = config.getOrElse("allow-multi-queue", false);
       this.multipleServerMessagingSelection = config.getOrElse("multiple-server-messaging-selection", "last");
       this.sendDelay = config.getOrElse("send-delay", 1.0);
       this.messageDelay = config.getOrElse("message-delay", 1.0);
       this.backendPingInterval = config.getOrElse("backend-ping-interval", 1.0);
-      this.maxSendRetries = config.getOrElse("max-send-retries", 5);
+      this.maxSendRetries = config.getOrElse("max-send-retries", 10);
       this.removePlayerOnServerSwitch = config.getOrElse("remove-player-on-server-switch", true);
       this.forwardKickReason = config.getOrElse("forward-kick-reason", true);
-
-      List<String> kickReasonBlacklistPatterns = config.getOrElse("kick-reasons-blacklist", List.of("banned", "blacklisted"));
-      this.kickReasonsBlacklist = new ArrayList<>(kickReasonBlacklistPatterns.size());
-
-      for (String pattern : kickReasonBlacklistPatterns) {
-        try {
-          this.kickReasonsBlacklist.add(Pattern.compile(pattern));
-        } catch (PatternSyntaxException e) {
-          logger.error("invalid regex in `kick-reasons-blacklist`", e);
-        }
-      }
-
-      this.returnOnlineSendDelay = config.getOrElse("return-online-send-delay", 0.0);
       this.allowPausedQueueJoining = config.getOrElse("allow-paused-queue-joining", false);
-      this.sendAllUsersWhenBackOnline = config.getOrElse("send-all-users-when-back-online", false);
+      this.queueOnShutdown = config.getOrElse("queue-on-shutdown", true);
       this.overrideBungeeMessaging = config.getOrElse("override-bungee-messaging", true);
       this.leaveQueueAliases = config.getOrElse("leave-queue-aliases", new ArrayList<>());
       this.queueAdminAliases = config.getOrElse("queue-admin-aliases", new ArrayList<>());
+      this.masterProxyIds = config.getOrElse("master-proxy-ids", new ArrayList<>());
+      this.bannedReason = config.getOrElse("banned-reason", new ArrayList<>());
     }
 
     public boolean isEnabled() {
       return enabled;
     }
 
-    public boolean isSendAllUsersWhenBackOnline() {
-      return sendAllUsersWhenBackOnline;
+    public boolean isQueueOnShutdown() {
+      return queueOnShutdown;
     }
 
     public boolean isAllowPausedQueueJoining() {
       return allowPausedQueueJoining;
     }
 
-    public double getReturnOnlineSendDelay() {
-      return returnOnlineSendDelay;
-    }
-
-    public List<Pattern> getKickReasonsBlacklist() {
-      return kickReasonsBlacklist;
+    public List<String> getBannedReason() {
+      return this.bannedReason;
     }
 
     public boolean isForwardKickReason() {
@@ -1600,9 +1674,7 @@ public final class VelocityConfiguration implements ProxyConfig {
       return noQueueServers;
     }
 
-    public List<String> getQueueAliases() {
-      return queueAliases;
-    }
+
 
     public boolean shouldOverrideBungeeMessaging() {
       return overrideBungeeMessaging;
@@ -1616,14 +1688,15 @@ public final class VelocityConfiguration implements ProxyConfig {
       return queueAdminAliases;
     }
 
+    public List<String> getMasterProxyIds() {
+      return masterProxyIds;
+    }
+
     @Override
     public String toString() {
       return "Queue{"
           + "enabled=" + enabled
-          + ", sendAllUsersWhenBackOnline=" + sendAllUsersWhenBackOnline
           + ", allowPausedQueueJoining=" + allowPausedQueueJoining
-          + ", returnOnlineSendDelay=" + returnOnlineSendDelay
-          + ", kickReasonsBlacklist=" + kickReasonsBlacklist
           + ", forwardKickReason=" + forwardKickReason
           + ", removePlayerOnServerSwitch=" + removePlayerOnServerSwitch
           + ", maxSendRetries=" + maxSendRetries
@@ -1632,10 +1705,10 @@ public final class VelocityConfiguration implements ProxyConfig {
           + ", multipleServerMessagingSelection=" + multipleServerMessagingSelection
           + ", allowMultiQueue=" + allowMultiQueue
           + ", noQueueServers=" + noQueueServers
-          + ", queueAliases=" + queueAliases
-          + ", overrideBungeeMessaging" + overrideBungeeMessaging
-          + ", leaveQueueAliases" + leaveQueueAliases
-          + ", queueAdminAliases" + queueAdminAliases
+          + ", overrideBungeeMessaging=" + overrideBungeeMessaging
+          + ", leaveQueueAliases=" + leaveQueueAliases
+          + ", queueAdminAliases=" + queueAdminAliases
+          + ", masterProxyIds=" + masterProxyIds
           + '}';
     }
   }

@@ -54,7 +54,9 @@ import com.velocitypowered.proxy.command.builtin.ServerCommand;
 import com.velocitypowered.proxy.command.builtin.ShowAllCommand;
 import com.velocitypowered.proxy.command.builtin.ShutdownCommand;
 import com.velocitypowered.proxy.command.builtin.SlashServerCommand;
+import com.velocitypowered.proxy.command.builtin.TransferCommand;
 import com.velocitypowered.proxy.command.builtin.VelocityCommand;
+import com.velocitypowered.proxy.config.ProxyAddress;
 import com.velocitypowered.proxy.config.VelocityConfiguration;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.connection.player.resourcepack.VelocityResourcePackInfo;
@@ -70,9 +72,12 @@ import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.util.FaviconSerializer;
 import com.velocitypowered.proxy.protocol.util.GameProfileSerializer;
-import com.velocitypowered.proxy.queue.QueueManagerImpl;
+import com.velocitypowered.proxy.queue.QueueManager;
+import com.velocitypowered.proxy.queue.QueueManagerNoRedisImpl;
+import com.velocitypowered.proxy.queue.QueueManagerRedisImpl;
 import com.velocitypowered.proxy.redis.RedisManagerImpl;
 import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.redis.multiproxy.RedisPlayerSetTransferringRequest;
 import com.velocitypowered.proxy.scheduler.VelocityScheduler;
 import com.velocitypowered.proxy.server.ServerMap;
 import com.velocitypowered.proxy.util.AddressUtil;
@@ -125,6 +130,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.translation.GlobalTranslator;
 import net.kyori.adventure.translation.TranslationRegistry;
 import net.kyori.adventure.translation.Translator;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bstats.MetricsBase;
@@ -192,7 +198,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   private final Key translationRegistryKey = Key.key("velocity", "translations");
   private RedisManagerImpl redisManager;
   private MultiProxyHandler multiProxyHandler;
-  private QueueManagerImpl queueManager;
+  private QueueManager queueManager;
 
   VelocityServer(final ProxyOptions options) {
     pluginManager = new VelocityPluginManager(this);
@@ -219,7 +225,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     return multiProxyHandler;
   }
 
-  public QueueManagerImpl getQueueManager() {
+  public QueueManager getQueueManager() {
     return queueManager;
   }
 
@@ -283,6 +289,15 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
 
     this.doStartupConfigLoad();
 
+    if (getConfiguration().getRedis().getProxyId() == null && getConfiguration().getRedis().isEnabled()) {
+      throw new IllegalArgumentException("'proxy-id' cannot be null when redis is enabled!");
+    }
+
+    if ((getConfiguration().getQueue().getMasterProxyIds() == null
+        || getConfiguration().getQueue().getMasterProxyIds().isEmpty()) && getConfiguration().getQueue().isEnabled()) {
+      throw new IllegalArgumentException("'master-proxy-ids' cannot be empty when queues is enabled!");
+    }
+
     // Initialize commands first
     final BrigadierCommand velocityParentCommand = VelocityCommand.create(this);
     commandManager.register(
@@ -317,7 +332,16 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       }
     }
 
+    redisManager = new RedisManagerImpl(this);
+    multiProxyHandler = new MultiProxyHandler(this);
+    if (getConfiguration().getRedis().isEnabled()) {
+      queueManager = new QueueManagerRedisImpl(this);
+    } else {
+      queueManager = new QueueManagerNoRedisImpl(this);
+    }
+
     registerCommands();
+
     registerTranslations(true);
 
     ipAttemptLimiter = Ratelimiters.createWithMilliseconds(configuration.getLoginRatelimit());
@@ -355,10 +379,6 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     } else {
       logger.warn("debug environment, metrics is disabled!");
     }
-
-    redisManager = new RedisManagerImpl(this);
-    multiProxyHandler = new MultiProxyHandler(this);
-    queueManager = new QueueManagerImpl(this);
   }
 
   private void unregisterTranslations() {
@@ -626,6 +646,15 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     this.configuration = newConfiguration;
     eventManager.fireAndForget(new ProxyReloadEvent());
     queueManager.reloadConfig();
+
+    if (!this.getConfiguration().getServerLinks().isEmpty()) {
+      for (Player player : this.getAllPlayers()) {
+        if (player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_21)) {
+          player.setServerLinks(getConfiguration().getServerLinks());
+        }
+      }
+    }
+
     return true;
   }
 
@@ -641,6 +670,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     unregisterCommand("showall");
     unregisterCommand("hub");
     unregisterCommand("lobby");
+    unregisterCommand("transfer");
   }
 
   private void unregisterCommand(final String command) {
@@ -662,6 +692,10 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
 
     if (!commandManager.hasCommand("find")) {
       new FindCommand(this).register(configuration.isFindEnabled());
+    }
+
+    if (!commandManager.hasCommand("transfer")) {
+      new TransferCommand(this).register(configuration.isTransferEnabled());
     }
 
     if (!commandManager.hasCommand("glist")) {
@@ -769,11 +803,47 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       // Shutdown the connection manager, this should be
       // done first to refuse new connections
       cm.shutdown();
-      multiProxyHandler.shutdown();
+      if (multiProxyHandler != null) {
+        multiProxyHandler.shutdown();
+      }
 
       ImmutableList<ConnectedPlayer> players = ImmutableList.copyOf(connectionsByUuid.values());
-      for (ConnectedPlayer player : players) {
-        player.disconnect(reason);
+
+      if (!getConfiguration().isAcceptTransfers()) {
+        for (ConnectedPlayer player : players) {
+          player.disconnect(reason);
+        }
+      } else {
+        ProxyAddress chosen = getProxyAddressToUse();
+        if (chosen == null) {
+          for (ConnectedPlayer player : players) {
+            player.disconnect(reason);
+          }
+          return;
+        }
+
+        for (ConnectedPlayer player : players) {
+          if (player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_20_5)) {
+            String connectedServer = player.getConnectedServer() != null ? player.getConnectedServer().getServerInfo().getName() : null;
+            getRedisManager().send(new RedisPlayerSetTransferringRequest(player.getUniqueId(), true,
+                    connectedServer));
+          }
+        }
+
+        try {
+          logger.log(Level.INFO, "Transferring all players to new proxy...");
+          Thread.sleep(1000);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+
+        for (ConnectedPlayer player : players) {
+          if (player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_20_5)) {
+            player.transferToHost(new InetSocketAddress(chosen.ip(), chosen.port()));
+          } else {
+            player.disconnect(reason);
+          }
+        }
       }
 
       try {
@@ -842,6 +912,41 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   @Override
   public void shutdown() {
     shutdown(true);
+  }
+
+  private ProxyAddress getProxyAddressToUse() {
+    final String filter = getConfiguration().getDynamicProxyFilter();
+    final List<ProxyAddress> addresses = new ArrayList<>(getConfiguration().getProxyAddresses().stream().toList());
+    addresses.removeIf(address -> Objects.requireNonNull(getMultiProxyHandler().getOwnProxyId()).equalsIgnoreCase(address.proxyId()));
+
+    switch (filter) {
+      case "MOST_EMPTY" -> addresses.sort((o1, o2) -> {
+        int connectedSize1 = getMultiProxyHandler().getAllPlayers().stream().filter(i ->
+            i.getProxyId().equalsIgnoreCase(o1.proxyId())).toList().size();
+
+        int connectedSize2 = getMultiProxyHandler().getAllPlayers().stream().filter(i ->
+            i.getProxyId().equalsIgnoreCase(o2.proxyId())).toList().size();
+
+        return Long.compare(connectedSize1, connectedSize2);
+      });
+      case "LEAST_EMPTY" -> addresses.sort((o1, o2) -> {
+        int connectedSize1 = getMultiProxyHandler().getAllPlayers().stream().filter(i ->
+            i.getProxyId().equalsIgnoreCase(o1.proxyId())).toList().size();
+
+        int connectedSize2 = getMultiProxyHandler().getAllPlayers().stream().filter(i ->
+            i.getProxyId().equalsIgnoreCase(o2.proxyId())).toList().size();
+
+        return Long.compare(connectedSize2, connectedSize1);
+      });
+      case "NONE" -> {
+        return null;
+      }
+      default -> {
+
+      }
+    }
+
+    return addresses.get(0);
   }
 
   @Override
@@ -947,6 +1052,8 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   public Collection<Player> getAllPlayers() {
     return ImmutableList.copyOf(connectionsByUuid.values());
   }
+
+
 
   @Override
   public int getPlayerCount() {

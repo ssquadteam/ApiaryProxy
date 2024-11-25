@@ -18,6 +18,7 @@
 package com.velocitypowered.proxy.redis.multiproxy;
 
 import com.velocitypowered.proxy.redis.RedisPacket;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -27,13 +28,13 @@ import org.slf4j.LoggerFactory;
 /**
  * Sends a message to a target.
  *
- * @param target the target
+ * @param player the UUID of the target
  * @param componentJson the message to send, encoded as JSON
  */
-public record RedisSendMessage(EncodedCommandSource target, String componentJson) implements RedisPacket {
+public record RedisSendMessageToUuidRequest(UUID player, String componentJson) implements RedisPacket {
   private static final Logger logger = LoggerFactory.getLogger(RedisSendMessage.class);
   private static final GsonComponentSerializer SERIALIZER = GsonComponentSerializer.gson();
-  public static final String ID = "send-message";
+  public static final String ID = "send-message-uuid";
 
   /**
    * Sends a message to a target. Encodes the given component as JSON text.
@@ -41,7 +42,7 @@ public record RedisSendMessage(EncodedCommandSource target, String componentJson
    * @param target the target
    * @param component the message to send
    */
-  public RedisSendMessage(final EncodedCommandSource target, final Component component) {
+  public RedisSendMessageToUuidRequest(final UUID target, final Component component) {
     this(target, SERIALIZER.serialize(component));
   }
 

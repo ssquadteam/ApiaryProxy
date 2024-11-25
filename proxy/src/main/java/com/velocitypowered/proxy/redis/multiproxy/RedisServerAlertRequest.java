@@ -25,24 +25,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Sends a message to a target.
+ * Sends a message to all servers.
  *
- * @param target the target
  * @param componentJson the message to send, encoded as JSON
  */
-public record RedisSendMessage(EncodedCommandSource target, String componentJson) implements RedisPacket {
+public record RedisServerAlertRequest(String componentJson) implements RedisPacket {
+  public static final String ID = "redis-server-alert";
+
   private static final Logger logger = LoggerFactory.getLogger(RedisSendMessage.class);
   private static final GsonComponentSerializer SERIALIZER = GsonComponentSerializer.gson();
-  public static final String ID = "send-message";
 
   /**
-   * Sends a message to a target. Encodes the given component as JSON text.
+   * Sends a message to all servers. Encodes the given component as JSON text.
    *
-   * @param target the target
    * @param component the message to send
    */
-  public RedisSendMessage(final EncodedCommandSource target, final Component component) {
-    this(target, SERIALIZER.serialize(component));
+  public RedisServerAlertRequest(final Component component) {
+    this(SERIALIZER.serialize(component));
   }
 
   @Override

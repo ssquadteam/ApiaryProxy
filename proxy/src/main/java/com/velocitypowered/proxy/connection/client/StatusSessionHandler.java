@@ -29,6 +29,7 @@ import com.velocitypowered.proxy.protocol.packet.StatusRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.StatusResponsePacket;
 import com.velocitypowered.proxy.util.except.QuietRuntimeException;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -103,6 +104,7 @@ public class StatusSessionHandler implements MinecraftSessionHandler {
                 final StringBuilder json = new StringBuilder();
                 VelocityServer.getPingGsonInstance(connection.getProtocolVersion())
                         .toJson(event.getPing(), json);
+
                 connection.write(new StatusResponsePacket(json));
               } else {
                 connection.close();
@@ -114,6 +116,20 @@ public class StatusSessionHandler implements MinecraftSessionHandler {
           return null;
         });
     return true;
+  }
+
+  private ByteBuf encode(String response) {
+    ByteBuf buf = Unpooled.buffer();
+    buf.writeByte(0xFF);
+
+    char[] chars = response.toCharArray();
+    buf.writeShort(chars.length);
+
+    for (char c : chars) {
+      buf.writeChar(c);
+    }
+
+    return buf;
   }
 
   @Override

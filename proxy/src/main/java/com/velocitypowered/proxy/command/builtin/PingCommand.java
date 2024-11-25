@@ -28,7 +28,8 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.command.VelocityCommands;
 import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
-import java.util.Optional;
+import com.velocitypowered.proxy.redis.multiproxy.EncodedCommandSource;
+import com.velocitypowered.proxy.redis.multiproxy.RedisGetPlayerPingRequest;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -56,23 +57,15 @@ public class PingCommand {
         .then(
             BrigadierCommand.requiredArgumentBuilder("player", StringArgumentType.word())
                 .requires(source -> source.getPermissionValue("velocity.command.ping.others") == Tristate.TRUE)
-                .suggests((ctx, builder) -> VelocityCommands.suggestPlayer(server, ctx, builder, false))
+                .suggests((ctx, builder) -> VelocityCommands.suggestPlayer(server, ctx, builder, true))
                 .executes(context -> {
                   String player = context.getArgument("player", String.class);
-                  Optional<Player> maybePlayer = server.getPlayer(player);
-
-                  if (maybePlayer.isEmpty()) {
-                    context.getSource().sendMessage(
-                        CommandMessages.PLAYER_NOT_FOUND.arguments(Component.text(player))
-                    );
-                    return 0;
-                  }
-                  return this.getPing(context, maybePlayer.get());
+                  return this.getPing(context, player);
                 })
         )
         .executes(context -> {
           if (context.getSource() instanceof Player player) {
-            return this.getPing(context, player);
+            return this.getPing(context, player.getUsername());
           } else {
             context.getSource().sendMessage(CommandMessages.PLAYERS_ONLY);
             return 0;
@@ -88,36 +81,57 @@ public class PingCommand {
     );
   }
 
-  private int getPing(final CommandContext<CommandSource> context, final Player player) {
-    long ping = player.getPing();
-
-    if (ping == -1L) {
-      context.getSource().sendMessage(
-          Component.translatable("velocity.command.ping.unknown", NamedTextColor.RED)
-              .arguments(Component.text(player.getUsername()))
-      );
-      return 0;
-    }
-
+  private int getPing(final CommandContext<CommandSource> context, final String username) {
     // Check if sending player matches for the response message.
     boolean matchesSender = false;
+    Player player = this.server.getPlayer(username).orElse(null);
 
     if (context.getSource() instanceof Player sendingPlayer) {
-      if (player.getUniqueId().equals(sendingPlayer.getUniqueId())) {
+      if (player != null && player.getUniqueId().equals(sendingPlayer.getUniqueId())) {
         matchesSender = true;
       }
     }
 
     if (matchesSender) {
+      long ping = player.getPing();
+
+      if (ping == -1L) {
+        context.getSource().sendMessage(
+                Component.translatable("velocity.command.ping.unknown", NamedTextColor.RED)
+                        .arguments(Component.text(player.getUsername()))
+        );
+        return 0;
+      }
+
       context.getSource().sendMessage(
           Component.translatable("velocity.command.ping.self", NamedTextColor.GREEN)
               .arguments(Component.text(ping))
       );
     } else {
-      context.getSource().sendMessage(
-          Component.translatable("velocity.command.ping.other", NamedTextColor.GREEN)
-              .arguments(Component.text(player.getUsername()), Component.text(ping))
-      );
+      if (server.getMultiProxyHandler().isEnabled()) {
+        if (!this.server.getMultiProxyHandler().isPlayerOnline(username)) {
+          context.getSource().sendMessage(Component.translatable("velocity.command.player-not-found")
+              .arguments(Component.text(username)));
+          return -1;
+        }
+
+        this.server.getRedisManager().send(new RedisGetPlayerPingRequest(EncodedCommandSource.from(
+            context.getSource(),
+            this.server.getConfiguration().getRedis().getProxyId()),
+            username));
+      } else {
+        if (player == null) {
+          context.getSource().sendMessage(Component.translatable("velocity.command.player-not-found")
+              .arguments(Component.text(username)));
+          return -1;
+        }
+
+        Component component = Component.translatable("velocity.command.ping.other",
+                NamedTextColor.GREEN)
+            .arguments(Component.text(player.getUsername()),
+                Component.text(player.getPing()));
+        context.getSource().sendMessage(component);
+      }
     }
     return Command.SINGLE_SUCCESS;
   }

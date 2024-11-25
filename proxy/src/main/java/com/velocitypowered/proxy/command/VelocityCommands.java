@@ -382,7 +382,6 @@ public final class VelocityCommands {
       return null;
     }
 
-
     if (!allowNonQueueable && !registeredServer.getQueueStatus().hasQueue()) {
       ctx.getSource().sendMessage(Component.translatable("velocity.queue.error.server-has-no-queue")
           .arguments(Component.text(serverName)));
@@ -465,8 +464,8 @@ public final class VelocityCommands {
 
     if (includeRemote && server.getMultiProxyHandler().isEnabled()) {
       for (MultiProxyHandler.RemotePlayerInfo info : server.getMultiProxyHandler().getAllPlayers()) {
-        if (info.name.regionMatches(true, 0, argument, 0, argument.length())) {
-          builder.suggest(info.name);
+        if (info.getName().regionMatches(true, 0, argument, 0, argument.length())) {
+          builder.suggest(info.getName());
         }
       }
 

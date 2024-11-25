@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.PluginMessageEncoder;
+import com.velocitypowered.api.proxy.player.PlayerInfo;
 import com.velocitypowered.api.proxy.server.PingOptions;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
@@ -45,7 +46,9 @@ import com.velocitypowered.proxy.protocol.netty.MinecraftEncoder;
 import com.velocitypowered.proxy.protocol.netty.MinecraftVarintFrameDecoder;
 import com.velocitypowered.proxy.protocol.netty.MinecraftVarintLengthEncoder;
 import com.velocitypowered.proxy.protocol.util.ByteBufDataOutput;
+import com.velocitypowered.proxy.queue.QueueManagerRedisImpl;
 import com.velocitypowered.proxy.queue.ServerQueueStatus;
+import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -53,7 +56,9 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoop;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -73,7 +78,6 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
   private final @Nullable VelocityServer server;
   private final ServerInfo serverInfo;
   private final Map<UUID, ConnectedPlayer> players = new ConcurrentHashMap<>();
-  private final ServerQueueStatus queueStatus;
 
   /**
    * Constructs a {@link VelocityRegisteredServer} instance.
@@ -84,11 +88,6 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
   public VelocityRegisteredServer(@Nullable final VelocityServer server, final ServerInfo serverInfo) {
     this.server = server;
     this.serverInfo = Preconditions.checkNotNull(serverInfo, "serverInfo");
-    this.queueStatus = this.server == null ? null : new ServerQueueStatus(this, this.server);
-  }
-
-  public ServerQueueStatus getQueueStatus() {
-    return queueStatus;
   }
 
   @Override
@@ -99,6 +98,30 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
   @Override
   public Collection<Player> getPlayersConnected() {
     return ImmutableList.copyOf(players.values());
+  }
+
+  @Override
+  public List<PlayerInfo> getPlayerInfo() {
+    if (!this.server.getMultiProxyHandler().isEnabled()) {
+      List<PlayerInfo> info = new ArrayList<>();
+      players.forEach((uuid, player) -> {
+        info.add(new PlayerInfo(player.getUsername(), player.getUniqueId()));
+      });
+      return info;
+    }
+
+    List<PlayerInfo> info = new ArrayList<>();
+    for (MultiProxyHandler.RemotePlayerInfo i : this.server.getMultiProxyHandler().getAllPlayers()) {
+      if (i.getServerName() != null && i.getServerName().equalsIgnoreCase(getServerInfo().getName())) {
+        info.add(new PlayerInfo(i.getName(), i.getUuid()));
+      }
+    }
+
+    return info;
+  }
+
+  public int getPlayerCount() {
+    return this.players.size();
   }
 
   public ConnectedPlayer getPlayer(final UUID uuid) {
@@ -217,5 +240,15 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
   @Override
   public @NonNull Iterable<? extends Audience> audiences() {
     return this.getPlayersConnected();
+  }
+
+  /**
+   * Gets the queue status from the {@link QueueManagerRedisImpl}
+   * directly, to make it work with the old system automatically.
+   *
+   * @return The queue status of the server
+   */
+  public ServerQueueStatus getQueueStatus() {
+    return requireNonNull(this.server).getQueueManager().getQueue(serverInfo.getName());
   }
 }

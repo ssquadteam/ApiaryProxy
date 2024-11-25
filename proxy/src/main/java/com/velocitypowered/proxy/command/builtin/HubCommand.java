@@ -23,14 +23,13 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
+import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.server.VelocityRegisteredServer;
 import java.util.Locale;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.translation.GlobalTranslator;
 
 /**
@@ -38,9 +37,9 @@ import net.kyori.adventure.translation.GlobalTranslator;
  */
 public class HubCommand {
 
-  private final ProxyServer server;
+  private final VelocityServer server;
 
-  public HubCommand(final ProxyServer server) {
+  public HubCommand(final VelocityServer server) {
     this.server = server;
   }
 
@@ -97,23 +96,17 @@ public class HubCommand {
             .arguments(Component.text(serverToTry.getServerInfo().getName())));
       }
 
-      TranslatableComponent fallbackMessage = Component.translatable("velocity.error.connecting-server-error")
-          .arguments(Component.text(serverToTry.getServerInfo().getName()));
-      ((VelocityRegisteredServer) serverToTry).getQueueStatus().queue(player).whenComplete((result, throwable) -> {
-        if (result == null || throwable != null) {
-          player.sendMessage(fallbackMessage);
-          return;
-        }
-        if (!result.isSuccessful()) {
-          player.sendMessage(result.getReasonComponent().orElse(fallbackMessage));
-          return;
-        }
+      if (this.server.getConfiguration().getQueue().getNoQueueServers()
+              .contains(serverToTry.getServerInfo().getName()) || !server.getMultiProxyHandler().isEnabled()
+              || player.hasPermission("velocity.queue.bypass")) {
+        player.createConnectionRequest(serverToTry).connectWithIndication();
+        return Command.SINGLE_SUCCESS;
+      }
 
-        if (translationExists("velocity.command.hub.fallback-connected", player)) {
-          player.sendMessage(Component.translatable("velocity.command.hub.fallback-connected")
-              .arguments(Component.text(serverToTry.getServerInfo().getName())));
-        }
-      });
+      ((VelocityRegisteredServer) serverToTry).getQueueStatus().queue(player.getUniqueId(),
+          player.getQueuePriority(serverToTry.getServerInfo().getName()),
+          player.hasPermission("velocity.queue.full.bypass"));
+
       return Command.SINGLE_SUCCESS;
     }
     return 0;
