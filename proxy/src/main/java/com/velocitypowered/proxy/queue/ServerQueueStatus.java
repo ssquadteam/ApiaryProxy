@@ -215,7 +215,7 @@ public class ServerQueueStatus {
    * @param playerUuid the UUID of the player to queue
    * @param priority The priority with which the player should be added.
    */
-  public void queue(final UUID playerUuid, final int priority, boolean fullBypass) {
+  public void queue(final UUID playerUuid, final int priority, final boolean fullBypass) {
     if (!config.isEnabled()) {
       Player player = server.getPlayer(playerUuid);
       if (player != null) {
@@ -253,7 +253,6 @@ public class ServerQueueStatus {
     }
 
     if (this.sendingTaskHandle == null) {
-      //sendFirstInQueue();
       this.rescheduleTimerTask();
     }
   }
@@ -279,7 +278,7 @@ public class ServerQueueStatus {
    *
    * @param player the player to remove
    */
-  public void dequeue(final UUID player, boolean maxRetriesReached) {
+  public void dequeue(final UUID player, final boolean maxRetriesReached) {
     this.velocityServer.getScheduler().buildTask(VelocityVirtualPlugin.INSTANCE, () -> {
       if (maxRetriesReached) {
         if (this.velocityServer.getMultiProxyHandler().isEnabled()) {

@@ -1526,8 +1526,8 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
           }
         }
 
-        // broken NPE warning?? Optionals can't be "null"??
-        final Component reason = status.getReasonComponent()
+        // Optionals cannot be null in this instance
+        final Component reason = requireNonNull(status).getReasonComponent()
             .orElse(ConnectionMessages.INTERNAL_SERVER_CONNECTION_ERROR);
 
         if (server.getQueueManager().isEnabled()) {
@@ -1572,8 +1572,6 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
                     .orElse(ConnectionMessages.INTERNAL_SERVER_CONNECTION_ERROR);
             handleConnectionException(toConnect,
                     DisconnectPacket.create(reason, getProtocolVersion(), connection.getState()), status.isSafe());
-
-
 
             TextComponent textComponent = (TextComponent) reason;
             if (server.getQueueManager().isEnabled()) {
