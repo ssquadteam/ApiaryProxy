@@ -123,7 +123,7 @@ server-enabled = true
 glist-enabled = true
 send-enabled = true
 
-# Velocity-CTD Command Registration
+# ApiaryProxy Command Registration
 alert-enabled = true
 alertraw-enabled = true
 find-enabled = true
