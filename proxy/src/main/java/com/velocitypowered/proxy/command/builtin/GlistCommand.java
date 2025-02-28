@@ -34,6 +34,7 @@ import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.command.VelocityCommands;
 import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
 import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.redis.multiproxy.RemotePlayerInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -129,7 +130,7 @@ public class GlistCommand {
   private void sendTotalProxyCount(final CommandSource target) {
     final int online;
 
-    if (server.getMultiProxyHandler().isEnabled()) {
+    if (server.getMultiProxyHandler().isRedisEnabled()) {
       online = server.getMultiProxyHandler().getTotalPlayerCount();
     } else {
       online = server.getPlayerCount();
@@ -150,9 +151,9 @@ public class GlistCommand {
     List<Component> players = new ArrayList<>();
     MultiProxyHandler multiProxyHandler = this.server.getMultiProxyHandler();
 
-    if (multiProxyHandler.isEnabled()) {
+    if (multiProxyHandler.isRedisEnabled()) {
       for (String proxyId : multiProxyHandler.getAllProxyIds()) {
-        for (MultiProxyHandler.RemotePlayerInfo player : multiProxyHandler.getPlayers(proxyId)) {
+        for (RemotePlayerInfo player : multiProxyHandler.getPlayers(proxyId)) {
           if (player.getServerName() == null || !player.getServerName().equals(server.getServerInfo().getName())) {
             continue;
           }
@@ -166,9 +167,6 @@ public class GlistCommand {
       }
     } else {
       final List<Player> onServer = ImmutableList.copyOf(server.getPlayersConnected());
-      if (onServer.isEmpty() && fromAll) {
-        return;
-      }
       totalPlayers = onServer.size();
 
       for (Player player : onServer) {
@@ -177,18 +175,19 @@ public class GlistCommand {
       }
     }
 
-    int finalTotalPlayers = totalPlayers;
-    players.stream()
+    if (totalPlayers == 0 && fromAll) {
+      return;
+    }
+
+    Component playerList = players.stream()
         .reduce((a, b) -> a.append(Component.text(", ")).append(b))
-        .ifPresent(playerList -> {
-          final TranslatableComponent.Builder builder = Component.translatable()
-              .key("velocity.command.glist-server")
-              .arguments(
-                  Component.text(server.getServerInfo().getName()),
-                  Component.text(finalTotalPlayers),
-                  playerList
-              );
-          target.sendMessage(builder.build());
-        });
+        .orElse(Component.text(""));
+    target.sendMessage(Component.translatable("velocity.command.glist-server")
+        .arguments(
+            Component.text(server.getServerInfo().getName()),
+            Component.text(totalPlayers),
+            playerList
+        )
+    );
   }
 }

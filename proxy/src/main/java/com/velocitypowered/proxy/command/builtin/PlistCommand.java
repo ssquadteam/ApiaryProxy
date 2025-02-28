@@ -30,9 +30,10 @@ import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.command.VelocityCommands;
-import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.redis.multiproxy.RemotePlayerInfo;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -55,7 +56,7 @@ public class PlistCommand {
    * Registers this command.
    */
   public void register(final boolean isPlistEnabled) {
-    if (!isPlistEnabled || !server.getMultiProxyHandler().isEnabled()) {
+    if (!isPlistEnabled || !server.getMultiProxyHandler().isRedisEnabled()) {
       return;
     }
 
@@ -74,8 +75,8 @@ public class PlistCommand {
             final String argument = context.getArguments().containsKey(SERVER_ARG)
                 ? context.getArgument(SERVER_ARG, String.class)
                 : "";
-            for (RegisteredServer server : server.getAllServers()) {
-              final String serverName = server.getServerInfo().getName();
+            for (RegisteredServer registeredServer : server.getAllServers()) {
+              final String serverName = registeredServer.getServerInfo().getName();
               if (serverName.regionMatches(true, 0, argument, 0, argument.length())) {
                 builder.suggest(serverName);
               }
@@ -98,53 +99,74 @@ public class PlistCommand {
     sendTotalProxyCount(source, this.server.getMultiProxyHandler().getOwnProxyId(), this.server.getPlayerCount());
     source.sendMessage(
         Component.translatable("velocity.command.plist-view-proxy", NamedTextColor.YELLOW));
-    return 1;
+    return Command.SINGLE_SUCCESS;
   }
 
-  private List<MultiProxyHandler.RemotePlayerInfo> getProxyPlayers(final CommandContext<CommandSource> context) {
-    final String proxyName = getString(context, PROXY_ARG);
-    final List<MultiProxyHandler.RemotePlayerInfo> proxyPlayers = server.getMultiProxyHandler().getPlayers(proxyName);
-
-    if (proxyPlayers == null) {
-      context.getSource().sendMessage(Component.translatable("velocity.command.proxy-does-not-exist", NamedTextColor.RED)
-          .arguments(Component.text(proxyName))
-      );
-    }
-
-    return proxyPlayers;
+  private Optional<String> validateProxy(final String proxyName, final CommandSource source) {
+    return server.getMultiProxyHandler().getAllProxyIds().stream()
+        .filter(proxyId -> proxyId.equalsIgnoreCase(proxyName))
+        .findFirst()
+        .or(() -> {
+          source.sendMessage(Component.translatable("velocity.command.proxy-does-not-exist", NamedTextColor.RED)
+              .arguments(Component.text(proxyName)));
+          return Optional.empty();
+        });
   }
 
   private int serverCount(final CommandContext<CommandSource> context) {
-    final List<MultiProxyHandler.RemotePlayerInfo> proxyPlayers = getProxyPlayers(context);
-
-    if (proxyPlayers == null) {
-      return -1;
-    }
-
+    final String proxyName = getString(context, PROXY_ARG);
     final String serverName = getString(context, SERVER_ARG);
 
-    if (!Objects.equals(serverName, "all")) {
-      proxyPlayers.removeIf(it -> it.getServerName() == null || !it.getServerName().equalsIgnoreCase(serverName));
+    Optional<String> validatedProxy = validateProxy(proxyName, context.getSource());
+    if (validatedProxy.isEmpty()) {
+      return Command.SINGLE_SUCCESS;
     }
 
-    sendServerPlayers(context.getSource(), proxyPlayers, serverName);
+    if ("all".equalsIgnoreCase(serverName)) {
+      List<RemotePlayerInfo> allPlayers = new ArrayList<>();
+      for (RegisteredServer registeredServer : server.getAllServers()) {
+        List<RemotePlayerInfo> serverPlayers =
+            new ArrayList<>(this.server.getMultiProxyHandler().getPlayers(validatedProxy.get()));
+        serverPlayers.removeIf(player -> !player.getServerName().equalsIgnoreCase(registeredServer.getServerInfo().getName()));
+        allPlayers.addAll(serverPlayers);
+        sendServerPlayers(context.getSource(), validatedProxy.get(), registeredServer, true);
+      }
 
-    if (Objects.equals(serverName, "all")) {
-      sendTotalProxyCount(context.getSource(), context.getArgument(PROXY_ARG, String.class), proxyPlayers.size());
+      sendTotalProxyCount(context.getSource(), validatedProxy.get(), allPlayers.size());
+      return Command.SINGLE_SUCCESS;
     }
 
+    Optional<RegisteredServer> validatedServer = validateServer(serverName, context.getSource());
+    if (validatedServer.isEmpty()) {
+      return Command.SINGLE_SUCCESS;
+    }
+
+    sendServerPlayers(context.getSource(), validatedProxy.get(), validatedServer.get(), false);
     return Command.SINGLE_SUCCESS;
   }
 
   private int proxyCount(final CommandContext<CommandSource> context) {
-    final List<MultiProxyHandler.RemotePlayerInfo> proxyPlayers = getProxyPlayers(context);
+    final String proxyName = getString(context, PROXY_ARG);
 
-    if (proxyPlayers == null) {
-      return -1;
+    Optional<String> validatedProxy = validateProxy(proxyName, context.getSource());
+    if (validatedProxy.isEmpty()) {
+      return Command.SINGLE_SUCCESS;
     }
 
-    sendTotalProxyCount(context.getSource(), getString(context, PROXY_ARG), proxyPlayers.size());
+    final List<RemotePlayerInfo> proxyPlayers = server.getMultiProxyHandler().getPlayers(validatedProxy.get());
+    sendTotalProxyCount(context.getSource(), validatedProxy.get(), proxyPlayers.size());
     return Command.SINGLE_SUCCESS;
+  }
+
+  private Optional<RegisteredServer> validateServer(final String serverName, final CommandSource source) {
+    return server.getAllServers().stream()
+        .filter(registeredServer -> registeredServer.getServerInfo().getName().equalsIgnoreCase(serverName))
+        .findFirst()
+        .or(() -> {
+          source.sendMessage(Component.translatable("velocity.command.server-does-not-exist", NamedTextColor.RED)
+              .arguments(Component.text(serverName)));
+          return Optional.empty();
+        });
   }
 
   private void sendTotalProxyCount(final CommandSource target, final String proxyId, final int online) {
@@ -161,20 +183,33 @@ public class PlistCommand {
   }
 
   private void sendServerPlayers(final CommandSource target,
-                                 final List<MultiProxyHandler.RemotePlayerInfo> onServer,
-                                 final String serverName) {
-    onServer.stream()
-        .map(MultiProxyHandler.RemotePlayerInfo::getName)
-        .reduce((a, b) -> a + ", " + b)
-        .ifPresent(playerList -> {
-          final TranslatableComponent.Builder builder = Component.translatable()
-              .key("velocity.command.plist-server")
-              .arguments(
-                  Component.text(serverName),
-                  Component.text(onServer.size()),
-                  Component.text(playerList)
-              );
-          target.sendMessage(builder.build());
-        });
+                                 final String proxyId,
+                                 final RegisteredServer server,
+                                 final boolean fromAll) {
+    final List<RemotePlayerInfo> proxyPlayers = this.server.getMultiProxyHandler().getPlayers(proxyId);
+    List<Component> players = new ArrayList<>();
+    int totalPlayers = 0;
+
+    for (RemotePlayerInfo player : proxyPlayers) {
+      if (server.getServerInfo().getName().equalsIgnoreCase(player.getServerName())) {
+        players.add(Component.text(player.getName()));
+        totalPlayers++;
+      }
+    }
+
+    if (fromAll && totalPlayers == 0) {
+      return;
+    }
+
+    Component playerList = players.stream()
+        .reduce((a, b) -> a.append(Component.text(", ")).append(b))
+        .orElse(Component.text(""));
+    target.sendMessage(Component.translatable("velocity.command.plist-server")
+        .arguments(
+            Component.text(server.getServerInfo().getName()),
+            Component.text(totalPlayers),
+            playerList
+        )
+    );
   }
 }

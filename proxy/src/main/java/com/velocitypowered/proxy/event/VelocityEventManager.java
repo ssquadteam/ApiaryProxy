@@ -308,7 +308,7 @@ public class VelocityEventManager implements EventManager {
               + "EventTask.Basic or EventTask.WithContinuation");
         } else if (returnType == EventTask.class) {
           // technically, for compatibility, we *should* assume that the method must be invoked
-          // async, however, from examining some publicly-available plugins, developers did
+          // async, however, from examining some publicly available plugins, developers did
           // generally follow the contract and returned an EventTask only if they wanted this
           // behavior. enable it for them.
           asyncType = AsyncType.SOMETIMES;
@@ -325,8 +325,9 @@ public class VelocityEventManager implements EventManager {
         asyncType = AsyncType.ALWAYS;
       }
 
+      // The default value of 0 will fall back to PostOrder, the default PostOrder (NORMAL) is also 0
       final short order;
-      if (subscribe.order() == PostOrder.CUSTOM) {
+      if (subscribe.priority() != 0) {
         order = subscribe.priority();
       } else {
         order = (short) POST_ORDER_MAP.get(subscribe.order());
@@ -676,6 +677,6 @@ public class VelocityEventManager implements EventManager {
       final HandlerRegistration registration, final Throwable t) {
     final PluginDescription pluginDescription = registration.plugin.getDescription();
     logger.error("Couldn't pass {} to {} {}", registration.eventType.getSimpleName(),
-            pluginDescription.getId(), pluginDescription.getVersion().orElse(""), t);
+        pluginDescription.getId(), pluginDescription.getVersion().orElse(""), t);
   }
 }

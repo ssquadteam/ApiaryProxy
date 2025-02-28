@@ -44,7 +44,6 @@ import com.velocitypowered.proxy.protocol.packet.LoginAcknowledgedPacket;
 import com.velocitypowered.proxy.protocol.packet.ServerLoginSuccessPacket;
 import com.velocitypowered.proxy.protocol.packet.ServerboundCookieResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.SetCompressionPacket;
-import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
 import com.velocitypowered.proxy.redis.multiproxy.RedisPlayerSetTransferringRequest;
 import io.netty.buffer.ByteBuf;
 import java.util.Objects;
@@ -121,7 +120,7 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
       // Initiate a regular connection and move over to it.
       ConnectedPlayer player = new ConnectedPlayer(server, profileEvent.getGameProfile(),
           mcConnection, inbound.getVirtualHost().orElse(null), inbound.getRawVirtualHost().orElse(null), onlineMode,
-          inbound.getIdentifiedKey());
+          inbound.getHandshakeIntent(), inbound.getIdentifiedKey());
       this.connectedPlayer = player;
       if (!server.canRegisterConnection(player)) {
         player.disconnect0(
@@ -277,10 +276,11 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
           return;
         }
 
-        MultiProxyHandler.RemotePlayerInfo info = this.server.getMultiProxyHandler().getPlayerInfo(player.getUniqueId());
-        if (this.server.getMultiProxyHandler().onPlayerJoin(player) && info != null && !info.isBeingTransferred()) {
-          player.disconnect0(Component.translatable("velocity.error.already-connected-proxy.remote"), true);
-          return;
+        if (this.server.getMultiProxyHandler().isRedisEnabled()) {
+          boolean success = this.server.getMultiProxyHandler().onPlayerJoin(player);
+          if (!success) {
+            return;
+          }
         }
 
         ServerLoginSuccessPacket success = new ServerLoginSuccessPacket();
@@ -293,10 +293,11 @@ public class AuthSessionHandler implements MinecraftSessionHandler {
         if (inbound.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_20_2)) {
           loginState = State.ACKNOWLEDGED;
           mcConnection.setActiveSessionHandler(StateRegistry.PLAY, new InitialConnectSessionHandler(player, server));
-          server.getEventManager().fire(new PostLoginEvent(player)).thenCompose((ignored) -> connectToInitialServer(player)).exceptionally((ex) -> {
-            logger.error("Exception while connecting {} to initial server", player, ex);
-            return null;
-          });
+          server.getEventManager().fire(new PostLoginEvent(player)).thenCompose((ignored)
+              -> connectToInitialServer(player)).exceptionally((ex) -> {
+                logger.error("Exception while connecting {} to initial server", player, ex);
+                return null;
+              });
         }
       }
     }, mcConnection.eventLoop()).exceptionally((ex) -> {

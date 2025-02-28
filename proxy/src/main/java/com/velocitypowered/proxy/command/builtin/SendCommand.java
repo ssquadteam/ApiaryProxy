@@ -31,8 +31,8 @@ import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
-import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
 import com.velocitypowered.proxy.redis.multiproxy.RedisSwitchServerRequest;
+import com.velocitypowered.proxy.redis.multiproxy.RemotePlayerInfo;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -60,7 +60,7 @@ public class SendCommand {
       return;
     }
 
-    if (server.getMultiProxyHandler().isEnabled()) {
+    if (server.getMultiProxyHandler().isRedisEnabled()) {
       registerMultiProxy(true);
       return;
     }
@@ -123,15 +123,15 @@ public class SendCommand {
     rootNode.then(playerNode.build());
     final BrigadierCommand command = new BrigadierCommand(rootNode);
     server.getCommandManager().register(
-            server.getCommandManager().metaBuilder(command)
-                    .plugin(VelocityVirtualPlugin.INSTANCE)
-                    .build(),
-            command
+        server.getCommandManager().metaBuilder(command)
+            .plugin(VelocityVirtualPlugin.INSTANCE)
+            .build(),
+        command
     );
   }
 
   /**
-   * Handles registering the command in case of a Multi Proxy system.
+   * Handles registering the command when Redis is enabled.
    *
    * @param isSendEnabled Whether the command is enabled or not.
    */
@@ -151,7 +151,7 @@ public class SendCommand {
           final String argument = context.getArguments().containsKey(PLAYER_ARG)
               ? context.getArgument(PLAYER_ARG, String.class)
               : "";
-          for (MultiProxyHandler.RemotePlayerInfo info : server.getMultiProxyHandler().getAllPlayers()) {
+          for (RemotePlayerInfo info : server.getMultiProxyHandler().getAllPlayers()) {
             final String playerName = info.getName();
             if (playerName.regionMatches(true, 0, argument, 0, argument.length())) {
               builder.suggest(playerName);
@@ -213,9 +213,10 @@ public class SendCommand {
   }
 
   private int send(final CommandContext<CommandSource> context) {
-    if (server.getMultiProxyHandler().isEnabled()) {
+    if (server.getMultiProxyHandler().isRedisEnabled()) {
       return sendMultiProxy(context);
     }
+
     final String serverName = context.getArgument(SERVER_ARG, String.class);
     final String player = context.getArgument(PLAYER_ARG, String.class);
 
@@ -313,11 +314,11 @@ public class SendCommand {
 
     if (player0.getCurrentServer().isPresent() && player0.getCurrentServer().get().getServer().equals(targetServer)) {
       context.getSource().sendMessage(Component.translatable("velocity.command.send-player-none",
-              Component.text(player0.getUsername()), Component.text(targetServer.getServerInfo().getName())));
+          Component.text(player0.getUsername()), Component.text(targetServer.getServerInfo().getName())));
     } else {
       player0.createConnectionRequest(targetServer).fireAndForget();
       context.getSource().sendMessage(Component.translatable("velocity.command.send-player",
-              Component.text(player0.getUsername()), Component.text(targetServer.getServerInfo().getName())));
+          Component.text(player0.getUsername()), Component.text(targetServer.getServerInfo().getName())));
     }
   }
 
@@ -334,18 +335,17 @@ public class SendCommand {
 
     if (playerSize == 0) {
       context.getSource().sendMessage(Component.translatable("velocity.command.send-server-none",
-              Component.text(name), Component.text(targetServer.getServerInfo().getName())));
+          Component.text(name), Component.text(targetServer.getServerInfo().getName())));
       return;
     }
     for (Player targetPlayer : server.getPlayersConnected()) {
       targetPlayer.createConnectionRequest(targetServer).fireAndForget();
     }
     context.getSource().sendMessage(Component.translatable(playerSize == 1
-                    ? "velocity.command.send-server-singular" : "velocity.command.send-server-plural",
-            Component.text(playerSize), Component.text(name),
-            Component.text(targetServer.getServerInfo().getName())));
+            ? "velocity.command.send-server-singular" : "velocity.command.send-server-plural",
+        Component.text(playerSize), Component.text(name),
+        Component.text(targetServer.getServerInfo().getName())));
   }
-
 
   private int sendMultiProxy(final CommandContext<CommandSource> context) {
     final String serverName = context.getArgument(SERVER_ARG, String.class);
@@ -362,7 +362,7 @@ public class SendCommand {
 
     final RegisteredServer targetServer = maybeServer.get();
 
-    if (!this.server.getMultiProxyHandler().isPlayerOnline(player)
+    if (this.server.getMultiProxyHandler().isPlayerOnline(player)
         && !Objects.equals(player, "all")
         && !Objects.equals(player, "current")
         && !player.startsWith("+")) {
@@ -373,8 +373,8 @@ public class SendCommand {
     }
 
     if (Objects.equals(player, "all")) {
-      List<MultiProxyHandler.RemotePlayerInfo> list = this.server.getMultiProxyHandler().getAllPlayers();
-      for (final MultiProxyHandler.RemotePlayerInfo p : list) {
+      List<RemotePlayerInfo> list = this.server.getMultiProxyHandler().getAllPlayers();
+      for (final RemotePlayerInfo p : list) {
         this.server.getRedisManager().send(new RedisSwitchServerRequest(p.getName(), targetServer.getServerInfo().getName()));
       }
       final int globalCount = list.size();
@@ -398,8 +398,8 @@ public class SendCommand {
           return -1;
         }
         int amountDone = 0;
-        List<MultiProxyHandler.RemotePlayerInfo> list = this.server.getMultiProxyHandler().getAllPlayers();
-        for (final MultiProxyHandler.RemotePlayerInfo p : list) {
+        List<RemotePlayerInfo> list = this.server.getMultiProxyHandler().getAllPlayers();
+        for (final RemotePlayerInfo p : list) {
           if (p.getServerName().equalsIgnoreCase(connectedServer.get().getServerInfo().getName())) {
             this.server.getRedisManager().send(new RedisSwitchServerRequest(p.getName(), connectedServer.get().getServerInfo().getName()));
             amountDone++;
@@ -416,6 +416,7 @@ public class SendCommand {
     }
 
     if (player.startsWith("+")) {
+
       final ServerResult result = findServer(player.substring(1));
 
       if (result.bestMatch().isEmpty()) {
@@ -438,25 +439,27 @@ public class SendCommand {
     return Command.SINGLE_SUCCESS;
   }
 
-  private void sendPlayerMultiProxy(final CommandContext<CommandSource> context, final String player0,
-      final RegisteredServer targetServer) {
+  private void sendPlayerMultiProxy(final CommandContext<CommandSource> context, final String playerInput,
+                                    final RegisteredServer targetServer) {
 
-    boolean alreadyConnected = server.getMultiProxyHandler().getPlayerInfo(player0).getServerName()
-            .equalsIgnoreCase(targetServer.getServerInfo().getName());
+    RemotePlayerInfo playerInfo = server.getMultiProxyHandler().getPlayerInfo(playerInput);
+
+    String correctName = playerInfo.getName();
+    boolean alreadyConnected = playerInfo.getServerName().equalsIgnoreCase(targetServer.getServerInfo().getName());
 
     if (alreadyConnected) {
       context.getSource().sendMessage(Component.translatable("velocity.command.send-player-none",
-              Component.text(player0), Component.text(targetServer.getServerInfo().getName())));
+              Component.text(correctName), Component.text(targetServer.getServerInfo().getName())));
     } else {
-      this.server.getRedisManager().send(new RedisSwitchServerRequest(player0,
+      this.server.getRedisManager().send(new RedisSwitchServerRequest(correctName,
               targetServer.getServerInfo().getName()));
       context.getSource().sendMessage(Component.translatable("velocity.command.send-player",
-              Component.text(player0), Component.text(targetServer.getServerInfo().getName())));
+              Component.text(correctName), Component.text(targetServer.getServerInfo().getName())));
     }
   }
 
   private void sendPlayersFromServerMultiProxy(final CommandContext<CommandSource> context, final RegisteredServer server,
-      final RegisteredServer targetServer) {
+                                               final RegisteredServer targetServer) {
     final String name = server.getServerInfo().getName();
 
     if (name.equalsIgnoreCase(targetServer.getServerInfo().getName())) {
@@ -465,8 +468,8 @@ public class SendCommand {
     }
 
     int amountDone = 0;
-    List<MultiProxyHandler.RemotePlayerInfo> list = this.server.getMultiProxyHandler().getAllPlayers();
-    for (final MultiProxyHandler.RemotePlayerInfo p : list) {
+    List<RemotePlayerInfo> list = this.server.getMultiProxyHandler().getAllPlayers();
+    for (final RemotePlayerInfo p : list) {
       if (p.getServerName().equalsIgnoreCase(name)) {
         this.server.getRedisManager().send(new RedisSwitchServerRequest(p.getName(), targetServer.getServerInfo().getName()));
         amountDone++;
@@ -475,16 +478,16 @@ public class SendCommand {
 
     if (amountDone == 0) {
       context.getSource().sendMessage(Component.translatable("velocity.command.send-server-none",
-              Component.text(name), Component.text(targetServer.getServerInfo().getName())));
+          Component.text(name), Component.text(targetServer.getServerInfo().getName())));
       return;
     }
     for (Player targetPlayer : server.getPlayersConnected()) {
       targetPlayer.createConnectionRequest(targetServer).fireAndForget();
     }
     context.getSource().sendMessage(Component.translatable(amountDone == 1
-                    ? "velocity.command.send-server-singular" : "velocity.command.send-server-plural",
-            Component.text(amountDone), Component.text(name),
-            Component.text(targetServer.getServerInfo().getName())));
+            ? "velocity.command.send-server-singular" : "velocity.command.send-server-plural",
+        Component.text(amountDone), Component.text(name),
+        Component.text(targetServer.getServerInfo().getName())));
   }
 
   private ServerResult findServer(final String serverName) {
@@ -495,6 +498,7 @@ public class SendCommand {
     boolean multipleMatches = false;
 
     for (RegisteredServer server : servers) {
+
       final String lowerName = server.getServerInfo().getName().toLowerCase();
 
       if (lowerName.equals(lowerServerName)) {

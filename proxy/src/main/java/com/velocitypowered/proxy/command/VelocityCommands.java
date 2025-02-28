@@ -45,7 +45,7 @@ import com.velocitypowered.proxy.command.brigadier.VelocityArgumentCommandNode;
 import com.velocitypowered.proxy.command.brigadier.VelocityBrigadierCommandWrapper;
 import com.velocitypowered.proxy.command.builtin.CommandMessages;
 import com.velocitypowered.proxy.config.VelocityConfiguration;
-import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.redis.multiproxy.RemotePlayerInfo;
 import com.velocitypowered.proxy.server.VelocityRegisteredServer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -440,7 +440,7 @@ public final class VelocityCommands {
         ? context.getArgument("proxy", String.class)
         : "";
     for (String proxyId : server.getMultiProxyHandler().getAllProxyIds()) {
-      if (proxyId.regionMatches(true, 0, argument, 0, argument.length())) {
+      if (proxyId.toLowerCase().regionMatches(true, 0, argument.toLowerCase(), 0, argument.length())) {
         builder.suggest(proxyId);
       }
     }
@@ -462,8 +462,8 @@ public final class VelocityCommands {
         ? ctx.getArgument("player", String.class)
         : "";
 
-    if (includeRemote && server.getMultiProxyHandler().isEnabled()) {
-      for (MultiProxyHandler.RemotePlayerInfo info : server.getMultiProxyHandler().getAllPlayers()) {
+    if (includeRemote && server.getMultiProxyHandler().isRedisEnabled()) {
+      for (RemotePlayerInfo info : server.getMultiProxyHandler().getAllPlayers()) {
         if (info.getName().regionMatches(true, 0, argument, 0, argument.length())) {
           builder.suggest(info.getName());
         }

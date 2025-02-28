@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Velocity Contributors
+ * Copyright (C) 2020-2024 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,21 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.velocitypowered.proxy.redis.multiproxy;
-
-import com.velocitypowered.proxy.redis.RedisPacket;
+package com.velocitypowered.proxy.queue;
 
 /**
- * Constructs a request to pause a queue.
- *
- * @param server The name of the server.
- * @param pause Whether to pause it or not.
+ * server status.
  */
-public record RedisQueuePauseRequest(String server, boolean pause) implements RedisPacket {
-  public static final String ID = "redis-queue-pause";
-
-  @Override
-  public String getId() {
-    return ID;
-  }
+public enum ServerStatus {
+  OFFLINE,
+  WAITING,
+  ONLINE
 }

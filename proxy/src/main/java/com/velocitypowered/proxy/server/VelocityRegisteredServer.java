@@ -48,7 +48,7 @@ import com.velocitypowered.proxy.protocol.netty.MinecraftVarintLengthEncoder;
 import com.velocitypowered.proxy.protocol.util.ByteBufDataOutput;
 import com.velocitypowered.proxy.queue.QueueManagerRedisImpl;
 import com.velocitypowered.proxy.queue.ServerQueueStatus;
-import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.redis.multiproxy.RemotePlayerInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -101,17 +101,32 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
   }
 
   @Override
+  public long getTotalPlayerCount() {
+    if (this.server.getMultiProxyHandler().isRedisEnabled()) {
+      int amount = 0;
+
+      for (RemotePlayerInfo info : this.server.getMultiProxyHandler().getAllPlayers()) {
+        if (info.getServerName() != null && info.getServerName().equalsIgnoreCase(getServerInfo().getName())) {
+          amount++;
+        }
+      }
+
+      return amount;
+    } else {
+      return getPlayersConnected().size();
+    }
+  }
+
+  @Override
   public List<PlayerInfo> getPlayerInfo() {
-    if (!this.server.getMultiProxyHandler().isEnabled()) {
+    if (this.server == null || !this.server.getMultiProxyHandler().isRedisEnabled()) {
       List<PlayerInfo> info = new ArrayList<>();
-      players.forEach((uuid, player) -> {
-        info.add(new PlayerInfo(player.getUsername(), player.getUniqueId()));
-      });
+      players.forEach((uuid, player) -> info.add(new PlayerInfo(player.getUsername(), player.getUniqueId())));
       return info;
     }
 
     List<PlayerInfo> info = new ArrayList<>();
-    for (MultiProxyHandler.RemotePlayerInfo i : this.server.getMultiProxyHandler().getAllPlayers()) {
+    for (RemotePlayerInfo i : this.server.getMultiProxyHandler().getAllPlayers()) {
       if (i.getServerName() != null && i.getServerName().equalsIgnoreCase(getServerInfo().getName())) {
         info.add(new PlayerInfo(i.getName(), i.getUuid()));
       }
@@ -120,7 +135,7 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
     return info;
   }
 
-  public int getPlayerCount() {
+  public long getPlayerCount() {
     return this.players.size();
   }
 
@@ -169,7 +184,7 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
       if (future.isSuccess()) {
         MinecraftConnection conn = future.channel().pipeline().get(MinecraftConnection.class);
         PingSessionHandler handler = new PingSessionHandler(pingFuture,
-            VelocityRegisteredServer.this, conn, pingOptions.getProtocolVersion());
+            VelocityRegisteredServer.this, conn, pingOptions.getProtocolVersion(), pingOptions.getVirtualHost());
         conn.setActiveSessionHandler(StateRegistry.HANDSHAKE, handler);
       } else {
         pingFuture.completeExceptionally(future.cause());
@@ -249,6 +264,6 @@ public class VelocityRegisteredServer implements RegisteredServer, ForwardingAud
    * @return The queue status of the server
    */
   public ServerQueueStatus getQueueStatus() {
-    return requireNonNull(this.server).getQueueManager().getQueue(serverInfo.getName());
+    return this.server.getQueueManager().getQueue(serverInfo.getName());
   }
 }

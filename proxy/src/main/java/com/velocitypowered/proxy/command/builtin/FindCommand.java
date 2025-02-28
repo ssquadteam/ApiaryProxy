@@ -31,7 +31,7 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.command.VelocityCommands;
 import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
-import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.redis.multiproxy.RemotePlayerInfo;
 import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -75,7 +75,7 @@ public class FindCommand {
   }
 
   private int find(final CommandContext<CommandSource> context) {
-    if (server.getMultiProxyHandler().isEnabled()) {
+    if (server.getMultiProxyHandler().isRedisEnabled()) {
       return findMultiProxy(context);
     }
 
@@ -115,18 +115,18 @@ public class FindCommand {
 
   private int findMultiProxy(final CommandContext<CommandSource> context) {
     final String player = context.getArgument("player", String.class);
-    if (!server.getMultiProxyHandler().isPlayerOnline(player)) {
+    if (server.getMultiProxyHandler().isPlayerOnline(player)) {
       context.getSource().sendMessage(
-              CommandMessages.PLAYER_NOT_FOUND.arguments(Component.text(player))
+          CommandMessages.PLAYER_NOT_FOUND.arguments(Component.text(player))
       );
       return 0;
     }
 
-    MultiProxyHandler.RemotePlayerInfo info = server.getMultiProxyHandler().getPlayerInfo(player);
+    RemotePlayerInfo info = server.getMultiProxyHandler().getPlayerInfo(player);
 
     if (info.getServerName() == null) {
       context.getSource().sendMessage(
-              Component.translatable("velocity.command.find.no-server", NamedTextColor.YELLOW)
+          Component.translatable("velocity.command.find.no-server", NamedTextColor.YELLOW)
       );
       return 0;
     }
@@ -134,15 +134,15 @@ public class FindCommand {
     RegisteredServer server = this.server.getServer(info.getServerName()).orElse(null);
     if (server == null) {
       context.getSource().sendMessage(
-              Component.translatable("velocity.command.find.no-server", NamedTextColor.YELLOW)
+          Component.translatable("velocity.command.find.no-server", NamedTextColor.YELLOW)
       );
       return 0;
     }
 
     context.getSource().sendMessage(
-            Component.translatable("velocity.command.find.message", NamedTextColor.YELLOW,
-                    Component.text(info.getName()), Component.text(server.getServerInfo().getName()
-                            + " (" + info.getProxyId() + ")"))
+        Component.translatable("velocity.command.find.message", NamedTextColor.YELLOW,
+            Component.text(info.getName()), Component.text(server.getServerInfo().getName()
+                + " (" + info.getProxyId() + ")"))
     );
     return Command.SINGLE_SUCCESS;
   }

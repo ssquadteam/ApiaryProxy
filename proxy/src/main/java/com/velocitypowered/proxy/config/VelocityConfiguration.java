@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -66,8 +67,10 @@ public final class VelocityConfiguration implements ProxyConfig {
   private String bind = "0.0.0.0:25565";
   @Expose
   private String motd = "<aqua>A Velocity Server";
+  private net.kyori.adventure.text.@MonotonicNonNull Component motdAsComponent;
   @Expose
   private List<String> motdHover = List.of("");
+  private List<net.kyori.adventure.text.@MonotonicNonNull Component> motdHoverComponents;
   @Expose
   private int showMaxPlayers = 500;
   @Expose
@@ -98,7 +101,6 @@ public final class VelocityConfiguration implements ProxyConfig {
   private final Queue queue;
   @Expose
   private boolean enablePlayerAddressLogging = true;
-  private net.kyori.adventure.text.@MonotonicNonNull Component motdAsComponent;
   private @Nullable Favicon favicon;
   @Expose
   private boolean forceKeyAuthentication = true; // Added in 1.19
@@ -130,7 +132,7 @@ public final class VelocityConfiguration implements ProxyConfig {
   private Map<String, Integer> playerCaps;
 
   private VelocityConfiguration(final Servers servers, final ForcedHosts forcedHosts, final Commands commands,
-      final Advanced advanced, final Query query, final Metrics metrics, final Redis redis, final Queue queue) {
+                                final Advanced advanced, final Query query, final Metrics metrics, final Redis redis, final Queue queue) {
     this.servers = servers;
     this.forcedHosts = forcedHosts;
     this.commands = commands;
@@ -143,16 +145,16 @@ public final class VelocityConfiguration implements ProxyConfig {
 
   private VelocityConfiguration(final String bind, final String motd, final List<String> motdHover,
                                 final int showMaxPlayers, final boolean onlineMode,
-      final boolean preventClientProxyConnections, final boolean announceForge,
-      final PlayerInfoForwarding playerInfoForwardingMode, final byte[] forwardingSecret,
-      final boolean onlineModeKickExistingPlayers, final PingPassthroughMode pingPassthrough,
-      final boolean enablePlayerAddressLogging, final Servers servers, final ForcedHosts forcedHosts,
-      final Commands commands, final Advanced advanced, final Query query, final Metrics metrics, final boolean forceKeyAuthentication,
-      final boolean logPlayerConnections, final boolean logPlayerDisconnections,
-      final boolean logOfflineConnections, final boolean disableForge, final boolean enforceChatSigning,
-      final boolean translateHeaderFooter, final boolean logMinimumVersion, final String minimumVersion,
-      final Redis redis, final Queue queue, final Map<String, List<String>> slashServers, List<ServerLink> serverLinks,
-                                List<ProxyAddress> proxyAddresses, String dynamicProxyFilter, Map<String, Integer> playerCaps) {
+                                final boolean preventClientProxyConnections, final boolean announceForge,
+                                final PlayerInfoForwarding playerInfoForwardingMode, final byte[] forwardingSecret,
+                                final boolean onlineModeKickExistingPlayers, final PingPassthroughMode pingPassthrough,
+                                final boolean enablePlayerAddressLogging, final Servers servers, final ForcedHosts forcedHosts,
+                                final Commands commands, final Advanced advanced, final Query query, final Metrics metrics,
+                                final boolean forceKeyAuthentication, final boolean logPlayerConnections, final boolean logPlayerDisconnections,
+                                final boolean logOfflineConnections, final boolean disableForge, final boolean enforceChatSigning,
+                                final boolean translateHeaderFooter, final boolean logMinimumVersion, final String minimumVersion, final Redis redis,
+                                final Queue queue, final Map<String, List<String>> slashServers, final List<ServerLink> serverLinks,
+                                final List<ProxyAddress> proxyAddresses, final String dynamicProxyFilter, final Map<String, Integer> playerCaps) {
     this.bind = bind;
     this.motd = motd;
     this.motdHover = motdHover;
@@ -289,13 +291,13 @@ public final class VelocityConfiguration implements ProxyConfig {
 
     for (Map.Entry<String, List<String>> entry : slashServers.entrySet()) {
       if (entry.getValue().isEmpty()) {
-        logger.error("/server alias '{}' does not contain any servers", entry.getKey());
+        logger.error("Slash server alias '{}' does not contain any servers", entry.getKey());
         valid = false;
         continue;
       }
 
       if (!servers.getServers().containsKey(entry.getKey())) {
-        logger.error("Server '{}' does not exist (in /server aliases)", entry.getKey());
+        logger.error("Server '{}' does not exist in slash server aliases", entry.getKey());
         valid = false;
       }
     }
@@ -304,6 +306,13 @@ public final class VelocityConfiguration implements ProxyConfig {
       getMotd();
     } catch (Exception e) {
       logger.error("Can't parse your MOTD", e);
+      valid = false;
+    }
+
+    try {
+      getMotdHover();
+    } catch (Exception e) {
+      logger.error("Can't parse your MOTD hover", e);
       valid = false;
     }
 
@@ -376,8 +385,14 @@ public final class VelocityConfiguration implements ProxyConfig {
     return motdAsComponent;
   }
 
-  public List<String> getMotdHover() {
-    return this.motdHover;
+  @Override
+  public List<net.kyori.adventure.text.Component> getMotdHover() {
+    if (motdHoverComponents == null) {
+      motdHoverComponents = motdHover.stream()
+          .map(MiniMessage.miniMessage()::deserialize)
+          .toList();
+    }
+    return motdHoverComponents;
   }
 
   @Override
@@ -490,10 +505,6 @@ public final class VelocityConfiguration implements ProxyConfig {
 
   public boolean isSendEnabled() {
     return commands.isSendEnabled();
-  }
-
-  public boolean isShowAllEnabled() {
-    return commands.isShowAllEnabled();
   }
 
   public boolean isOverrideServerCommandUsage() {
@@ -693,18 +704,18 @@ public final class VelocityConfiguration implements ProxyConfig {
       }
 
       String forwardingSecretString = System.getenv().getOrDefault(
-              "VELOCITY_FORWARDING_SECRET", "");
+          "VELOCITY_FORWARDING_SECRET", "");
       if (forwardingSecretString.isEmpty()) {
         final String forwardSecretFile = config.get("forwarding-secret-file");
         final Path secretPath = forwardSecretFile == null
-                ? defaultForwardingSecretPath
-                : Path.of(forwardSecretFile);
+            ? defaultForwardingSecretPath
+            : Path.of(forwardSecretFile);
         if (Files.exists(secretPath)) {
           if (Files.isRegularFile(secretPath)) {
             forwardingSecretString = String.join("", Files.readAllLines(secretPath));
           } else {
             throw new RuntimeException(
-                    "The file " + forwardSecretFile + " is not a valid file or it is a directory.");
+                "The file " + forwardSecretFile + " is not a valid file or it is a directory.");
           }
         } else {
           throw new RuntimeException("The forwarding-secret-file does not exist.");
@@ -726,12 +737,10 @@ public final class VelocityConfiguration implements ProxyConfig {
       final CommentedConfig serverLinksConfig = config.get("server-links");
       final CommentedConfig proxyAddressesConfig = config.get("proxy-addresses");
       final CommentedConfig playerCapsConfig = config.get("playercaps");
-
       final PlayerInfoForwarding forwardingMode = config.getEnumOrElse(
               "player-info-forwarding-mode", PlayerInfoForwarding.NONE);
       final PingPassthroughMode pingPassthroughMode = config.getEnumOrElse("ping-passthrough",
               PingPassthroughMode.DISABLED);
-
       final String bind = config.getOrElse("bind", "0.0.0.0:25565");
       final int maxPlayers = config.getIntOrElse("show-max-players", 500);
       final boolean onlineMode = config.getOrElse("online-mode", true);
@@ -781,8 +790,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         for (CommentedConfig.Entry entry : serverLinksConfig.entrySet()) {
           CommentedConfig link = entry.getValue();
           links.add(ServerLink.serverLink(MiniMessage.miniMessage().deserialize(link.get("label")),
-                  link.get("link")));
-
+              link.get("link")));
         }
       }
 
@@ -798,8 +806,8 @@ public final class VelocityConfiguration implements ProxyConfig {
 
           CommentedConfig link = entry.getValue();
           addresses.add(new ProxyAddress(link.get("proxy-id"),
-                  link.get("ip"),
-                  link.get("port")));
+              link.get("ip"),
+              link.get("port")));
         }
       }
 
@@ -937,7 +945,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         Map<String, PlayerInfoForwarding> serverForwardingModes = new HashMap<>();
         for (UnmodifiableConfig.Entry entry : config.entrySet()) {
           if (entry.getKey().equalsIgnoreCase("dynamic-fallbacks-filter")) {
-            continue;
+            continue; // Intended despite uselessness.
           } else if (entry.getValue() instanceof String) {
             servers.put(cleanServerName(entry.getKey()), entry.getValue());
           } else if (entry.getValue() instanceof UnmodifiableConfig) {
@@ -975,7 +983,7 @@ public final class VelocityConfiguration implements ProxyConfig {
     }
 
     private Servers(final Map<String, String> servers, final List<String> attemptConnectionOrder,
-        final Map<String, PlayerInfoForwarding> serverForwardingModes) {
+                    final Map<String, PlayerInfoForwarding> serverForwardingModes) {
       this.servers = servers;
       this.attemptConnectionOrder = attemptConnectionOrder;
     }
@@ -999,7 +1007,6 @@ public final class VelocityConfiguration implements ProxyConfig {
     public String getDynamicFallbackFilter() {
       return dynamicFallbackFilter;
     }
-
 
     public void setAttemptConnectionOrder(final List<String> attemptConnectionOrder) {
       this.attemptConnectionOrder = attemptConnectionOrder;
@@ -1102,8 +1109,6 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private boolean sendCommand = true;
     @Expose
-    private boolean showAllCommand = true;
-    @Expose
     private boolean overrideServerCommandUsage = false;
     @Expose
     private boolean transferEnabled = true;
@@ -1122,7 +1127,6 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.hubCommand = config.getOrElse("hub-enabled", true);
         this.pingCommand = config.getOrElse("ping-enabled", true);
         this.sendCommand = config.getOrElse("send-enabled", true);
-        this.showAllCommand = config.getOrElse("showall-enabled", true);
         this.overrideServerCommandUsage = config.getOrElse("override-server-command-usage", false);
         this.transferEnabled = config.getOrElse("transfer-enabled", true);
       }
@@ -1164,10 +1168,6 @@ public final class VelocityConfiguration implements ProxyConfig {
       return sendCommand;
     }
 
-    public boolean isShowAllEnabled() {
-      return showAllCommand;
-    }
-
     public boolean isOverrideServerCommandUsage() {
       return overrideServerCommandUsage;
     }
@@ -1188,7 +1188,6 @@ public final class VelocityConfiguration implements ProxyConfig {
           + ", hubCommand=" + hubCommand
           + ", pingCommand=" + pingCommand
           + ", sendCommand=" + sendCommand
-          + ", showAllCommand=" + showAllCommand
           + ", overrideServerCommandUsage=" + overrideServerCommandUsage
           + '}';
     }
@@ -1226,8 +1225,10 @@ public final class VelocityConfiguration implements ProxyConfig {
     private boolean allowIllegalCharactersInChat = false;
     @Expose
     private String serverBrand = "{backend-brand} ({proxy-brand})";
+    private String serverBrandAsString;
     @Expose
     private String fallbackVersionPing = "{proxy-brand} {protocol-min}-{protocol-max}";
+    private String fallbackVersionPingAsString;
     @Expose
     private boolean alwaysFallBackPing = true;
     @Expose
@@ -1265,6 +1266,12 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.proxyBrandCustom = config.getOrElse("custom-brand-proxy", "Velocity");
         this.backendBrandCustom = config.getOrElse("custom-brand-backend", "Paper");
       }
+
+      this.serverBrandAsString = LegacyComponentSerializer.legacySection()
+          .serialize(MiniMessage.miniMessage().deserialize(this.serverBrand));
+
+      this.fallbackVersionPingAsString = LegacyComponentSerializer.legacySection()
+          .serialize(MiniMessage.miniMessage().deserialize(this.fallbackVersionPing));
     }
 
     public int getCompressionThreshold() {
@@ -1328,17 +1335,16 @@ public final class VelocityConfiguration implements ProxyConfig {
     }
 
     public String getServerBrand() {
-      return serverBrand;
+      return this.serverBrandAsString;
     }
 
     public String getFallbackVersionPing() {
-      return this.fallbackVersionPing;
+      return this.fallbackVersionPingAsString;
     }
 
     public boolean getAlwaysFallBackPing() {
       return this.alwaysFallBackPing;
     }
-
 
     public String getProxyBrandCustom() {
       return this.proxyBrandCustom;
@@ -1546,7 +1552,6 @@ public final class VelocityConfiguration implements ProxyConfig {
       return proxyId;
     }
 
-
     @Override
     public String toString() {
       return "Redis{"
@@ -1572,9 +1577,9 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private boolean allowMultiQueue;
     @Expose
-    private String multipleServerMessagingSelection;
-    @Expose
     private double sendDelay;
+    @Expose
+    private double queueDelay;
     @Expose
     private double messageDelay;
     @Expose
@@ -1606,8 +1611,8 @@ public final class VelocityConfiguration implements ProxyConfig {
       this.enabled = config.getOrElse("enabled", false);
       this.noQueueServers = config.getOrElse("no-queue-servers", List.of());
       this.allowMultiQueue = config.getOrElse("allow-multi-queue", false);
-      this.multipleServerMessagingSelection = config.getOrElse("multiple-server-messaging-selection", "last");
       this.sendDelay = config.getOrElse("send-delay", 1.0);
+      this.queueDelay = config.getOrElse("queue-delay", 0.0);
       this.messageDelay = config.getOrElse("message-delay", 1.0);
       this.backendPingInterval = config.getOrElse("backend-ping-interval", 1.0);
       this.maxSendRetries = config.getOrElse("max-send-retries", 10);
@@ -1658,12 +1663,12 @@ public final class VelocityConfiguration implements ProxyConfig {
       return sendDelay;
     }
 
-    public double getBackendPingInterval() {
-      return backendPingInterval;
+    public double getQueueDelay() {
+      return this.queueDelay;
     }
 
-    public String getMultipleServerMessagingSelection() {
-      return multipleServerMessagingSelection;
+    public double getBackendPingInterval() {
+      return backendPingInterval;
     }
 
     public boolean isAllowMultiQueue() {
@@ -1673,8 +1678,6 @@ public final class VelocityConfiguration implements ProxyConfig {
     public List<String> getNoQueueServers() {
       return noQueueServers;
     }
-
-
 
     public boolean shouldOverrideBungeeMessaging() {
       return overrideBungeeMessaging;
@@ -1702,7 +1705,7 @@ public final class VelocityConfiguration implements ProxyConfig {
           + ", maxSendRetries=" + maxSendRetries
           + ", messageDelay=" + messageDelay
           + ", sendDelay=" + sendDelay
-          + ", multipleServerMessagingSelection=" + multipleServerMessagingSelection
+          + ", queueDelay=" + queueDelay
           + ", allowMultiQueue=" + allowMultiQueue
           + ", noQueueServers=" + noQueueServers
           + ", overrideBungeeMessaging=" + overrideBungeeMessaging

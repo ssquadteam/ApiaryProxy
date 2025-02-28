@@ -88,38 +88,40 @@ public class HubCommand {
 
       RegisteredServer serverToTry = p.getNextServerToTry().orElse(null);
       if (serverToTry == null) {
+        player.sendMessage(Component.translatable("velocity.command.no-fallbacks"));
         return 0;
       }
 
-      if (translationExists("velocity.command.hub.fallback-connecting", player)) {
+      if (translationExists(player)) {
         player.sendMessage(Component.translatable("velocity.command.hub.fallback-connecting")
             .arguments(Component.text(serverToTry.getServerInfo().getName())));
       }
 
-      if (this.server.getConfiguration().getQueue().getNoQueueServers()
-              .contains(serverToTry.getServerInfo().getName()) || !server.getMultiProxyHandler().isEnabled()
-              || player.hasPermission("velocity.queue.bypass")) {
+      if (this.server.getConfiguration().getQueue().getNoQueueServers().contains(serverToTry.getServerInfo().getName())
+              || !server.getMultiProxyHandler().isRedisEnabled()
+              || (server.getQueueManager().isQueueEnabled() && player.hasPermission("velocity.queue.bypass"))) {
         player.createConnectionRequest(serverToTry).connectWithIndication();
         return Command.SINGLE_SUCCESS;
       }
 
       ((VelocityRegisteredServer) serverToTry).getQueueStatus().queue(player.getUniqueId(),
           player.getQueuePriority(serverToTry.getServerInfo().getName()),
-          player.hasPermission("velocity.queue.full.bypass"));
+          server.getQueueManager().isQueueEnabled() && player.hasPermission("velocity.queue.full.bypass"),
+          server.getQueueManager().isQueueEnabled() && player.hasPermission("velocity.queue.bypass"));
 
       return Command.SINGLE_SUCCESS;
     }
     return 0;
   }
 
-  private static boolean translationExists(final String key, final Player player) {
+  private static boolean translationExists(final Player player) {
     Locale locale = player.getEffectiveLocale();
 
     if (locale == null) {
       locale = Locale.ENGLISH;
     }
 
-    Component format = GlobalTranslator.translator().translate(Component.translatable(key), locale);
+    Component format = GlobalTranslator.translator().translate(Component.translatable("velocity.command.hub.fallback-connecting"), locale);
     return format != null && !format.equals(Component.empty());
   }
 }

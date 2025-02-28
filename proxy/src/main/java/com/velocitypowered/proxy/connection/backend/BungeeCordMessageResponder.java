@@ -18,6 +18,7 @@
 package com.velocitypowered.proxy.connection.backend;
 
 import com.velocitypowered.api.network.ProtocolVersion;
+import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.messages.LegacyChannelIdentifier;
@@ -32,11 +33,12 @@ import com.velocitypowered.proxy.protocol.packet.PluginMessagePacket;
 import com.velocitypowered.proxy.protocol.util.ByteBufDataInput;
 import com.velocitypowered.proxy.protocol.util.ByteBufDataOutput;
 import com.velocitypowered.proxy.queue.ServerQueueStatus;
-import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.redis.multiproxy.RemotePlayerInfo;
 import com.velocitypowered.proxy.server.VelocityRegisteredServer;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -59,8 +61,7 @@ public class BungeeCordMessageResponder {
 
   private static final MinecraftChannelIdentifier MODERN_CHANNEL = MinecraftChannelIdentifier
       .create("bungeecord", "main");
-  private static final LegacyChannelIdentifier LEGACY_CHANNEL =
-      new LegacyChannelIdentifier("BungeeCord");
+  private static final LegacyChannelIdentifier LEGACY_CHANNEL = new LegacyChannelIdentifier("BungeeCord");
 
   private final VelocityServer proxy;
   private final ConnectedPlayer player;
@@ -77,8 +78,19 @@ public class BungeeCordMessageResponder {
 
   private void processConnect(final ByteBufDataInput in, final boolean queue) {
     String serverName = in.readUTF();
+
+    if (player.getPermissionValue("velocity.command.server." + serverName) == Tristate.FALSE) {
+      player.sendMessage(Component.translatable("velocity.command.server-does-not-exist")
+          .arguments(Component.text(serverName)));
+      return;
+    }
+
     proxy.getServer(serverName).ifPresent(server -> {
-      if (queue && proxy.getQueueManager().isEnabled()) {
+      if (queue && proxy.getQueueManager().isQueueEnabled()) {
+        if (this.proxy.getConfiguration().getQueue().getNoQueueServers().contains(server.getServerInfo().getName())) {
+          player.createConnectionRequest(server).connectWithIndication();
+          return;
+        }
         if (player.hasPermission("velocity.queue.bypass")) {
           player.createConnectionRequest(server).connectWithIndication();
         } else {
@@ -97,7 +109,18 @@ public class BungeeCordMessageResponder {
     Optional<Player> referencedPlayer = proxy.getPlayer(playerName);
     Optional<RegisteredServer> referencedServer = proxy.getServer(serverName);
     if (referencedPlayer.isPresent() && referencedServer.isPresent()) {
-      if (queue && proxy.getQueueManager().isEnabled()) {
+      if (referencedPlayer.get().getPermissionValue("velocity.command.server." + serverName) == Tristate.FALSE) {
+        referencedPlayer.get().sendMessage(Component.translatable("velocity.command.server-does-not-exist")
+            .arguments(Component.text(serverName)));
+        return;
+      }
+
+      if (queue && proxy.getQueueManager().isQueueEnabled()) {
+        if (this.proxy.getConfiguration().getQueue().getNoQueueServers().contains(referencedServer.get().getServerInfo().getName())) {
+          player.createConnectionRequest(referencedServer.get()).connectWithIndication();
+          return;
+        }
+
         if (!referencedPlayer.get().hasPermission("velocity.queue.bypass")) {
           proxy.getQueueManager().queue(player, (VelocityRegisteredServer) referencedServer.get());
         } else {
@@ -129,7 +152,7 @@ public class BungeeCordMessageResponder {
         out.writeUTF("ALL");
 
         int amount;
-        if (proxy.getMultiProxyHandler().isEnabled()) {
+        if (proxy.getMultiProxyHandler().isRedisEnabled()) {
           amount = proxy.getMultiProxyHandler().getTotalPlayerCount();
         } else {
           amount = proxy.getPlayerCount();
@@ -141,8 +164,8 @@ public class BungeeCordMessageResponder {
           out.writeUTF(rs.getServerInfo().getName());
 
           int amount = 0;
-          if (proxy.getMultiProxyHandler().isEnabled()) {
-            for (MultiProxyHandler.RemotePlayerInfo info : proxy.getMultiProxyHandler().getAllPlayers()) {
+          if (proxy.getMultiProxyHandler().isRedisEnabled()) {
+            for (RemotePlayerInfo info : proxy.getMultiProxyHandler().getAllPlayers()) {
               if (info.getServerName() != null && info.getServerName().equalsIgnoreCase(rs.getServerInfo().getName())) {
                 amount++;
               }
@@ -189,16 +212,19 @@ public class BungeeCordMessageResponder {
 
     ByteBuf buf = Unpooled.buffer();
 
-    MultiProxyHandler.RemotePlayerInfo info = proxy.getMultiProxyHandler().getPlayerInfo(playerUuid);
+    String queuedServer = null;
+
+    for (ServerQueueStatus status : proxy.getQueueManager().getAll()) {
+      if (status.isQueued(playerUuid)) {
+        queuedServer = status.getServerName();
+        break;
+      }
+    }
 
     try (ByteBufDataOutput out = new ByteBufDataOutput(buf)) {
       out.writeUTF("QueuedServer");
       out.writeUTF(playerUuid.toString());
-      if (info != null && info.getQueuedServer() != null) {
-        out.writeUTF(info.getQueuedServer());
-      } else {
-        out.writeUTF("N/A");
-      }
+      out.writeUTF(Objects.requireNonNullElse(queuedServer, "N/A"));
     }
 
     if (buf.isReadable()) {
@@ -212,18 +238,12 @@ public class BungeeCordMessageResponder {
     UUID playerUuid = UUID.fromString(in.readUTF());
 
     ByteBuf buf = Unpooled.buffer();
-
-    MultiProxyHandler.RemotePlayerInfo info = proxy.getMultiProxyHandler().getPlayerInfo(playerUuid);
-
-    if (!proxy.getQueueManager().isMasterProxy()) {
-      return;
-    }
-
     int position = -1;
-    if (info != null && info.getQueuedServer() != null) {
-      ServerQueueStatus status = proxy.getQueueManager().getQueue(info.getQueuedServer());
-      if (status != null && status.isQueued(playerUuid)) {
+
+    for (ServerQueueStatus status : proxy.getQueueManager().getAll()) {
+      if (status.isQueued(playerUuid)) {
         position = status.getQueuePosition(playerUuid);
+        break;
       }
     }
 
@@ -244,18 +264,12 @@ public class BungeeCordMessageResponder {
     UUID playerUuid = UUID.fromString(in.readUTF());
 
     ByteBuf buf = Unpooled.buffer();
-
-    MultiProxyHandler.RemotePlayerInfo info = proxy.getMultiProxyHandler().getPlayerInfo(playerUuid);
-
-    if (!proxy.getQueueManager().isMasterProxy()) {
-      return;
-    }
-
     int position = -1;
-    if (info != null && info.getQueuedServer() != null) {
-      ServerQueueStatus status = proxy.getQueueManager().getQueue(info.getQueuedServer());
-      if (status != null && status.isQueued(playerUuid)) {
+
+    for (ServerQueueStatus status : proxy.getQueueManager().getAll()) {
+      if (status.isQueued(playerUuid)) {
         position = status.getSize();
+        break;
       }
     }
 
@@ -277,17 +291,12 @@ public class BungeeCordMessageResponder {
 
     ByteBuf buf = Unpooled.buffer();
 
-    MultiProxyHandler.RemotePlayerInfo info = proxy.getMultiProxyHandler().getPlayerInfo(playerUuid);
-
-    if (!proxy.getQueueManager().isMasterProxy()) {
-      return;
-    }
-
     boolean paused = false;
-    if (info != null && info.getQueuedServer() != null) {
-      ServerQueueStatus status = proxy.getQueueManager().getQueue(info.getQueuedServer());
-      if (status != null && status.isQueued(playerUuid)) {
-        paused = status.isPaused();
+
+    for (ServerQueueStatus status : proxy.getQueueManager().getAll()) {
+      if (status.isQueued(playerUuid)) {
+        paused = true;
+        break;
       }
     }
 
@@ -484,6 +493,17 @@ public class BungeeCordMessageResponder {
     }
   }
 
+  private void processGetPlayerServer(final ByteBufDataInput in) {
+    proxy.getPlayer(in.readUTF()).ifPresent(player -> player.getCurrentServer().ifPresent(server -> {
+      ByteBuf buf = Unpooled.buffer();
+      ByteBufDataOutput out = new ByteBufDataOutput(buf);
+      out.writeUTF("GetPlayerServer");
+      out.writeUTF(player.getUsername());
+      out.writeUTF(server.getServerInfo().getName());
+      sendResponseOnConnection(buf);
+    }));
+  }
+
   static String getBungeeCordChannel(final ProtocolVersion version) {
     return version.noLessThan(ProtocolVersion.MINECRAFT_1_13) ? MODERN_CHANNEL.getId()
         : LEGACY_CHANNEL.getId();
@@ -514,6 +534,9 @@ public class BungeeCordMessageResponder {
     ByteBufDataInput in = new ByteBufDataInput(message.content());
     String subChannel = in.readUTF();
     switch (subChannel) {
+      case "GetPlayerServer":
+        this.processGetPlayerServer(in);
+        break;
       case "ForwardToPlayer":
         this.processForwardToPlayer(in);
         break;

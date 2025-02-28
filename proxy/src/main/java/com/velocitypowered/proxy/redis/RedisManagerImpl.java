@@ -26,14 +26,18 @@ import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.config.VelocityConfiguration;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
-import com.velocitypowered.proxy.redis.multiproxy.MultiProxyHandler;
+import com.velocitypowered.proxy.queue.ServerQueueEntry;
+import com.velocitypowered.proxy.queue.ServerQueueStatus;
+import com.velocitypowered.proxy.queue.cache.SerializableQueue;
 import com.velocitypowered.proxy.redis.multiproxy.RedisGetPlayerPingRequest;
+import com.velocitypowered.proxy.redis.multiproxy.RedisKickPlayerRequest;
 import com.velocitypowered.proxy.redis.multiproxy.RedisPlayerSetTransferringRequest;
 import com.velocitypowered.proxy.redis.multiproxy.RedisSendMessage;
 import com.velocitypowered.proxy.redis.multiproxy.RedisSendMessageToUuidRequest;
 import com.velocitypowered.proxy.redis.multiproxy.RedisServerAlertRequest;
 import com.velocitypowered.proxy.redis.multiproxy.RedisSwitchServerRequest;
 import com.velocitypowered.proxy.redis.multiproxy.RedisTransferCommandRequest;
+import com.velocitypowered.proxy.redis.multiproxy.RemotePlayerInfo;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -54,7 +59,7 @@ import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
-import redis.clients.jedis.exceptions.JedisException;
+import redis.clients.jedis.exceptions.JedisDataException;
 
 /**
  * Manages Redis connectivity and communication within the Velocity proxy.
@@ -66,12 +71,15 @@ import redis.clients.jedis.exceptions.JedisException;
  */
 public class RedisManagerImpl {
   private static final String CHANNEL = "velocityredis";
+  private static final String CACHE_KEY = "remote-players";
+  private static final String QUEUE_CACHE_KEY = "queue-cache";
 
   private static final Logger logger = LoggerFactory.getLogger(RedisManagerImpl.class);
   private static final Gson gson = new Gson();
 
   private @MonotonicNonNull JedisPool jedisPool;
   private final VelocityPubSub pubSub;
+  private final AsyncPlayerCache asyncPlayerCache;
 
   /**
    * Constructs a Redis manager using the given Velocity server instance to retrieve
@@ -84,10 +92,34 @@ public class RedisManagerImpl {
     this.pubSub = new VelocityPubSub();
 
     if (redisConfig.isEnabled()) {
-      this.start(redisConfig);
+      this.start(redisConfig, velocityServer);
     }
 
+    int threadPoolSize = Math.max(1, Runtime.getRuntime().availableProcessors() / 8);
+    asyncPlayerCache = new AsyncPlayerCache(CACHE_KEY, jedisPool, gson, threadPoolSize);
+
     registerListeners(velocityServer);
+  }
+
+  private void startKeepalive(final String proxyId, final VelocityServer server) {
+    if (jedisPool == null) {
+      return;
+    }
+
+    server.getScheduler()
+        .buildTask(VelocityVirtualPlugin.INSTANCE, () -> {
+          if (server.isStartedShutdown()) {
+            return;
+          }
+
+          try (Jedis jedis = jedisPool.getResource()) {
+            jedis.setex("PROXY_HEARTBEAT:" + proxyId, 30, "online");
+          } catch (Exception e) {
+            logger.error("Keepalive failed for Proxy ID '{}'.", proxyId, e);
+          }
+        })
+        .repeat(30, TimeUnit.SECONDS)
+        .schedule();
   }
 
   private void registerListeners(final VelocityServer proxy) {
@@ -102,36 +134,12 @@ public class RedisManagerImpl {
     listen(RedisGetPlayerPingRequest.ID, RedisGetPlayerPingRequest.class, it -> {
       proxy.getPlayer(it.playerToCheck()).ifPresent(player -> {
         Component component = Component.translatable("velocity.command.ping.other",
-                        NamedTextColor.GREEN)
-                        .arguments(Component.text(player.getUsername()),
-                                Component.text(player.getPing()));
+            NamedTextColor.GREEN)
+               .arguments(Component.text(player.getUsername()),
+                   Component.text(player.getPing()));
 
         send(new RedisSendMessage(it.commandSender(), component));
       });
-    });
-
-    listen(RedisSwitchServerRequest.ID, RedisSwitchServerRequest.class, it -> {
-      proxy.getPlayer(it.username()).ifPresent(player -> {
-        proxy.getServer(it.server()).ifPresent(server -> {
-          player.createConnectionRequest(server).connectWithIndication();
-        });
-      });
-    });
-
-    listen(RedisPlayerSetTransferringRequest.ID, RedisPlayerSetTransferringRequest.class, it -> {
-      MultiProxyHandler.RemotePlayerInfo info = proxy.getMultiProxyHandler().getPlayerInfo(it.uuid());
-      if (info != null) {
-        info.setBeingTransferred(it.transferring());
-      }
-
-      if (!it.transferring()) {
-        proxy.getMultiProxyHandler().getTransferringServers().remove(it.uuid());
-      } else {
-        proxy.getMultiProxyHandler().getTransferringServers().put(it.uuid(), it.currentlyConnectedServer());
-        proxy.getScheduler().buildTask(VelocityVirtualPlugin.INSTANCE, () -> {
-          proxy.getMultiProxyHandler().getTransferringServers().remove(it.uuid());
-        }).delay(10, TimeUnit.SECONDS).schedule();
-      }
     });
 
     listen(RedisTransferCommandRequest.ID, RedisTransferCommandRequest.class, it -> {
@@ -143,7 +151,7 @@ public class RedisManagerImpl {
       if (connectedPlayer.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_20_5)) {
         String connectedServer = connectedPlayer.getConnectedServer() != null ? connectedPlayer.getConnectedServer().getServerInfo().getName() : null;
         send(new RedisPlayerSetTransferringRequest(connectedPlayer.getUniqueId(), true,
-                connectedServer));
+            connectedServer));
       }
 
       proxy.getScheduler().buildTask(VelocityVirtualPlugin.INSTANCE, () -> {
@@ -155,40 +163,76 @@ public class RedisManagerImpl {
         }
       }).delay(1, TimeUnit.SECONDS).schedule();
     });
+
+    listen(RedisSwitchServerRequest.ID, RedisSwitchServerRequest.class, it
+        -> proxy.getPlayer(it.username()).ifPresent(player
+            -> proxy.getServer(it.server()).ifPresent(server
+                -> player.createConnectionRequest(server).connectWithIndication())));
+
+    listen(RedisKickPlayerRequest.ID, RedisKickPlayerRequest.class, it -> {
+      if (proxy.getMultiProxyHandler().getOwnProxyId().equalsIgnoreCase(it.proxyId())) {
+        return;
+      }
+
+      ConnectedPlayer player = (ConnectedPlayer) proxy.getPlayer(it.player()).orElse(null);
+      if (player != null) {
+        player.setDontRemoveFromRedis(true);
+        player.disconnect0(Component.translatable("velocity.error.already-connected-proxy.remote"), true);
+      }
+    });
   }
 
   /**
-   * Adds a proxy ID to the cache.
+   * Add paused queue.
    *
-   * @param id The ID of the proxy.
+   * @param serverName The name of the server.
    */
-  public void addProxyId(final String id) {
+  public void addPausedQueue(final String serverName) {
     if (this.jedisPool == null) {
       return;
     }
 
     try (Jedis jedis = this.jedisPool.getResource()) {
-      jedis.sadd("PROXY_IDS", id);
+      jedis.sadd("PAUSED_QUEUES", serverName);
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
   /**
-   * Removes a proxy ID from the cache.
+   * Remove paused queue.
    *
-   * @param id The ID of the proxy.
+   * @param serverName The name of the server.
    */
-  public void removeProxyId(final String id) {
+  public void removePausedQueue(final String serverName) {
     if (this.jedisPool == null) {
       return;
     }
 
     try (Jedis jedis = this.jedisPool.getResource()) {
-      jedis.srem("PROXY_IDS", id);
+      jedis.srem("PAUSED_QUEUES", serverName);
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  /**
+   * Get all the paused queues.
+   *
+   * @return All the paused queues.
+   */
+  public List<String> getPausedQueues() {
+    if (this.jedisPool == null) {
+      return new ArrayList<>();
+    }
+
+    try (Jedis jedis = this.jedisPool.getResource()) {
+      return new ArrayList<>(jedis.smembers("PAUSED_QUEUES").stream().toList());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    return new ArrayList<>();
   }
 
   /**
@@ -201,9 +245,8 @@ public class RedisManagerImpl {
       return new ArrayList<>();
     }
 
-
     try (Jedis jedis = this.jedisPool.getResource()) {
-      return new ArrayList<>(jedis.smembers("PROXY_IDS").stream().toList());
+      return new ArrayList<>(jedis.keys("PROXY_HEARTBEAT:*").stream().map(key -> key.replace("PROXY_HEARTBEAT:", "")).collect(Collectors.toList()));
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -211,32 +254,211 @@ public class RedisManagerImpl {
     return new ArrayList<>();
   }
 
-  private void start(final VelocityConfiguration.Redis redisConfig) {
-    try {
-      JedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
-          .ssl(redisConfig.isUseSsl())
-          .credentials(new DefaultRedisCredentials(redisConfig.getUsername(),
-                  redisConfig.getPassword()))
-          .build();
+  /**
+   * Remove the proxy ID from the redis cache.
+   *
+   * @param proxyId The proxy ID.
+   */
+  public void removeProxyId(final String proxyId) {
+    try (Jedis jedis = this.jedisPool.getResource()) {
+      jedis.del("PROXY_HEARTBEAT:" + proxyId);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
 
-      HostAndPort hostAndPort = new HostAndPort(redisConfig.getHost(), redisConfig.getPort());
+  /**
+   * Add a player to the cache.
+   *
+   * @param player The player to update.
+   */
+  public void addOrUpdatePlayer(final RemotePlayerInfo player) {
+    if (this.jedisPool == null) {
+      return;
+    }
+
+    asyncPlayerCache.addOrUpdatePlayer(player);
+  }
+
+  /**
+   * Remove a player from the cache.
+   *
+   * @param info The player to update.
+   */
+  public void removePlayer(final RemotePlayerInfo info) {
+    if (this.jedisPool == null) {
+      return;
+    }
+    asyncPlayerCache.removePlayer(info);
+  }
+
+  /**
+   * Get the cache of players.
+   *
+   * @return the list of players.
+   */
+  public List<RemotePlayerInfo> getCache() {
+    if (this.jedisPool == null) {
+      return new ArrayList<>();
+    }
+    return asyncPlayerCache.getCache();
+  }
+
+  /**
+   * Add or update a queue in the cache.
+   *
+   * @param queue The queue to add or update.
+   */
+  public void addOrUpdateQueue(final ServerQueueStatus queue) {
+    if (this.jedisPool == null) {
+      return;
+    }
+
+    try (Jedis jedis = this.jedisPool.getResource()) {
+      jedis.hset(QUEUE_CACHE_KEY, queue.getServerName(), gson.toJson(new SerializableQueue(queue)));
+    } catch (JedisDataException ignored) {
+      // Ignore raw hash due to redundant logging.
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * Updates the entry.
+   *
+   * @param serverQueueEntry The entry to update.
+   */
+  public void addOrUpdateEntry(final ServerQueueEntry serverQueueEntry) {
+    if (this.jedisPool == null) {
+      return;
+    }
+
+    ServerQueueStatus status = getQueue(serverQueueEntry.getTarget().getServerInfo().getName())
+        .convert(serverQueueEntry.getProxy(), serverQueueEntry.getTarget());
+    if (status == null) {
+      return;
+    }
+
+    ServerQueueEntry entry = status.getEntry(serverQueueEntry.getPlayer()).orElse(null);
+    if (entry == null) {
+      return;
+    }
+    entry.update(serverQueueEntry.getConnectionAttempts(), serverQueueEntry.isWaitingForConnection(),
+        serverQueueEntry.getPriority(),
+        serverQueueEntry.isFullBypass(),
+        serverQueueEntry.isQueueBypass());
+
+    addOrUpdateQueue(status);
+  }
+
+  /**
+   * Get a queue from the cache based on username.
+   *
+   * @param serverName The name of the server.
+   * @return The queue from the cache.
+   */
+  public SerializableQueue getQueue(final String serverName) {
+    if (this.jedisPool == null) {
+      return null;
+    }
+
+    try (Jedis jedis = this.jedisPool.getResource()) {
+      String json = jedis.hget(QUEUE_CACHE_KEY, serverName);
+      if (json == null) {
+        return null; // Key does not exist
+      }
+      return gson.fromJson(json, SerializableQueue.class);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null; // Return null in case of an error
+    }
+  }
+
+  /**
+   * Get all the queues from the cache.
+   *
+   * @return All the queues from the cache.
+   */
+  public List<SerializableQueue> getAllQueues() {
+    if (this.jedisPool == null) {
+      return new ArrayList<>();
+    }
+
+    try (Jedis jedis = this.jedisPool.getResource()) {
+      Map<String, String> queueMap = jedis.hgetAll(QUEUE_CACHE_KEY);
+      return queueMap.values().stream()
+          .map(json -> gson.fromJson(json, SerializableQueue.class))
+          .collect(Collectors.toList());
+    } catch (Exception e) {
+      return new ArrayList<>();
+    }
+  }
+
+  private void start(final VelocityConfiguration.Redis redisConfig, final VelocityServer server) {
+    try {
       JedisPoolConfig poolConfig = new JedisPoolConfig();
       poolConfig.setMaxTotal(redisConfig.getMaxConcurrentConnections());
       poolConfig.setBlockWhenExhausted(false);
+      poolConfig.setTestOnBorrow(true);
+      poolConfig.setTestOnReturn(true);
+      poolConfig.setTestWhileIdle(true);
+      poolConfig.setMinEvictableIdleTimeMillis(30000); // 30 seconds before removing stale connections
+      poolConfig.setTimeBetweenEvictionRunsMillis(15000); // Check stale connections every 15 sec
+      poolConfig.setNumTestsPerEvictionRun(-1); // Test all idle connections
+      
+      JedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
+          .ssl(redisConfig.isUseSsl())
+          .credentials(new DefaultRedisCredentials(redisConfig.getUsername(),
+              redisConfig.getPassword().equalsIgnoreCase("") ? null : redisConfig.getPassword()))
+          .build();
+      HostAndPort hostAndPort = new HostAndPort(redisConfig.getHost(), redisConfig.getPort());
       this.jedisPool = new JedisPool(poolConfig, hostAndPort, clientConfig);
 
       Thread thread = new Thread(() -> {
         try (Jedis jedis = this.jedisPool.getResource()) {
           jedis.subscribe(this.pubSub, CHANNEL);
-        } catch (JedisException e) {
-          logger.error("error in pubsub listener", e);
+        } catch (Exception e) {
+          logger.error("Error in pubsub listener", e);
         }
       });
       thread.setName("Velocity Redis PubSub Listener Thread");
       thread.setDaemon(true);
       thread.start();
+
+      validateProxyId(redisConfig.getProxyId());
+      startKeepalive(redisConfig.getProxyId(), server);
+      startKeepalivePlayers(server);
     } catch (Exception e) {
-      logger.error("Failed to set up Redis connection", e);
+      logger.error("Failed to setup Redis connection", e);
+    }
+  }
+
+  private void startKeepalivePlayers(final VelocityServer proxy) {
+    proxy.getScheduler().buildTask(VelocityVirtualPlugin.INSTANCE, () -> {
+      for (RemotePlayerInfo info : this.getCache()) {
+        if (info.getProxyId().equalsIgnoreCase(proxy.getConfiguration().getRedis().getProxyId())) {
+          if (proxy.getPlayer(info.getUuid()).isEmpty()) {
+            removePlayer(info);
+          }
+        }
+      }
+    }).repeat(30, TimeUnit.SECONDS).schedule();
+  }
+
+  private void validateProxyId(final String proxyId) {
+    if (jedisPool == null) {
+      throw new IllegalStateException("Redis connection pool is not initialized.");
+    }
+
+    try (Jedis jedis = jedisPool.getResource()) {
+      if (jedis.exists("PROXY_HEARTBEAT:" + proxyId)) {
+        logger.error("Proxy ID '{}' is still marked as running. Killing"
+            + " your proxies with Redis enabled is not suggested. Please wait"
+            + " for Redis to automatically determine whether the proxy is online or not.", proxyId);
+        System.exit(0);
+      }
+    } catch (Exception e) {
+      throw new IllegalStateException("Failed to validate Proxy ID.", e);
     }
   }
 
@@ -293,17 +515,35 @@ public class RedisManagerImpl {
 
     @Override
     public void onMessage(final String channel, final String message) {
-      JsonObject obj = gson.fromJson(message, JsonObject.class);
-      String packetId = obj.getAsJsonPrimitive("id").getAsString();
-      JsonObject packetObj = obj.getAsJsonObject("obj");
-      ChannelRegistration<?> registration = this.listeners.get(packetId);
+      try {
+        JsonObject obj = gson.fromJson(message, JsonObject.class);
+        String packetId = obj.getAsJsonPrimitive("id").getAsString();
+        JsonObject packetObj = obj.getAsJsonObject("obj");
+        ChannelRegistration<?> registration = this.listeners.get(packetId);
 
-      if (registration == null) {
-        return;
+        if (registration == null) {
+          return;
+        }
+
+        this.onMessage0(registration, channel, packetObj);
+      } catch (Exception e) {
+        logger.error(ANSI_WHITE + "------------------------------------");
+        logger.error(ANSI_RED + "AN ERROR HAS OCCURRED!!!!");
+        logger.error(" ");
+        logger.error(ANSI_BLUE + "CAUSE OF ERROR: " + ANSI_RESET + "{}", String.valueOf(e.getCause()));
+        logger.error(ANSI_YELLOW + "MESSAGE: " + ANSI_RESET + "{}", e.getMessage());
+        logger.error(ANSI_WHITE + "------------------------------------");
+        logger.error(ANSI_PURPLE + "STACK TRACE:");
+        e.printStackTrace();
       }
-
-      this.onMessage0(registration, channel, packetObj);
     }
+
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_PURPLE = "\u001B[35m";
+    public static final String ANSI_WHITE = "\u001B[37m";
 
     // second function for `T` parameter
     private <T> void onMessage0(final ChannelRegistration<T> registration, final String channel,
@@ -314,7 +554,7 @@ public class RedisManagerImpl {
         instance = gson.fromJson(obj, registration.clazz);
       } catch (JsonSyntaxException e) {
         logger.error("received invalid JSON on channel {} for packet class {}", channel,
-                registration.clazz, e);
+            registration.clazz, e);
         return;
       }
 
