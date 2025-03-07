@@ -132,6 +132,8 @@ public final class VelocityConfiguration implements ProxyConfig {
   private String dynamicProxyFilter;
   @Expose
   private Map<String, Integer> playerCaps;
+  @Expose
+  private final AntiBot antiBot = new AntiBot();
 
   private VelocityConfiguration(final Servers servers, final ForcedHosts forcedHosts, final Commands commands,
                                 final Advanced advanced, final Query query, final Metrics metrics, final Redis redis, final Queue queue) {
@@ -636,6 +638,10 @@ public final class VelocityConfiguration implements ProxyConfig {
     return this.playerCaps;
   }
 
+  public AntiBot getAntiBot() {
+    return antiBot;
+  }
+
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
@@ -667,6 +673,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         .add("minimumVersion", minimumVersion)
         .add("slashServers", slashServers)
         .add("playerCaps", playerCaps)
+        .add("antiBot", antiBot)
         .toString();
   }
 
@@ -935,6 +942,38 @@ public final class VelocityConfiguration implements ProxyConfig {
 
   public List<String> getServerAliases() {
     return this.servers.getServerAliases();
+  }
+
+  /**
+   * Configuration for the AntiBot system.
+   */
+  public static class AntiBot {
+    @Expose
+    private boolean enabled = false; // Disabled by default as requested
+
+    public AntiBot() {
+    }
+
+    private AntiBot(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    /**
+     * Creates an AntiBot configuration from the provided config.
+     *
+     * @param config the config to read from
+     * @return the AntiBot configuration
+     */
+    public static AntiBot fromConfig(CommentedConfig config) {
+      if (config == null) {
+        return new AntiBot();
+      }
+      return new AntiBot(config.getOrElse("enabled", false));
+    }
   }
 
   private static final class Servers {

@@ -132,6 +132,7 @@ import net.kyori.adventure.translation.TranslationRegistry;
 import net.kyori.adventure.translation.Translator;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import com.velocitypowered.proxy.antibot.ApiaryAntibot;
 import org.apache.logging.log4j.Logger;
 import org.bstats.MetricsBase;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
@@ -200,6 +201,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   private RedisManagerImpl redisManager;
   private MultiProxyHandler multiProxyHandler;
   private QueueManager queueManager;
+  private ApiaryAntibot antiBot;
 
   VelocityServer(final ProxyOptions options) {
     pluginManager = new VelocityPluginManager(this);
@@ -353,6 +355,9 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     } else {
       queueManager = new QueueManagerNoRedisImpl(this);
     }
+
+    // Initialize AntiBot system
+    antiBot = new ApiaryAntibot(this);
 
     registerCommands();
 
@@ -1179,5 +1184,14 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   @Override
   public ResourcePackInfo.Builder createResourcePackBuilder(final String url) {
     return new VelocityResourcePackInfo.BuilderImpl(url);
+  }
+
+  /**
+   * Gets the ApiaryAntibot instance.
+   *
+   * @return the antibot instance
+   */
+  public ApiaryAntibot getAntiBot() {
+    return antiBot;
   }
 }

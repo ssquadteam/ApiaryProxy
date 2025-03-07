@@ -14,6 +14,7 @@
  - **Necessary Server Commands in-built!** /alert /find /hub /ping /send, you name it!
  - **In-built Redis & Queue System!** Easy access to a Redi System to eliminate 
  - **Extremely High Performance** to achieve the main goal for having thousands of players!
+ - **ApiaryAntibot Protection** - A custom fork of Sonar AntiBot integrated directly into the proxy for robust bot attack protection
 
 
 ## ApiaryProxy Permissions
