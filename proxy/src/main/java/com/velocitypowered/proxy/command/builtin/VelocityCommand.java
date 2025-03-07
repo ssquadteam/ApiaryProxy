@@ -507,15 +507,15 @@ public final class VelocityCommand {
       if (version.getName().equals("Velocity")) {
         final TextComponent embellishment = Component.text()
             .append(Component.text()
-                .content("discord.gg/beer")
-                .color(NamedTextColor.GOLD)
+                .content("discord.gg/themegahivemc")
+                .color(NamedTextColor.RED)
                 .clickEvent(
-                    ClickEvent.openUrl("https://discord.gg/themegahive"))
+                    ClickEvent.openUrl("https://discord.gg/themegahivemc"))
                 .build())
             .append(Component.text(" - "))
             .append(Component.text()
                 .content("GitHub")
-                .color(NamedTextColor.GOLD)
+                .color(NamedTextColor.RED)
                 .decoration(TextDecoration.UNDERLINED, true)
                 .clickEvent(ClickEvent.openUrl(
                     "https://github.com/ssquadteam/ApiaryProxy"))

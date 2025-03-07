@@ -94,6 +94,9 @@ ping-passthrough = "disabled"
 # If not enabled (default is true) player IP addresses will be replaced by <ip address withheld> in logs.
 enable-player-address-logging = true
 
+# Max commands a player can send in a second before being kicked. Set to -1 to disable.
+max-commands-per-second = 10
+
 # If false, disables logging for offline player connections.
 log-offline-connections = true
 
@@ -124,7 +127,7 @@ server-enabled = true
 glist-enabled = true
 send-enabled = true
 
-# ApiaryProxy Command Registration
+# Velocity-CTD Command Registration
 alert-enabled = true
 alertraw-enabled = true
 find-enabled = true
@@ -229,6 +232,12 @@ log-command-executions = false
 # Allows players transferred from other hosts via the
 # Transfer packet (Minecraft 1.20.5) to be received.
 accepts-transfers = false
+
+# Enables support for SO_REUSEPORT. This may help the proxy scale better on multicore systems
+# with a lot of incoming connections, and provide better CPU utilization than the existing
+# strategy of having a single thread accepting connections and distributing them to worker
+# threads. Disabled by default. Requires Linux or macOS.
+enable-reuse-port = false
 
 # Enables the execution of illegal characters in chat and only allows
 # or denies illegal characters that are executed through the proxy.
