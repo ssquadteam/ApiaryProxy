@@ -1,0 +1,66 @@
+# ApiaryAntiBot Test Configuration
+# Use this for testing purposes
+
+# General settings for ApiaryAntibot
+general:
+  # Enable the AntiBot system for testing
+  enabled: true
+  # Should ApiaryAntibot automatically check for new updates?
+  check-for-updates: true
+  # Should ApiaryAntibot log players' IP addresses in console?
+  log-player-addresses: true
+  # Maximum number of players online with the same IP address (lower for testing)
+  max-online-per-ip: 2
+
+# Sensitivity settings for the attack tracker - LOWERED FOR TESTING
+attack-tracker:
+  # Minimum number of new players for attack detection - LOWERED for testing
+  min-players-for-attack: 3
+  # Amount of time for attack to be over (in milliseconds)
+  min-attack-duration: 30000
+  # Number of incident reports needed - LOWERED for testing
+  min-attack-threshold: 1
+  # Cooldown delay between attacks (in milliseconds)
+  attack-cooldown-delay: 3000
+
+# Connection queue settings
+queue:
+  # Number of concurrent queue polls per second - INCREASED for testing
+  max-polls: 40
+
+# Verification settings
+verification:
+  # When to verify new players - ALWAYS to ensure testing
+  timing: ALWAYS
+  checks:
+    # Gravity check - enabled for testing
+    gravity:
+      enabled: true
+      captcha-on-fail: true
+      max-movement-ticks: 8
+
+    # Collision check - enabled for testing
+    collision:
+      enabled: true
+
+    # Vehicle check - enabled for testing
+    vehicle:
+      enabled: true
+      minimum-packets: 2
+
+    # CAPTCHA check - set to ALWAYS for testing
+    map-captcha:
+      timing: ALWAYS
+      background: ''
+      precompute: 100
+      max-duration: 30000
+      max-tries: 3
+      alphabet: 'abcdefhjkmnoprstuxyz'
+
+  # Validation settings - keep default or make more permissive for testing
+  valid-name-regex: '^[a-zA-Z0-9_]{3,16}$'
+  valid-locale-regex: '^[a-z]{2}_[A-Z]{2}$'
+  
+  client-brand:
+    valid-regex: '.*'
+    allowed-mismatch: true 
