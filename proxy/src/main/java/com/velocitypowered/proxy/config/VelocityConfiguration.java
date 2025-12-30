@@ -185,6 +185,13 @@ public final class VelocityConfiguration implements ProxyConfig {
   private final boolean logOfflineConnections;
 
   /**
+   * Whether to keep players in the play state when they switch backend servers,
+   * instead of sending them back through the configuration state.
+   */
+  @Expose
+  private final boolean removeReconfig;
+
+  /**
    * Whether to disable Forge negotiation and related plugin messages.
    */
   @Expose
@@ -266,7 +273,8 @@ public final class VelocityConfiguration implements ProxyConfig {
                                 Query query, Metrics metrics, boolean forceKeyAuthentication,
                                 PacketLimiterConfig packetLimiterConfig,
                                 boolean logPlayerConnections, boolean logPlayerDisconnections,
-                                boolean logOfflineConnections, boolean disableForge,
+                                boolean logOfflineConnections, boolean removeReconfig,
+                                boolean disableForge,
                                 boolean enforceChatSigning, boolean preventsChatReports, boolean translateHeaderFooter,
                                 boolean logMinimumVersion, String minimumVersion,
                                 String maximumVersion,
@@ -300,6 +308,7 @@ public final class VelocityConfiguration implements ProxyConfig {
     this.logPlayerConnections = logPlayerConnections;
     this.logPlayerDisconnections = logPlayerDisconnections;
     this.logOfflineConnections = logOfflineConnections;
+    this.removeReconfig = removeReconfig;
     this.disableForge = disableForge;
     this.enforceChatSigning = enforceChatSigning;
     this.preventsChatReports = preventsChatReports;
@@ -1047,6 +1056,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         .add("logPlayerConnections", logPlayerConnections)
         .add("logPlayerDisconnections", logPlayerDisconnections)
         .add("logOfflineConnections", logOfflineConnections)
+        .add("removeReconfig", removeReconfig)
         .add("disableForge", disableForge)
         .add("enforceChatSigning", enforceChatSigning)
         .add("preventsChatReports", preventsChatReports)
@@ -1189,6 +1199,7 @@ public final class VelocityConfiguration implements ProxyConfig {
       boolean logPlayerConnections = config.getOrElse("log-player-connections", true);
       boolean logPlayerDisconnections = config.getOrElse("log-player-disconnections", true);
       boolean logOfflineConnections = config.getOrElse("log-offline-connections", true);
+      boolean removeReconfig = config.getOrElse("remove-reconfig", false);
       boolean disableForge = config.getOrElse("disable-forge", false);
       boolean enforceChatSigning = config.getOrElse("enforce-chat-signing", false);
       boolean preventsChatReports = config.getOrElse("prevents-chat-reports", false);
@@ -1300,6 +1311,7 @@ public final class VelocityConfiguration implements ProxyConfig {
           logPlayerConnections,
           logPlayerDisconnections,
           logOfflineConnections,
+          removeReconfig,
           disableForge,
           enforceChatSigning,
           preventsChatReports,
@@ -1432,6 +1444,19 @@ public final class VelocityConfiguration implements ProxyConfig {
    */
   public boolean isLogOfflineConnections() {
     return logOfflineConnections;
+  }
+
+  /**
+   * Returns whether the configuration state is skipped when a player switches backend servers.
+   *
+   * <p>When enabled, players stay in the play state across server switches, which removes the
+   * "Reconfiguring..." screen. This requires every backend server to advertise the same registry
+   * data, so all backends must run the same Minecraft version.
+   *
+   * @return true if the reconfiguration stage is skipped on server switches
+   */
+  public boolean isRemoveReconfig() {
+    return removeReconfig;
   }
 
   /**

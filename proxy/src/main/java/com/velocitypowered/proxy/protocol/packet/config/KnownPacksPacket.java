@@ -33,6 +33,14 @@ public class KnownPacksPacket implements MinecraftPacket {
 
   private List<KnownPack> packs;
 
+  public KnownPacksPacket() {
+    this.packs = List.of();
+  }
+
+  public KnownPacksPacket(List<KnownPack> packs) {
+    this.packs = packs;
+  }
+
   @Override
   public void decode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion protocolVersion) {
     int packCount = ProtocolUtils.readVarInt(buf);
@@ -61,6 +69,17 @@ public class KnownPacksPacket implements MinecraftPacket {
   @Override
   public boolean handle(MinecraftSessionHandler handler) {
     return handler.handle(this);
+  }
+
+  public List<KnownPack> getPacks() {
+    return packs;
+  }
+
+  @Override
+  public String toString() {
+    return "KnownPacksPacket{"
+        + "packs=" + packs
+        + '}';
   }
 
   public record KnownPack(String namespace, String id, String version) {

@@ -4,11 +4,24 @@ config-version = "2.9"
 # What port should the proxy be bound to? By default, we'll bind to all addresses on port 25565.
 bind = "0.0.0.0:25565"
 
+# If true, players stay in the play state when they switch backend servers, instead of being sent
+# back through the configuration state. This removes the "Reconfiguring..." screen and the
+# accompanying resource pack, tab list and scoreboard flicker, so switches look seamless.
+#
+# The proxy answers the backend's known-packs handshake on the client's behalf and clears the
+# scoreboard objectives, teams and boss bars left behind by the previous server itself.
+#
+# WARNING: every backend server must run the same Minecraft version. The client keeps the registry
+# data it received from the first server it joined, so a backend on a different protocol version
+# will desync the client and cause visual corruption or kicks. Leave this off if your backends are
+# not all on the same version.
+remove-reconfig = false
+
 # The MOTD shown in the server list when a player adds your server. Accepts a list of lines.
 # Supports the "{players}" placeholder (documented under "motd-hover") as well as the other
 # placeholders listed under "fallback-version-ping".
 motd = [
-    "<#ff3a4c>A Velocity-CTD Server"
+    "<#ff3a4c>An ApiaryProxy Server"
 ]
 
 # Shown when hovering over the player count in the server list. Accepts a list of lines, and

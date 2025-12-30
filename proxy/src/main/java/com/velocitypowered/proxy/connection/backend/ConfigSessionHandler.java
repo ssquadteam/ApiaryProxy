@@ -39,6 +39,7 @@ import com.velocitypowered.proxy.connection.util.ConnectionRequestResults;
 import com.velocitypowered.proxy.connection.util.ConnectionRequestResults.Impl;
 import com.velocitypowered.proxy.network.Connections;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
+import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.StateRegistry;
 import com.velocitypowered.proxy.protocol.netty.MinecraftDecoder;
 import com.velocitypowered.proxy.protocol.netty.MinecraftVarintFrameDecoder;
@@ -55,15 +56,18 @@ import com.velocitypowered.proxy.protocol.packet.config.ClientboundCustomReportD
 import com.velocitypowered.proxy.protocol.packet.config.ClientboundServerLinksPacket;
 import com.velocitypowered.proxy.protocol.packet.config.CodeOfConductPacket;
 import com.velocitypowered.proxy.protocol.packet.config.FinishedUpdatePacket;
+import com.velocitypowered.proxy.protocol.packet.config.KnownPacksPacket;
 import com.velocitypowered.proxy.protocol.packet.config.RegistrySyncPacket;
 import com.velocitypowered.proxy.protocol.packet.config.StartUpdatePacket;
 import com.velocitypowered.proxy.protocol.packet.config.TagsUpdatePacket;
 import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -256,13 +260,31 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   public boolean handle(FinishedUpdatePacket packet) {
     MinecraftConnection smc = serverConn.ensureConnected();
     ConnectedPlayer player = serverConn.getPlayer();
-    ClientConfigSessionHandler configHandler = (ClientConfigSessionHandler) player.getConnection().getActiveSessionHandler();
 
     smc.getChannel().pipeline().get(MinecraftVarintFrameDecoder.class).setState(StateRegistry.PLAY);
     smc.getChannel().pipeline().get(MinecraftDecoder.class).setState(StateRegistry.PLAY);
 
+    if (!(player.getConnection().getActiveSessionHandler() instanceof ClientConfigSessionHandler configHandler)) {
+      // The client never left play, so it cannot report its brand again. Replay the brand we
+      // recorded on login and advance the backend without waiting on a client handshake.
+      String clientBrand = player.getClientBrand();
+      if (clientBrand != null) {
+        ByteBuf brandBuf = Unpooled.buffer();
+        ProtocolUtils.writeString(brandBuf, clientBrand);
+        smc.write(new PluginMessagePacket("minecraft:brand", brandBuf));
+      }
+
+      advanceBackendToPlay(false);
+      smc.removePlayPacketQueueInboundHandler();
+
+      if (player.resourcePackHandler().getFirstAppliedPack() == null && resourcePackToApply != null) {
+        player.resourcePackHandler().queueResourcePack(resourcePackToApply);
+      }
+
+      return true;
+    }
+
     // Start client-side configuration; may hold the player to apply a resource pack.
-    // noinspection DataFlowIssue
     CompletableFuture<Void> clientFinished = configHandler.handleBackendFinishUpdate(serverConn);
 
     // Advance the backend to PLAY on whichever comes first: the client finishing, or the timeout.
@@ -383,6 +405,30 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
               }
             }, serverConn.ensureConnected().eventLoop());
     return true;
+  }
+
+  @Override
+  public boolean handle(KnownPacksPacket packet) {
+    // Server expects us to reply to this packet
+    if (serverConn.getPlayer().getConnection().getState() != StateRegistry.CONFIG) {
+      List<KnownPacksPacket.KnownPack> clientPacks = List.of(
+          new KnownPacksPacket.KnownPack(
+              "minecraft",
+              "core",
+              serverConn.getPlayer().getProtocolVersion().getVersionIntroducedIn()
+          )
+      );
+      serverConn.ensureConnected().write(
+          new KnownPacksPacket(
+              packet.getPacks().stream()
+                  .distinct()
+                  .filter(clientPacks::contains)
+                  .toList()
+          )
+      );
+      return true;
+    }
+    return false; // forward
   }
 
   @Override

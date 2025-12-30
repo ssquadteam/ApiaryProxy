@@ -93,6 +93,21 @@ public class CtdConfigMigrations {
             "UNBOUNDED"
         ),
         migration(
+            "If true, players stay in the play state when they switch backend servers, instead of being sent\n"
+                + "back through the configuration state. This removes the \"Reconfiguring...\" screen and the\n"
+                + "accompanying resource pack, tab list and scoreboard flicker, so switches look seamless.\n"
+                + "\n"
+                + "The proxy answers the backend's known-packs handshake on the client's behalf and clears the\n"
+                + "scoreboard objectives, teams and boss bars left behind by the previous server itself.\n"
+                + "\n"
+                + "WARNING: every backend server must run the same Minecraft version. The client keeps the registry\n"
+                + "data it received from the first server it joined, so a backend on a different protocol version\n"
+                + "will desync the client and cause visual corruption or kicks. Leave this off if your backends are\n"
+                + "not all on the same version.",
+            "remove-reconfig",
+            false
+        ),
+        migration(
             "If true, disables handling of inbound Forge handshakes.",
             "disable-forge",
             false

@@ -183,6 +183,11 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
             LOGGER.error("Exception while handling plugin message packet for {}", player, ex);
             return null;
           });
+      return true;
+    }
+
+    if (server.getConfiguration().isRemoveReconfig()) {
+      return false;
     }
 
     return true;
@@ -200,6 +205,16 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
 
   @Override
   public boolean handle(KnownPacksPacket packet) {
+    if (server.getConfiguration().isRemoveReconfig()) {
+      VelocityServerConnection connectionInFlight = player.getConnectionInFlight();
+      if (connectionInFlight != null) {
+        connectionInFlight.ensureConnected().write(packet);
+        return true;
+      }
+
+      return false;
+    }
+
     callConfigurationEvent().thenRun(() -> {
       VelocityServerConnection targetServer = player.getConnectionInFlightOrConnectedServer();
       if (targetServer != null) {
@@ -210,7 +225,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
       return null;
     });
 
-    return true;
+    return false;
   }
 
   @Override
