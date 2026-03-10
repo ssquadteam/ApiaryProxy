@@ -23,7 +23,10 @@ import static com.velocityctd.proxy.util.PlaceholderSubstitutor.substitute;
 
 import com.google.common.collect.ImmutableList;
 import com.velocityctd.proxy.util.PlaceholderSubstitutor;
+import com.velocitypowered.api.event.player.PlayerServerBrandEvent;
 import com.velocitypowered.api.network.ProtocolVersion;
+import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.LegacyChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
@@ -191,6 +194,8 @@ public final class PluginMessageUtil {
    * Rewrites the brand message to indicate the presence of Velocity.
    *
    * @param message the original brand {@link PluginMessagePacket}
+   * @param proxy the proxy instance used to fire {@link PlayerServerBrandEvent}
+   * @param player the player the brand message is being rewritten for
    * @param version the {@link ProxyVersion} instance for the current Velocity proxy
    * @param protocolVersion the client's protocol version
    * @param brand the format string for the new brand message, supporting placeholders
@@ -202,6 +207,8 @@ public final class PluginMessageUtil {
    * @throws IllegalArgumentException if the provided packet is not a brand message
    */
   public static PluginMessagePacket rewriteMinecraftBrand(PluginMessagePacket message,
+                                                          ProxyServer proxy,
+                                                          Player player,
                                                           ProxyVersion version,
                                                           ProtocolVersion protocolVersion,
                                                           String brand,
@@ -210,15 +217,21 @@ public final class PluginMessageUtil {
                                                           String connectedServer,
                                                           String minimumVersion) {
     checkNotNull(message, "message");
+    checkNotNull(proxy, "proxy");
+    checkNotNull(player, "player");
     checkNotNull(version, "version");
     checkNotNull(brand, "brand");
     checkArgument(isMcBrand(message), "message is not a brand plugin message");
 
+    String backendBrand = readBrandMessage(message.content());
     String rewrittenBrand = substitute(brand,
         new BrandPlaceholderResolver(message, version, proxyBrandCustom,
             backendBrandCustom, connectedServer, minimumVersion));
 
     rewrittenBrand += "§r"; // Ensures brand coloration remains within bounds
+
+    PlayerServerBrandEvent event = new PlayerServerBrandEvent(player, backendBrand, rewrittenBrand);
+    rewrittenBrand = proxy.getEventManager().fire(event).join().getBrand();
 
     ByteBuf rewrittenBuf = Unpooled.buffer();
     if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {

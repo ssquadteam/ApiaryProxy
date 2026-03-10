@@ -317,6 +317,8 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
 
     if (PluginMessageUtil.isMcBrand(packet)) {
       PluginMessagePacket rewritten = PluginMessageUtil.rewriteMinecraftBrand(packet,
+          server,
+          serverConn.getPlayer(),
           server.getVersion(),
           playerConnection.getProtocolVersion(),
           server.getConfiguration().getServerBrand(),

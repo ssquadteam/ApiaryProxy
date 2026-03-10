@@ -313,14 +313,17 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
   @Override
   public boolean handle(PluginMessagePacket packet) {
     if (PluginMessageUtil.isMcBrand(packet)) {
-      serverConn.getPlayer().getConnection().write(PluginMessageUtil.rewriteMinecraftBrand(packet,
+      PluginMessagePacket rewritten = PluginMessageUtil.rewriteMinecraftBrand(packet,
+          server,
+          serverConn.getPlayer(),
           server.getVersion(),
           serverConn.getPlayer().getProtocolVersion(),
           server.getConfiguration().getServerBrand(),
           server.getConfiguration().getProxyBrandCustom(),
           server.getConfiguration().getBackendBrandCustom(),
           serverConn.getServer().getServerInfo().getName(),
-          ProtocolVersion.getVersionByName(server.getConfiguration().getMinimumVersion()).getVersionIntroducedIn()));
+          ProtocolVersion.getVersionByName(server.getConfiguration().getMinimumVersion()).getVersionIntroducedIn());
+      serverConn.getPlayer().getConnection().write(rewritten);
     } else {
       ChannelIdentifier id = this.server.getChannelRegistrar().getFromId(packet.getChannel());
 

@@ -27,6 +27,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
 import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.event.connection.PreLoginEvent.PreLoginComponentResult;
+import com.velocitypowered.api.event.connection.ValidateSessionEvent;
 import com.velocitypowered.api.network.HandshakeIntent;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.crypto.IdentifiedKey;
@@ -274,6 +275,8 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
             }
 
             if (throwable != null) {
+              server.getEventManager().fireAndForget(
+                  new ValidateSessionEvent(inbound, 503, false));
               LOGGER.error("Unable to authenticate player", throwable);
               inbound.disconnect(Component.translatable("multiplayer.disconnect.authservers_down"));
               return;
@@ -291,14 +294,20 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
                       Component.translatable("multiplayer.disconnect.invalid_public_key"));
                 }
               }
+              server.getEventManager().fireAndForget(
+                  new ValidateSessionEvent(inbound, response.getCode(), true));
               // All went well, initialize the session.
               mcConnection.setActiveSessionHandler(StateRegistry.LOGIN,
                   new AuthSessionHandler(server, inbound, profile, true, serverId, appliedResourcePacksFuture));
             } else if (response.getCode() == 204) {
+              server.getEventManager().fireAndForget(
+                  new ValidateSessionEvent(inbound, response.getCode(), false));
               // Apparently, an offline-mode user logged onto this online-mode proxy.
               inbound.disconnect(
                   Component.translatable("velocity.error.online-mode-only", NamedTextColor.RED));
             } else {
+              server.getEventManager().fireAndForget(
+                  new ValidateSessionEvent(inbound, response.getCode(), false));
               // Something else went wrong
               LOGGER.error(
                   "Got an unexpected error code {} whilst contacting Mojang to log in {} ({})",
