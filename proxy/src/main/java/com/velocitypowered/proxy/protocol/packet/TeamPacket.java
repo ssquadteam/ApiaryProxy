@@ -67,26 +67,35 @@ public class TeamPacket implements MinecraftPacket {
     mode = buf.readByte();
     if (mode == ADD || mode == UPDATE) {
       displayName = ComponentHolder.read(buf, version);
-      if (version.lessThan(ProtocolVersion.MINECRAFT_1_13)) {
+      if (version.noLessThan(ProtocolVersion.MINECRAFT_26_2)) {
         prefix = ComponentHolder.read(buf, version);
         suffix = ComponentHolder.read(buf, version);
-      }
-      friendlyFire = buf.readByte();
-      if (version.noLessThan(ProtocolVersion.MINECRAFT_1_21_5)) {
         nameTagVisibilityInt = ProtocolUtils.readVarInt(buf);
         collisionRuleInt = ProtocolUtils.readVarInt(buf);
+        color = buf.readBoolean() ? ProtocolUtils.readVarInt(buf) : -1;
+        friendlyFire = buf.readByte();
       } else {
-        nameTagVisibility = ProtocolUtils.readString(buf);
-        if (version.noLessThan(ProtocolVersion.MINECRAFT_1_9)) {
-          collisionRule = ProtocolUtils.readString(buf);
+        if (version.lessThan(ProtocolVersion.MINECRAFT_1_13)) {
+          prefix = ComponentHolder.read(buf, version);
+          suffix = ComponentHolder.read(buf, version);
         }
-      }
-      if (version.noLessThan(ProtocolVersion.MINECRAFT_1_13)) {
-        color = ProtocolUtils.readVarInt(buf);
-        prefix = ComponentHolder.read(buf, version);
-        suffix = ComponentHolder.read(buf, version);
-      } else {
-        color = buf.readByte();
+        friendlyFire = buf.readByte();
+        if (version.noLessThan(ProtocolVersion.MINECRAFT_1_21_5)) {
+          nameTagVisibilityInt = ProtocolUtils.readVarInt(buf);
+          collisionRuleInt = ProtocolUtils.readVarInt(buf);
+        } else {
+          nameTagVisibility = ProtocolUtils.readString(buf);
+          if (version.noLessThan(ProtocolVersion.MINECRAFT_1_9)) {
+            collisionRule = ProtocolUtils.readString(buf);
+          }
+        }
+        if (version.noLessThan(ProtocolVersion.MINECRAFT_1_13)) {
+          color = ProtocolUtils.readVarInt(buf);
+          prefix = ComponentHolder.read(buf, version);
+          suffix = ComponentHolder.read(buf, version);
+        } else {
+          color = buf.readByte();
+        }
       }
     }
     if (mode == ADD || mode == ADD_PLAYER || mode == REMOVE_PLAYER) {
@@ -104,26 +113,40 @@ public class TeamPacket implements MinecraftPacket {
     buf.writeByte(mode);
     if (mode == ADD || mode == UPDATE) {
       displayName.write(buf);
-      if (protocolVersion.lessThan(ProtocolVersion.MINECRAFT_1_13)) {
+      if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_26_2)) {
         prefix.write(buf);
         suffix.write(buf);
-      }
-      buf.writeByte(friendlyFire);
-      if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_21_5)) {
         ProtocolUtils.writeVarInt(buf, nameTagVisibilityInt);
         ProtocolUtils.writeVarInt(buf, collisionRuleInt);
-      } else {
-        ProtocolUtils.writeString(buf, nameTagVisibility);
-        if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_9)) {
-          ProtocolUtils.writeString(buf, collisionRule);
+        if (color >= 0) {
+          buf.writeBoolean(true);
+          ProtocolUtils.writeVarInt(buf, color);
+        } else {
+          buf.writeBoolean(false);
         }
-      }
-      if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_13)) {
-        ProtocolUtils.writeVarInt(buf, color);
-        prefix.write(buf);
-        suffix.write(buf);
+        buf.writeByte(friendlyFire);
       } else {
-        buf.writeByte(color);
+        if (protocolVersion.lessThan(ProtocolVersion.MINECRAFT_1_13)) {
+          prefix.write(buf);
+          suffix.write(buf);
+        }
+        buf.writeByte(friendlyFire);
+        if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_21_5)) {
+          ProtocolUtils.writeVarInt(buf, nameTagVisibilityInt);
+          ProtocolUtils.writeVarInt(buf, collisionRuleInt);
+        } else {
+          ProtocolUtils.writeString(buf, nameTagVisibility);
+          if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_9)) {
+            ProtocolUtils.writeString(buf, collisionRule);
+          }
+        }
+        if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_13)) {
+          ProtocolUtils.writeVarInt(buf, color);
+          prefix.write(buf);
+          suffix.write(buf);
+        } else {
+          buf.writeByte(color);
+        }
       }
     }
     if (mode == ADD || mode == ADD_PLAYER || mode == REMOVE_PLAYER) {
