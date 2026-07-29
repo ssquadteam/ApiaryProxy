@@ -92,13 +92,15 @@ public final class SerializedPluginDescription {
    */
   private final @Nullable List<Dependency> dependencies;
 
+  private final @Nullable List<String> provides;
+
   /**
    * The fully qualified name of the plugin's main class.
    */
   private final String main;
 
   private SerializedPluginDescription(String id, String name, String version, String description,
-                                      String url, List<String> authors, List<Dependency> dependencies, String main) {
+                                      String url, List<String> authors, List<Dependency> dependencies, List<String> provides, String main) {
     Preconditions.checkNotNull(id, "id");
     Preconditions.checkArgument(ID_PATTERN.matcher(id).matches(), "id is not valid");
     this.id = id;
@@ -109,6 +111,7 @@ public final class SerializedPluginDescription {
     this.authors = authors == null || authors.isEmpty() ? ImmutableList.of() : authors;
     this.dependencies =
         dependencies == null || dependencies.isEmpty() ? ImmutableList.of() : dependencies;
+    this.provides = provides == null || provides.isEmpty() ? ImmutableList.of() : provides;
     this.main = Preconditions.checkNotNull(main, "main");
   }
 
@@ -121,7 +124,9 @@ public final class SerializedPluginDescription {
     return new SerializedPluginDescription(plugin.id(), plugin.name(), plugin.version(),
         plugin.description(), plugin.url(),
         Arrays.stream(plugin.authors()).filter(author -> !author.isEmpty())
-            .collect(Collectors.toList()), dependencies, qualifiedName);
+            .collect(Collectors.toList()), dependencies,
+        Arrays.stream(plugin.provides()).filter(provided -> !provided.isEmpty())
+            .collect(Collectors.toList()), qualifiedName);
   }
 
   /**
@@ -193,6 +198,10 @@ public final class SerializedPluginDescription {
     return dependencies == null ? ImmutableList.of() : dependencies;
   }
 
+  public List<String> getProvides() {
+    return provides == null ? ImmutableList.of() : provides;
+  }
+
   /**
    * Gets the fully qualified name of the plugin's main class.
    *
@@ -218,12 +227,13 @@ public final class SerializedPluginDescription {
         && Objects.equals(url, that.url)
         && Objects.equals(authors, that.authors)
         && Objects.equals(dependencies, that.dependencies)
+        && Objects.equals(provides, that.provides)
         && Objects.equals(main, that.main);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, version, description, url, authors, dependencies);
+    return Objects.hash(id, name, version, description, url, authors, dependencies, provides);
   }
 
   @Override
@@ -236,6 +246,7 @@ public final class SerializedPluginDescription {
         + ", url='" + url + '\''
         + ", authors=" + authors
         + ", dependencies=" + dependencies
+        + ", provides=" + provides
         + ", main='" + main + '\''
         + '}';
   }
