@@ -54,6 +54,12 @@ public class CtdConfigMigrations {
                 "{players}")
         ),
         migration(
+            "If true, offline-mode connections still use the vanilla encryption handshake without Mojang auth."
+                + " Only works on Minecraft 1.20.5+ clients.",
+            "offline-mode-encryption",
+            false
+        ),
+        migration(
             "Whether chat signing should be enforced. If disabled, backend servers MUST disable chat signing.",
             "enforce-chat-signing",
             true
