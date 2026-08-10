@@ -4,7 +4,7 @@
 name: Java CI with Gradle
 on:
   push:
-    tags-ignore:
+    branches:
       - '**'
   pull_request:
   workflow_dispatch:
