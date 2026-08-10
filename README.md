@@ -8,206 +8,34 @@ _[Discord](https://discord.gg/themegahivemc)_
 A Minecraft server proxy with unparalleled server support, scalability,
 and flexibility.
 
-ApiaryProxy is a fork of [Velocity-CTD](https://github.com/GemstoneGG/Velocity-CTD),
-which is itself a fork of [PaperMC/Velocity](https://github.com/PaperMC/Velocity).
-ApiaryProxy is licensed under the GPLv3 license, as required by its upstreams.
+ApiaryProxy is licensed under the GPLv3 license.
 
-## Purpose
+## Features
 
-ApiaryProxy was created to replace poorly made plugins or
-plugins that simply cannot be better as a result of API limitations,
-lack of support/maintainability, infrequent bumping of integral
-dependencies, useful performance improvements, and more.
+* Everything Velocity-CTD offers, tracking it upstream.
+* Toggleable removal of the reconfiguration stage on server switches.
 
-## Goals
+## Remove Reconfig
 
-* A codebase that is easy to dive into and consistently follows best practices
-  for Java projects as much as reasonably possible.
-* High performance: handle thousands of players on one proxy.
-* A new, refreshing API built from the ground up to be flexible and powerful
-  whilst avoiding design mistakes and suboptimal designs from other proxies.
-* First-class support for Paper, Sponge, Fabric and Forge. (Other implementations
-  may work, but we make every endeavor to support these server implementations
-  specifically.)
-* Features that deliver an "all-in-one" experience with various features that
-  we believe every network wants and needs.
+By default, a player switching backend servers is sent back through the
+configuration state, which shows the "Reconfiguring..." screen and makes the
+resource pack, tab list and scoreboard flicker.
 
-## Additional Features/Removals
+Setting `remove-reconfig = true` near the top of `velocity.toml` keeps the
+player in the play state for the whole switch. The proxy answers the backend's
+known-packs handshake on the client's behalf, replays the client brand, and
+clears the scoreboard objectives, teams and boss bars the previous server left
+behind. Titles are not reset either, so an in-progress teleport keeps its fade.
 
-* Utilization of newer dependencies for virtually any dependency that can
-  easily and fairly be upgraded to maintain the highest level of performance.
-* Implementation of full-fledged Redis database support to fully replace
-  plugins like RedisBungee in attempts to maintain a stabler Redis experience.
-* Implementation of a highly dynamic and efficient queue system that is
-  simplified in nature and intended to stably maintain thousands of players.
-* Implementation of a non-invasive multi-forwarding system that allows you
-  to use a different forwarding method for specific servers on the backend.
-* Configurable `/alert` command sends messages across your entire network.
-* Configurable `/alertraw` command to send non-prefixed messages across your
-  entire network.
-* Configurable `/find` command that locates yourself and other users.
-* Configurable `/gkick` command that kicks a player from the network, supporting
-  both local and cross-proxy (Redis) players.
-* Configurable `/gip` command that retrieves the IP address of an online player,
-  supporting both local and cross-proxy (Redis) players.
-* `/hub` with `/lobby` alias that sends you to the/a fallback server,
-  which synchronizes with the activation and deactivation of dynamic fallbacks.
-* Configurable `/ping` command that displays your and other users' ping.
-* Configurable `/plist` command that displays the total users on your proxy
-  or from a defined proxy scope.
-* The `/send` supports sending users from `{SERVER_FROM}` to `{SERVER_TO}`.
-* Configurable `/transfer` command that allows you to move a player, "current" players,
-  a specific server, or all players from one proxy to another.
-* Configurable `/velocity sudo` command to force users to execute a command on the
-  proxy or even server level.
-* Configurable `/velocity uptime` command to view how long your proxy has been online for.
-* Implementation of configurable `/server {SERVER}` access for tab completion and
-  command execution.
-* Choice implementation that allows you to fully strip, reload, and remove commands
-  present in regular Velocity and require/force deactivation of commands for
-  plugin overrides.
-* Configurable value to disable translation for header and footer for Velocity to
-  improve performance in plugins like TAB that do not need it.
-* Configurable minimum version value that allows users to block users on versions
-  older than your desired minimum server version (synchronizes with outdated pinger).
-* Fallback servers allow users to be sent to the least or most populated server,
-  which will cycle for even distribution.
-* Configurable server brand and server pinger message (outdated and fallback).
-* Configurable removal of unsigned message kick/disconnection events for plugins
-  with improper compatibility.
-* Configurable deactivation of Forge inbound handshakes for servers that do not
-  run Forge or NeoForge as their server software.
-* Other miscellaneous optimizations and tweaks that will only continue to be
-  implemented as this fork matures.
-* Preliminary MiniMessage support to permit full configurability of all Velocity
-  messages, alongside `/velocity reload`able translations, alongside `/velocity reload`able
-  server additions/removals inside the `velocity.toml`.
-* Removal of all language files except `messages.properties` to preserve
-  maintainability. PRs (Pull Requests) are welcome to reimplement all language files
-  with our changes.
-* And much, much more... Try it out and see what we have to offer for yourself!
+This is **off by default**.
 
-## ApiaryProxy Permissions
-* `velocity.command.alert` [/alert] (Allows you to display public alerts
-  to all users on the proxy or proxies, depending on your setup).
-* `velocity.command.alertraw` [/alertraw] (Allows you to display public non-formatted
-  alerts to all users on the proxy or proxies, depending on your setup).
-* `velocity.command.find` [/find] (Allows you to find the specific server a user is
-  actively connected to on the network).
-* `velocity.command.gkick` [/gkick] (Allows you to kick a player from the network,
-  including players connected to a different proxy in a Redis multi-proxy setup).
-* `velocity.command.hub` [/hub & /lobby] (Allows you to be sent to the hub/lobby or
-  your fallback server(s), depending on your setup).
-* `velocity.command.gip` [/gip] (Allows you to retrieve the IP address of an online player,
-  including players connected to a different proxy in a Redis multi-proxy setup).
-* `velocity.command.ping` [/ping] (Returns your latency of the proxy you are currently
-  connected to and not the latency of the backend server).
-* `velocity.command.plist` [/plist] (Returns the total users on your proxy
-  or from a defined proxy scope).
-* `velocity.command.sudo` [/velocity sudo] (Allows you to run a message or a command
-  for a player).
-* `velocity.command.transfer` [/transfer] (Allows you to transfer a player, "current" players,
-  a specific server, or all players from one proxy to another.)
-* `velocity.command.uptime` [/velocity uptime] (Displays how long the proxy has been
-  online for, from immediate runtime).
+### Notes
 
-## ApiaryProxy Queue Commands
-* `/server` [Default Aliases: `/queue` & `/joinqueue`]
-* `/leavequeue` [Default Alias: `/dequeue`]
-
-## Administrative Commands
-* `/queueadmin add {PLAYER} {SERVER}`
-* `/queueadmin addall {SERVER_FROM} {SERVER_TO}`
-* `/queueadmin list`
-* `/queueadmin listqueues`
-* `/queueadmin pause {SERVER}`
-* `/queueadmin remove {PLAYER} {SERVER}` (Not including server name
-  removes the user from all queues if multiple queuing is enabled).
-* `/queueadmin removeall {SERVER}`
-* `/queueadmin unpause {SERVER}`
-
-## ApiaryProxy Queue Permissions
-* `velocity.queue.bypass` or `velocity.queue.bypass.{SERVER}` (Allows you to bypass the queue for all
-  servers or a specific server).
-* `velocity.queue.full.bypass` (Allows you to connect to a server even when it is at capacity).
-* `velocity.queue.leave` (Allows you to leave the queue you are in or all queues you are in).
-* `velocity.queue.priority.{ALL/SERVER}.{WEIGHT}` (Sets the position you are in for the/a queue).
-* `velocity.queue.server-switch.bypass` (Allows you to switch servers freely while in a queue,
-  even when `queue-server` is configured. Without this permission, players on the `queue-server`
-  are blocked from switching to any server other than their queued destination).
-* `velocity.queue.timeout.{SECONDS}` (Specifies the amount of time a user has before they
-  are unqueued from a server when disconnecting; if you reach the position where
-  you can be sent and are offline, your queue position will reset, regardless of
-  your specified timeout).
-
-## ApiaryProxy Queue Administrative Permissions
-* `velocity.queue.admin.add` (Allows you to add a player to a queue).
-* `velocity.queue.admin.addall` (Allows you to add all players from a specific server to a queue).
-* `velocity.queue.admin.list` (Allows you to view the list of people queued for a specific server or all servers).
-* `velocity.queue.admin.listqueues` (Allows you to view all possible queues and number of people queued).
-* `velocity.queue.admin.pause` (Allows you to pause any specific server from queuing).
-* `velocity.queue.admin.remove` (Allows you to remove a player from any specific queue).
-* `velocity.queue.admin.removeall` (Allows you to remove a player from all queues).
-* `velocity.queue.admin.unpause` (Allows you to unpause any specific server for queuing).
-
-## ApiaryProxy API
-
-ApiaryProxy exposes its own api, one that is fully backwards-compatible with [com.velocitypowered:velocity-api](https://mvnrepository.com/artifact/com.velocitypowered/velocity-api) with some additional features.
-Some features are added to existing Velocity interfaces (in `com.velocitypowered.api`), and the CTD-custom functionality is exposed through the `com.velocityctd.api` package.
-
-Our API mainly adds and exposes the redis and queue subsystem through the API module, allowing you to interact with this system through plugins.
-
-See:
-- `ProxyServer.getClusterPlayerService()`
-- `ProxyServer.getClusterProxyService()`
-- `ProxyServer.getQueueManager()`
-
-ApiaryProxy does not publish its own Maven repository yet, so plugins compile against the
-upstream [Velocity-CTD API artifacts](https://repo.velocityctd.com/#/), which are
-binary-compatible with this fork:
-
-**Maven**
-```xml
-<repository>
-  <id>velocityctd-snapshots</id>
-  <name>ApiaryProxy Repository</name>
-  <url>https://repo.velocityctd.com/snapshots</url>
-</repository>
-
-<dependency>
-  <groupId>com.velocityctd</groupId>
-  <artifactId>velocity-api</artifactId>
-  <version>3.5.0-SNAPSHOT</version>
-</dependency>
-```
-
-**Gradle**
-
-_Groovy_
-```groovy
-maven {
-    name "velocityctdSnapshots"
-    url "https://repo.velocityctd.com/snapshots"
-}
-
-implementation "com.velocityctd:velocity-api:3.5.0-SNAPSHOT"
-```
-
-_Kotlin_
-```kotlin
-maven {
-    name = "velocityctdSnapshots"
-    url = uri("https://repo.velocityctd.com/snapshots")
-}
-
-implementation("com.velocityctd:velocity-api:3.5.0-SNAPSHOT")
-```
-
-## Special Notes
-To proficiently review the stability and performance of your proxy in addition to spark,
-consider utilizing JProfiler to enhance your experience and report any ongoing issues.
-
-[![JProfiler](https://github.com/user-attachments/assets/d4f6a94b-8da2-484a-85c8-537a4d19d188)](https://www.ej-technologies.com/jprofiler)
+* Every backend server must run the same Minecraft protocol version. The client
+  keeps the registry data it received from the first server it joined, so a
+  backend on a different version will desync the client and cause visual
+  corruption or kicks.
+* Leave this off if your backends are not all on the same version.
 
 ## Building
 
@@ -216,19 +44,14 @@ wrapper script (`./gradlew`) as our CI builds using it.
 
 It is sufficient to run `./gradlew build` to run the full build cycle.
 
-You can find new releases of ApiaryProxy in our [releases](https://github.com/GemstoneGG/ApiaryProxy/releases) tab,
-where our latest updates will be compiled and ready for use.
-
 ## Running
 
-Once you've built Velocity, you can copy and run the `-all` JAR from
+Once you've built ApiaryProxy, you can copy and run the `-all` JAR from
 `proxy/build/libs`. ApiaryProxy will generate a default configuration file,
 and you can configure it from there.
 
-## Localisation
+## Thanks to These Projects
 
-Upstream Velocity's Translations are handled using [Crowdin](https://papermc-io.crowdin.com/velocity).
-If you want to translate a language not available on Crowdin,
-you might want to ask in the upstream's [Discord](https://discord.gg/papermc) about it.
-
-ApiaryProxy removes the translations to preserve maintainability. See `Additional Features/Removals`.
+* [Velocity](https://github.com/PaperMC/Velocity)
+* [Velocity-CTD](https://github.com/GemstoneGG/Velocity-CTD)
+* [Velocity (SunnySMP Fork)](https://github.com/Sunny-SMP/Velocity)

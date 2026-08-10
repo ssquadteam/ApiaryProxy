@@ -10,7 +10,7 @@ package com.velocitypowered.api.event.connection;
 import java.net.SocketAddress;
 
 /**
- * fired when a connection is dropped, either by us or the player.
+ * Fired when a connection is dropped, either by the proxy or by the player.
  */
 public final class ConnectionDroppedEvent {
 
@@ -25,6 +25,11 @@ public final class ConnectionDroppedEvent {
     this.address = address;
   }
 
+  /**
+   * Returns the address the dropped connection came from.
+   *
+   * @return the remote address of the dropped connection
+   */
   public SocketAddress getAddress() {
     return address;
   }

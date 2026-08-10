@@ -34,14 +34,29 @@ public final class ValidateSessionEvent {
     this.isValid = isValid;
   }
 
+  /**
+   * Returns the connection of the player whose session was validated.
+   *
+   * @return the connection being validated
+   */
   public LoginPhaseConnection getConnection() {
     return connection;
   }
 
+  /**
+   * Returns the status code the Mojang session servers responded with.
+   *
+   * @return the HTTP status code, or 503 if the request itself failed
+   */
   public int getSessionServerResponseCode() {
     return this.sessionServerResponseCode;
   }
 
+  /**
+   * Returns whether the session was validated successfully.
+   *
+   * @return true if the session was validated
+   */
   public boolean isValid() {
     return this.isValid;
   }
