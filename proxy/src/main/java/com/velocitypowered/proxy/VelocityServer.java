@@ -148,8 +148,8 @@ import org.jetbrains.annotations.UnmodifiableView;
 @SuppressWarnings({"unchecked"})
 public class VelocityServer implements ProxyServer, ForwardingAudience {
 
-  public static final String VELOCITY_URL = "https://github.com/GemstoneGG/Velocity-CTD";
-  public static final String DISCORD_URL = "https://discord.gg/beer";
+  public static final String VELOCITY_URL = "https://github.com/ssquadteam/ApiaryProxy";
+  public static final String DISCORD_URL = "https://discord.gg/themegahivemc";
 
   private static final Logger LOGGER = LogManager.getLogger(VelocityServer.class);
 
@@ -336,13 +336,13 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     Package pkg = VelocityServer.class.getPackage();
     String implName = Optional.ofNullable(pkg)
         .map(Package::getImplementationTitle)
-        .orElse("Velocity-CTD");
+        .orElse("ApiaryProxy");
     String implVersion = Optional.ofNullable(pkg)
         .map(Package::getImplementationVersion)
         .orElse("<unknown>");
     String implVendor = Optional.ofNullable(pkg)
         .map(Package::getImplementationVendor)
-        .orElse("Velocity(-CTD) Contributors");
+        .orElse("ApiaryProxy Contributors");
 
     return new ProxyVersion(implName, implVendor, implVersion);
   }
@@ -350,8 +350,9 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   private VelocityPluginContainer createVirtualPlugin() {
     ProxyVersion version = getVersion();
     PluginDescription description = new VelocityPluginDescription(
-        "velocityctd", version.getName(), version.getVersion(), "The Velocity-CTD proxy",
-            (version.getName().equals("Velocity") || version.getName().equals("Velocity-CTD")) ? VELOCITY_URL : null,
+        "velocityctd", version.getName(), version.getVersion(), "The ApiaryProxy proxy",
+            (version.getName().equals("Velocity") || version.getName().equals("Velocity-CTD")
+                || version.getName().equals("ApiaryProxy")) ? VELOCITY_URL : null,
             ImmutableList.of(version.getVendor()), Collections.emptyList(),
             Collections.emptyList(), null);
     VelocityPluginContainer container = new VelocityPluginContainer(description);

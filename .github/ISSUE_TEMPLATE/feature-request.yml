@@ -40,9 +40,9 @@ body:
       value: |
         Before submitting this request, please ensure the following:
         
-        1. You are running the latest version of Velocity-CTD from [the releases tab](https://github.com/GemstoneGG/Velocity-CTD/releases/latest).
+        1. You are running the latest version of Velocity-CTD from [the releases tab](https://github.com/ssquadteam/ApiaryProxy/releases/latest).
         2. You searched for and ensured there isn't already an open issue regarding this.
         3. The feature you're requesting has to be implemented on Velocity-CTD and not on the backend server or a proxy plugin.
         
         If you are unsure whether your problem can already be fixed in another way, feel free to ask on our
-        [Discord](https://discord.gg/beer).
+        [Discord](https://discord.gg/themegahivemc).

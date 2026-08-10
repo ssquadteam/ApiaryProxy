@@ -128,7 +128,7 @@ public class VelocityCommand implements BuiltinCommandDefinition {
             .executes(new Heap())
             .build();
     LiteralCommandNode<CommandSource> info = BrigadierCommand.literalArgumentBuilder("info")
-            .requires(source -> source.getPermissionValue("velocity.command.info") == Tristate.TRUE)
+            .requires(source -> source.getPermissionValue("velocity.command.info") != Tristate.FALSE)
             .executes(new Info(server))
             .build();
     LiteralCommandNode<CommandSource> plugins = BrigadierCommand
@@ -425,7 +425,7 @@ public class VelocityCommand implements BuiltinCommandDefinition {
 
         TextComponent embellishment = Component.text()
             .append(Component.text()
-                .content("discord.gg/beer")
+                .content("discord.gg/themegahivemc")
                 .color(NamedTextColor.RED)
                 .clickEvent(ClickEvent.openUrl(VelocityServer.DISCORD_URL))
                 .build())

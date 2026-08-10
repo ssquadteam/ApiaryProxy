@@ -594,14 +594,14 @@ minigames = 300
 #                       is not a placeholder. Enter a valid server in the scope.
 
 [server-links.GitHub]
-link = "https://github.com/GemstoneGG/Velocity-CTD"
+link = "https://github.com/ssquadteam/ApiaryProxy"
 label = "<#ff3a4c>GitHub"
 server = [
     "all"
 ]
 
 [server-links.Discord]
-link = "https://discord.gg/beer"
+link = "https://discord.gg/themegahivemc"
 label = "<#09add3>Discord"
 server = [
     "factions",

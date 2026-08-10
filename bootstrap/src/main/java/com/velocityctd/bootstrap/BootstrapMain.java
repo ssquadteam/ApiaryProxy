@@ -91,7 +91,7 @@ public final class BootstrapMain {
 
       // Advise to download fat jar on repeated failure. Should be removed if/when we don't ship the fat jar anymore.
       BootstrapLogger.error("If this keeps happening (e.g. behind a firewall or while a repository "
-          + "is down), download the self-contained fat jar from https://github.com/GemstoneGG/Velocity-CTD/releases/latest "
+          + "is down), download the self-contained fat jar from https://github.com/ssquadteam/ApiaryProxy/releases/latest "
           + "instead.");
 
       throw e;

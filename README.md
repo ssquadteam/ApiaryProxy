@@ -1,19 +1,20 @@
-# Velocity-CTD
+# ApiaryProxy
 
-[![Join the Discord](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExdG5sdGgwazRwYjh4djdsdXJwcHR5ajZrNGE2NDBvcTUzdXltbHp1cCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fGIwpaCrtkFdHVksSu/giphy.gif)](https://discord.gg/beer) \
-_[Discord](https://discord.gg/beer)_ | _[VelocityCTD.com](https://velocityctd.com/)_
+[![Join the Discord](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExdG5sdGgwazRwYjh4djdsdXJwcHR5ajZrNGE2NDBvcTUzdXltbHp1cCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fGIwpaCrtkFdHVksSu/giphy.gif)](https://discord.gg/themegahivemc) \
+_[Discord](https://discord.gg/themegahivemc)_
+
+<img src="apiary.png" alt="ApiaryProxy" width="160">
 
 A Minecraft server proxy with unparalleled server support, scalability,
 and flexibility.
 
-Velocity-CTD is licensed under the GPLv3 license.
-
-[![Servers using Velocity-CTD](https://bstats-graph.gritter.nl/v1/plugins/30992/charts/servers/chart.png)](https://bstats.velocityctd.com/) \
-_Live graph of servers using Velocity-CTD, using [bstats-graph.gritter.nl](https://bstats-graph.gritter.nl/)._
+ApiaryProxy is a fork of [Velocity-CTD](https://github.com/GemstoneGG/Velocity-CTD),
+which is itself a fork of [PaperMC/Velocity](https://github.com/PaperMC/Velocity).
+ApiaryProxy is licensed under the GPLv3 license, as required by its upstreams.
 
 ## Purpose
 
-Velocity-CTD was created to replace poorly made plugins or
+ApiaryProxy was created to replace poorly made plugins or
 plugins that simply cannot be better as a result of API limitations,
 lack of support/maintainability, infrequent bumping of integral
 dependencies, useful performance improvements, and more.
@@ -86,7 +87,7 @@ dependencies, useful performance improvements, and more.
   with our changes.
 * And much, much more... Try it out and see what we have to offer for yourself!
 
-## Velocity-CTD Permissions
+## ApiaryProxy Permissions
 * `velocity.command.alert` [/alert] (Allows you to display public alerts
   to all users on the proxy or proxies, depending on your setup).
 * `velocity.command.alertraw` [/alertraw] (Allows you to display public non-formatted
@@ -110,7 +111,7 @@ dependencies, useful performance improvements, and more.
 * `velocity.command.uptime` [/velocity uptime] (Displays how long the proxy has been
   online for, from immediate runtime).
 
-## Velocity-CTD Queue Commands
+## ApiaryProxy Queue Commands
 * `/server` [Default Aliases: `/queue` & `/joinqueue`]
 * `/leavequeue` [Default Alias: `/dequeue`]
 
@@ -125,7 +126,7 @@ dependencies, useful performance improvements, and more.
 * `/queueadmin removeall {SERVER}`
 * `/queueadmin unpause {SERVER}`
 
-## Velocity-CTD Queue Permissions
+## ApiaryProxy Queue Permissions
 * `velocity.queue.bypass` or `velocity.queue.bypass.{SERVER}` (Allows you to bypass the queue for all
   servers or a specific server).
 * `velocity.queue.full.bypass` (Allows you to connect to a server even when it is at capacity).
@@ -139,7 +140,7 @@ dependencies, useful performance improvements, and more.
   you can be sent and are offline, your queue position will reset, regardless of
   your specified timeout).
 
-## Velocity-CTD Queue Administrative Permissions
+## ApiaryProxy Queue Administrative Permissions
 * `velocity.queue.admin.add` (Allows you to add a player to a queue).
 * `velocity.queue.admin.addall` (Allows you to add all players from a specific server to a queue).
 * `velocity.queue.admin.list` (Allows you to view the list of people queued for a specific server or all servers).
@@ -149,9 +150,9 @@ dependencies, useful performance improvements, and more.
 * `velocity.queue.admin.removeall` (Allows you to remove a player from all queues).
 * `velocity.queue.admin.unpause` (Allows you to unpause any specific server for queuing).
 
-## Velocity-CTD API
+## ApiaryProxy API
 
-Velocity-CTD exposes its own api, one that is fully backwards-compatible with [com.velocitypowered:velocity-api](https://mvnrepository.com/artifact/com.velocitypowered/velocity-api) with some additional features.
+ApiaryProxy exposes its own api, one that is fully backwards-compatible with [com.velocitypowered:velocity-api](https://mvnrepository.com/artifact/com.velocitypowered/velocity-api) with some additional features.
 Some features are added to existing Velocity interfaces (in `com.velocitypowered.api`), and the CTD-custom functionality is exposed through the `com.velocityctd.api` package.
 
 Our API mainly adds and exposes the redis and queue subsystem through the API module, allowing you to interact with this system through plugins.
@@ -161,13 +162,15 @@ See:
 - `ProxyServer.getClusterProxyService()`
 - `ProxyServer.getQueueManager()`
 
-Compile your plugin using CTD's API through the [Velocity-CTD Maven Repository](https://repo.velocityctd.com/#/):
+ApiaryProxy does not publish its own Maven repository yet, so plugins compile against the
+upstream [Velocity-CTD API artifacts](https://repo.velocityctd.com/#/), which are
+binary-compatible with this fork:
 
 **Maven**
 ```xml
 <repository>
   <id>velocityctd-snapshots</id>
-  <name>Velocity-CTD Repository</name>
+  <name>ApiaryProxy Repository</name>
   <url>https://repo.velocityctd.com/snapshots</url>
 </repository>
 
@@ -208,18 +211,18 @@ consider utilizing JProfiler to enhance your experience and report any ongoing i
 
 ## Building
 
-Velocity-CTD is built with [Gradle](https://gradle.org). We recommend using the
+ApiaryProxy is built with [Gradle](https://gradle.org). We recommend using the
 wrapper script (`./gradlew`) as our CI builds using it.
 
 It is sufficient to run `./gradlew build` to run the full build cycle.
 
-You can find new releases of Velocity-CTD in our [releases](https://github.com/GemstoneGG/Velocity-CTD/releases) tab,
+You can find new releases of ApiaryProxy in our [releases](https://github.com/GemstoneGG/ApiaryProxy/releases) tab,
 where our latest updates will be compiled and ready for use.
 
 ## Running
 
 Once you've built Velocity, you can copy and run the `-all` JAR from
-`proxy/build/libs`. Velocity-CTD will generate a default configuration file,
+`proxy/build/libs`. ApiaryProxy will generate a default configuration file,
 and you can configure it from there.
 
 ## Localisation
@@ -228,4 +231,4 @@ Upstream Velocity's Translations are handled using [Crowdin](https://papermc-io.
 If you want to translate a language not available on Crowdin,
 you might want to ask in the upstream's [Discord](https://discord.gg/papermc) about it.
 
-Velocity-CTD removes the translations to preserve maintainability. See `Additional Features/Removals`.
+ApiaryProxy removes the translations to preserve maintainability. See `Additional Features/Removals`.
