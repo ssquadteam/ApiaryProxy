@@ -1,9 +1,8 @@
 # ApiaryProxy
 
-[![Join the Discord](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExdG5sdGgwazRwYjh4djdsdXJwcHR5ajZrNGE2NDBvcTUzdXltbHp1cCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fGIwpaCrtkFdHVksSu/giphy.gif)](https://discord.gg/themegahivemc) \
-_[Discord](https://discord.gg/themegahivemc)_
-
 <img src="apiary.png" alt="ApiaryProxy" width="160">
+
+_[Discord](https://discord.gg/themegahivemc)_
 
 A Minecraft server proxy with unparalleled server support, scalability,
 and flexibility.
