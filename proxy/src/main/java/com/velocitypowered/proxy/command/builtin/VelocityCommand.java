@@ -425,12 +425,6 @@ public class VelocityCommand implements BuiltinCommandDefinition {
 
         TextComponent.Builder embellishment = Component.text()
             .append(Component.text()
-                .content("discord.gg/themegahivemc")
-                .color(NamedTextColor.RED)
-                .clickEvent(ClickEvent.openUrl(VelocityServer.DISCORD_URL))
-                .build())
-            .append(Component.text(" - "))
-            .append(Component.text()
                 .content("GitHub")
                 .color(NamedTextColor.RED)
                 .decoration(TextDecoration.UNDERLINED, true)

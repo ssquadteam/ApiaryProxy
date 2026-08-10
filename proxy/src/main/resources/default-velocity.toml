@@ -613,14 +613,6 @@ server = [
     "all"
 ]
 
-[server-links.Discord]
-link = "https://discord.gg/themegahivemc"
-label = "<#09add3>Discord"
-server = [
-    "factions",
-    "minigames"
-]
-
 [proxy-addresses]
 # Proxy addresses are specified to ensure that the player
 # can be transferred using the "/transfer" command and

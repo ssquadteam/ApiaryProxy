@@ -1,0 +1,22 @@
+tree fa17c6735082a1ce8b5f983972ea6ca7e49c80f2
+parent ace5e72c8d8c68d2842d7847d661537b2229fd93
+author Alexander Städing <alexanderstaeding@gmail.com> 1679840308 +0200
+committer Alexander Städing <alexanderstaeding@gmail.com> 1679840308 +0200
+gpgsig -----BEGIN PGP SIGNATURE-----
+ 
+ iQIzBAABCAAdFiEEfBCCDcofFhdxlrIouYG1WG9AWtEFAmQgVDQACgkQuYG1WG9A
+ WtFbqRAAuMXk39AHlnPk97oL/Bx/2qV7CTj66vixK4xxNZd+dnmw0DAuTgTtTbtw
+ wfNdBpF3D/10sbxwA7BtRosnhQ1nJRRSBjtssxr4APL1QTB+n3XG5yFb6Fo3Uh6O
+ 6wWrQVSEwN9YXp8LP6/8ZhyyEJZAfpoFBv0mhPKl4NfTfFlchcMzzQ6BZdJ7Agk0
+ zyuIFVJ3QM9xg/AvSICLDKxLdqQyUuMv4QEPTjM0iJwoIsGNuUNw/qZ0oC2t76gJ
+ ltmFe/tfpi6Gbl8h57UNx+CoDvLtakdGNk+aWbmDZpDcjzBXGvNTHJQUmHrw79+K
+ QRUj8WntqkBUaUqjHmnXePJg16dZsmpdxkGSJAGdnzlbrY4/grD4ONVY8+TqWUPi
+ 53NcXqtIQd3/XPxRmlkFdhQYTI32WpJccRSpbQBlA5nxfOz8TGV8NL1WYVf6oY8M
+ KZb6fzPSlw/4KJ3bO+6ciNJ9ext0G/Dt55eWks2ex/eiNVryU3QcDeZqj1yqU38V
+ Jok4y5mLh3z0QI9fdSvHzmfg+N5b0ION7qj8cZnG6ESc2GkKIUnSWZwzSTwXqgcI
+ 1sH5qBudw/7dlCTNCr2H2tfOQ7+35xbFBxf0KEItR/ICl+EX1/bEYGRwOAj2plPD
+ 5U4r+Blc3SOXPqHkviI8vfZVU2iHvkRgD9Zj2ajTnV753TQ1JKM=
+ =vmSm
+ -----END PGP SIGNATURE-----
+
+Forgot to migrate adventure bom declaration

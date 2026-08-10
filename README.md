@@ -2,8 +2,6 @@
 
 <img src="apiary.png" alt="ApiaryProxy" width="160">
 
-_[Discord](https://discord.gg/themegahivemc)_
-
 A Minecraft server proxy with unparalleled server support, scalability,
 and flexibility.
 

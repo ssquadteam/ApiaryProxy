@@ -149,7 +149,6 @@ import org.jetbrains.annotations.UnmodifiableView;
 public class VelocityServer implements ProxyServer, ForwardingAudience {
 
   public static final String VELOCITY_URL = "https://github.com/ssquadteam/ApiaryProxy";
-  public static final String DISCORD_URL = "https://discord.gg/themegahivemc";
 
   private static final Logger LOGGER = LogManager.getLogger(VelocityServer.class);
 
