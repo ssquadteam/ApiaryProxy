@@ -423,7 +423,7 @@ public class VelocityCommand implements BuiltinCommandDefinition {
                 .appendNewline()
                 .append(copyright);
 
-        TextComponent embellishment = Component.text()
+        TextComponent.Builder embellishment = Component.text()
             .append(Component.text()
                 .content("discord.gg/themegahivemc")
                 .color(NamedTextColor.RED)
@@ -435,9 +435,20 @@ public class VelocityCommand implements BuiltinCommandDefinition {
                 .color(NamedTextColor.RED)
                 .decoration(TextDecoration.UNDERLINED, true)
                 .clickEvent(ClickEvent.openUrl(VelocityServer.VELOCITY_URL))
-                .build())
-            .build();
-        infoBuilder.appendNewline().append(embellishment);
+                .build());
+
+        if (!ProxyVersion.UNKNOWN.equals(version.getSpecVersion())) {
+          embellishment.append(Component.text(" - "))
+              .append(Component.text()
+                  .content(version.getSpecVersion())
+                  .color(NamedTextColor.RED)
+                  .decoration(TextDecoration.UNDERLINED, true)
+                  .clickEvent(ClickEvent.openUrl(
+                      VelocityServer.VELOCITY_URL + "/commit/" + version.getSpecVersion()))
+                  .build());
+        }
+
+        infoBuilder.appendNewline().append(embellishment.build());
 
         infoBuilder.appendNewline();
         if (version.isDevelopmentVersion()) {

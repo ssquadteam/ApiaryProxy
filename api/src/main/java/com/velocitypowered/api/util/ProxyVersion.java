@@ -18,6 +18,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public final class ProxyVersion {
 
   /**
+   * The placeholder used when a version or revision cannot be read from the jar manifest.
+   */
+  public static final String UNKNOWN = "<unknown>";
+
+  /**
    * The name of the proxy implementation (e.g., "Velocity").
    */
   private final String name;
@@ -33,16 +38,34 @@ public final class ProxyVersion {
   private final String version;
 
   /**
-   * Creates a new {@link ProxyVersion} instance.
+   * The source revision the proxy implementation was built from.
+   */
+  private final String specVersion;
+
+  /**
+   * Creates a new {@link ProxyVersion} instance with an unknown source revision.
    *
    * @param name the name for the proxy implementation
    * @param vendor the vendor for the proxy implementation
    * @param version the version for the proxy implementation
    */
   public ProxyVersion(String name, String vendor, String version) {
+    this(name, vendor, version, UNKNOWN);
+  }
+
+  /**
+   * Creates a new {@link ProxyVersion} instance.
+   *
+   * @param name the name for the proxy implementation
+   * @param vendor the vendor for the proxy implementation
+   * @param version the version for the proxy implementation
+   * @param specVersion the source revision the proxy implementation was built from
+   */
+  public ProxyVersion(String name, String vendor, String version, String specVersion) {
     this.name = Preconditions.checkNotNull(name, "name");
     this.vendor = Preconditions.checkNotNull(vendor, "vendor");
     this.version = Preconditions.checkNotNull(version, "version");
+    this.specVersion = Preconditions.checkNotNull(specVersion, "specVersion");
   }
 
   /**
@@ -73,6 +96,15 @@ public final class ProxyVersion {
   }
 
   /**
+   * Gets the source revision the proxy implementation was built from.
+   *
+   * @return the source revision, or {@code <unknown>} if the jar does not record one
+   */
+  public String getSpecVersion() {
+    return specVersion;
+  }
+
+  /**
    * Pattern matching the {@code -b<digits>} suffix appended to {@code Implementation-Version}
    * by the CI build pipeline when a build number is available. Its presence is the signal
    * that a jar is a published build rather than a local development checkout — both share the
@@ -86,7 +118,7 @@ public final class ProxyVersion {
    * @return true if this version is a development version
    */
   public boolean isDevelopmentVersion() {
-    if (version.equalsIgnoreCase("<unknown>")) {
+    if (version.equalsIgnoreCase(UNKNOWN)) {
       return true;
     }
 
@@ -110,12 +142,13 @@ public final class ProxyVersion {
     ProxyVersion that = (ProxyVersion) o;
     return Objects.equals(name, that.name)
         && Objects.equals(vendor, that.vendor)
-        && Objects.equals(version, that.version);
+        && Objects.equals(version, that.version)
+        && Objects.equals(specVersion, that.specVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, vendor, version);
+    return Objects.hash(name, vendor, version, specVersion);
   }
 
   @Override
@@ -124,6 +157,7 @@ public final class ProxyVersion {
         + "name='" + name + '\''
         + ", vendor='" + vendor + '\''
         + ", version='" + version + '\''
+        + ", specVersion='" + specVersion + '\''
         + '}';
   }
 }

@@ -339,12 +339,15 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
         .orElse("ApiaryProxy");
     String implVersion = Optional.ofNullable(pkg)
         .map(Package::getImplementationVersion)
-        .orElse("<unknown>");
+        .orElse(ProxyVersion.UNKNOWN);
+    String specVersion = Optional.ofNullable(pkg)
+        .map(Package::getSpecificationVersion)
+        .orElse(ProxyVersion.UNKNOWN);
     String implVendor = Optional.ofNullable(pkg)
         .map(Package::getImplementationVendor)
         .orElse("ApiaryProxy Contributors");
 
-    return new ProxyVersion(implName, implVendor, implVersion);
+    return new ProxyVersion(implName, implVendor, implVersion, specVersion);
   }
 
   private VelocityPluginContainer createVirtualPlugin() {
