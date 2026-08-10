@@ -690,7 +690,8 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
 
     destination.setEntityId(joinGame.getEntityId()); // Sound API function
 
-    if (player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_20_2)) {
+    if (!server.getConfiguration().isRemoveReconfig()
+        && player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_20_2)) {
       player.getBossBarManager().sendBossBars();
     } else {
       // Remove previous boss bars. These don't get cleared when sending JoinGame (up until 1.20.2),
@@ -746,8 +747,10 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
     loginPluginMessagesBytes.set(0);
     loginPluginMessagesCount.set(0);
 
-    // Clear any title from the previous server.
-    if (player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
+    // Clear any title from the previous server. This is skipped when the configuration state is
+    // removed, so that the fade of an in-progress teleport survives the switch.
+    if (!server.getConfiguration().isRemoveReconfig()
+        && player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
       player.getConnection().delayedWrite(
           GenericTitlePacket.constructTitlePacket(GenericTitlePacket.ActionType.RESET,
               player.getProtocolVersion()));

@@ -192,7 +192,10 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
 
   @Override
   public boolean handle(BossBarPacket packet) {
-    if (serverConn.getPlayer().getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_20_2)) {
+    // Without the configuration state the client keeps its boss bars across a switch, so they have
+    // to be tracked and removed by hand on every version, not just those below 1.20.2.
+    if (server.getConfiguration().isRemoveReconfig()
+        || serverConn.getPlayer().getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_20_2)) {
       if (packet.getAction() == BossBarPacket.ADD) {
         playerSessionHandler.getServerBossBars().add(packet.getUuid());
       } else if (packet.getAction() == BossBarPacket.REMOVE) {

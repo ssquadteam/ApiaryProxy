@@ -274,12 +274,15 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
         smc.write(new PluginMessagePacket("minecraft:brand", brandBuf));
       }
 
-      advanceBackendToPlay(false);
-      smc.removePlayPacketQueueInboundHandler();
+      // Deferred by a tick so the brand message is flushed before the state change.
+      smc.eventLoop().execute(() -> {
+        advanceBackendToPlay(false);
+        smc.removePlayPacketQueueInboundHandler();
 
-      if (player.resourcePackHandler().getFirstAppliedPack() == null && resourcePackToApply != null) {
-        player.resourcePackHandler().queueResourcePack(resourcePackToApply);
-      }
+        if (player.resourcePackHandler().getFirstAppliedPack() == null && resourcePackToApply != null) {
+          player.resourcePackHandler().queueResourcePack(resourcePackToApply);
+        }
+      });
 
       return true;
     }
