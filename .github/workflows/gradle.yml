@@ -5,113 +5,114 @@ name: Java CI with Gradle
 on:
   push:
     branches:
-      - libdeflate
+      - main
   pull_request:
   workflow_dispatch:
 
 env:
-  RELEASE_BRANCH: refs/heads/libdeflate
+  RELEASE_BRANCH: refs/heads/main
 
 jobs:
   build:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+      MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v7
-      with:
-        persist-credentials: false
-        fetch-depth: 0
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
 
-    - name: Set up Gradle
-      uses: gradle/actions/setup-gradle@v6
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v6
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v5
-      with:
-        java-version: 21
-        distribution: 'zulu'
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
 
-    - name: Generate Release Tag
-      if: github.ref == env.RELEASE_BRANCH
-      id: release_tag
-      run: |
-        # Fetch all tags from remote
-        git fetch --tags
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != env.RELEASE_BRANCH }}
 
-        # Get the latest build number from existing releases
-        LATEST_BUILD=0
+      - name: Generate Release Tag
+        if: github.ref == env.RELEASE_BRANCH
+        id: release_tag
+        run: |
+          git fetch --tags
 
-        # Check if there are existing build tags and find the highest number
-        if git tag | grep -E "^build-[0-9]+$" > /dev/null; then
-          LATEST_BUILD=$(git tag | grep -E "^build-[0-9]+$" | sed 's/build-//' | sort -n | tail -1)
-        fi
+          LATEST_BUILD=0
+          if git tag | grep -qE "^build-[0-9]+$"; then
+            LATEST_BUILD=$(git tag | grep -E "^build-[0-9]+$" | sed 's/build-//' | sort -n | tail -1)
+          fi
 
-        # Debug output
-        echo "All tags:"
-        git tag
-        echo "Build tags found:"
-        git tag | grep -E "^build-[0-9]+$" || echo "No build tags found"
-        echo "Latest build number found: $LATEST_BUILD"
+          NEW_BUILD=$((LATEST_BUILD + 1))
+          echo "tag=build-$NEW_BUILD" >> "$GITHUB_OUTPUT"
+          echo "build_nr=$NEW_BUILD" >> "$GITHUB_OUTPUT"
+          echo "Building build-$NEW_BUILD (previous highest: $LATEST_BUILD)"
 
-        # Increment the build number
-        NEW_BUILD=$((LATEST_BUILD + 1))
+      - name: Build with Gradle
+        env:
+          BUILD_NUMBER: ${{ steps.release_tag.outputs.build_nr }}
+        run: ./gradlew build
 
-        echo "tag=build-$NEW_BUILD" >> $GITHUB_OUTPUT
-        echo "build_nr=$NEW_BUILD" >> $GITHUB_OUTPUT
-        echo "Generated tag: build-$NEW_BUILD"
-        echo "Previous highest build: $LATEST_BUILD"
-        echo "New build number: $NEW_BUILD"
+      - name: Rename Release Jars
+        if: github.ref == env.RELEASE_BRANCH
+        run: |
+          FAT_JAR=$(ls proxy/build/libs/velocity-proxy-*-all.jar)
+          VERSION=${FAT_JAR#proxy/build/libs/velocity-proxy-}
+          VERSION=${VERSION%-all.jar}
+          cp "$FAT_JAR" "proxy/build/libs/apiaryproxy-fatjar-$VERSION-${{ steps.release_tag.outputs.build_nr }}.jar"
 
-    - name: Build with Gradle
-      env:
-        BUILD_NUMBER: ${{ steps.release_tag.outputs.build_nr }}
-      run: ./gradlew build
+          BOOTSTRAP_JAR=$(ls bootstrap/build/libs/velocity-bootstrap-*.jar | grep -v -- '-sources\.jar')
+          VERSION=${BOOTSTRAP_JAR#bootstrap/build/libs/velocity-bootstrap-}
+          VERSION=${VERSION%.jar}
+          cp "$BOOTSTRAP_JAR" "bootstrap/build/libs/apiaryproxy-$VERSION-${{ steps.release_tag.outputs.build_nr }}.jar"
 
-    - name: Rename Velocity-CTD Fat Jar
-      if: github.ref == env.RELEASE_BRANCH
-      run: |
-        JAR=$(ls proxy/build/libs/velocity-proxy-*-all.jar)
-        VERSION=$(echo "$JAR" | sed 's|proxy/build/libs/velocity-proxy-||' | sed 's|-all\.jar||')
-        cp "$JAR" "proxy/build/libs/velocity-ctd-fatjar-$VERSION-${{ steps.release_tag.outputs.build_nr }}.jar"
+      - name: Publish to Maven Repository
+        if: github.ref == env.RELEASE_BRANCH && env.MAVEN_USERNAME != ''
+        continue-on-error: true
+        env:
+          BUILD_NUMBER: ${{ steps.release_tag.outputs.build_nr }}
+          ORG_GRADLE_PROJECT_apiaryUsername: ${{ env.MAVEN_USERNAME }}
+          ORG_GRADLE_PROJECT_apiaryPassword: ${{ env.MAVEN_PASSWORD }}
+        run: ./gradlew publishAllPublicationsToApiaryRepository
 
-    - name: Rename Velocity-CTD Bootstrap Jar
-      if: github.ref == env.RELEASE_BRANCH
-      run: |
-        JAR=$(ls bootstrap/build/libs/velocity-bootstrap-*.jar | grep -v -- '-sources\.jar')
-        VERSION=$(echo "$JAR" | sed 's|bootstrap/build/libs/velocity-bootstrap-||' | sed 's|\.jar||')
-        cp "$JAR" "bootstrap/build/libs/velocity-ctd-$VERSION-${{ steps.release_tag.outputs.build_nr }}.jar"
+      - name: Upload Build Artifacts
+        if: github.ref != env.RELEASE_BRANCH
+        uses: actions/upload-artifact@v5
+        with:
+          name: apiaryproxy-jars
+          path: |
+            proxy/build/libs/velocity-proxy-*-all.jar
+            bootstrap/build/libs/velocity-bootstrap-*.jar
+          if-no-files-found: error
 
-    - name: Publish to Maven Repository
-      if: github.ref == env.RELEASE_BRANCH
-      continue-on-error: true
-      env:
-        BUILD_NUMBER: ${{ steps.release_tag.outputs.build_nr }}
-        ORG_GRADLE_PROJECT_velocityctdUser: ${{ secrets.MAVEN_USERNAME }}
-        ORG_GRADLE_PROJECT_velocityctdPassword: ${{ secrets.MAVEN_PASSWORD }}
-      run: ./gradlew publish
+      - name: Upload as GitHub Release
+        if: github.ref == env.RELEASE_BRANCH
+        uses: softprops/action-gh-release@v3
+        with:
+          name: "ApiaryProxy ${{ steps.release_tag.outputs.tag }}"
+          tag_name: "${{ steps.release_tag.outputs.tag }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## Which jar should I download?
 
-    - name: Upload as GitHub Release
-      if: github.ref == env.RELEASE_BRANCH
-      continue-on-error: true
-      uses: softprops/action-gh-release@v3
-      with:
-        name: "Velocity-CTD"
-        tag_name: "${{ steps.release_tag.outputs.tag }}"
-        token: "${{ secrets.GITHUB_TOKEN }}"
-        prerelease: false
-        generate_release_notes: true
-        body: |
-          ## Which jar should I download?
+            **Recommended — `apiaryproxy-<version>-<build>.jar` (bootstrap jar)**
+            This is the bootstrap jar. It downloads the required dependencies only once, keeping the download small. Use this one.
 
-          **Recommended — `velocity-ctd-<version>-<build>.jar` (bootstrap jar)**
-          This is the bootstrap jar. It downloads the required dependencies only once, keeping the download small. Use this one.
+            **Fallback — `apiaryproxy-fatjar-<version>-<build>.jar`**
+            Only download the fatjar if the bootstrap jar is causing issues for you. If it is, please [open an issue](https://github.com/${{ github.repository }}/issues) describing the problem so we can fix it.
 
-          **Fallback — `velocity-ctd-fatjar-<version>-<build>.jar`**
-          Only download the fatjar if the bootstrap jar is causing issues for you. If it is, please [open an issue](https://github.com/${{ github.repository }}/issues) describing the problem so we can fix it.
-
-          > ⚠️ The fatjar will be removed soon — please migrate to the bootstrap jar.
-
-          ---
-        files: |
-          proxy/build/libs/velocity-ctd-fatjar-*-${{ steps.release_tag.outputs.build_nr }}.jar
-          bootstrap/build/libs/velocity-ctd-*-${{ steps.release_tag.outputs.build_nr }}.jar
+            ---
+          files: |
+            proxy/build/libs/apiaryproxy-fatjar-*-${{ steps.release_tag.outputs.build_nr }}.jar
+            bootstrap/build/libs/apiaryproxy-*-${{ steps.release_tag.outputs.build_nr }}.jar

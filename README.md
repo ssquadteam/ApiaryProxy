@@ -8,7 +8,14 @@ _[Discord](https://discord.gg/themegahivemc)_
 A Minecraft server proxy with unparalleled server support, scalability,
 and flexibility.
 
-ApiaryProxy is licensed under the GPLv3 license.
+## Licence
+
+ApiaryProxy is licensed under the **GNU General Public License v3.0**, the same
+licence as Velocity and Velocity-CTD, which it is derived from. The full text is
+in [LICENSE](LICENSE).
+
+The `api` module keeps upstream Velocity's **MIT** licence, so plugins compiled
+against it are not affected by the GPL. See [api/LICENSE](api/LICENSE).
 
 ## Features
 

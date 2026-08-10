@@ -1,5 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
 plugins {
     application
@@ -24,6 +25,29 @@ val relocatedLibraries: Configuration by configurations.creating {
 // Keep the relocated libraries on the compile/runtime classpath so the proxy compiles against them
 // and the fat shadowJar continues to bundle them.
 configurations.named("implementation") { extendsFrom(relocatedLibraries) }
+
+// Records the coordinates of everything shaded into the proxy jar, so :velocity-bootstrap can
+// exclude them from its Maven manifest without resolving this project's configuration itself.
+val relocatedLibrariesManifest by tasks.registering {
+    val resolvedArtifacts = relocatedLibraries.incoming.artifacts.resolvedArtifacts
+    val outputFile = layout.buildDirectory.file("generated/relocated-libraries.txt")
+
+    inputs.files(relocatedLibraries)
+    outputs.file(outputFile)
+
+    doLast {
+        val coordinates = resolvedArtifacts.get()
+            .mapNotNull { it.id.componentIdentifier as? ModuleComponentIdentifier }
+            .map { "${it.group}:${it.module}" }
+            .distinct()
+            .sorted()
+
+        outputFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText(coordinates.joinToString("\n", postfix = "\n"))
+        }
+    }
+}
 
 // Permission integration modules embedded as jar-in-jar resources. Each is shipped at
 // `<permissionIntegrationsResourceDir>/<module-dir-name>.jar` and listed in `integrations.index`,
@@ -67,9 +91,10 @@ tasks {
         permissionIntegrations.forEach { path ->
             val integrationProject = project(path)
             val integrationJar = integrationProject.tasks.named<Jar>("jar")
+            val integrationName = integrationProject.projectDir.name
             from(integrationJar.flatMap { it.archiveFile }) {
                 into(permissionIntegrationsResourceDir)
-                rename { "${integrationProject.projectDir.name}.jar" }
+                rename { "$integrationName.jar" }
             }
         }
         from(generatePermissionIntegrationsIndex)
