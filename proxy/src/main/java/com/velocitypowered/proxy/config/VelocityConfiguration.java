@@ -192,6 +192,12 @@ public final class VelocityConfiguration implements ProxyConfig {
   private final boolean removeReconfig;
 
   /**
+   * Whether to leave the client's loaded world in place when it switches backend servers.
+   */
+  @Expose
+  private final boolean keepClientWorldOnSwitch;
+
+  /**
    * Whether to disable Forge negotiation and related plugin messages.
    */
   @Expose
@@ -274,7 +280,7 @@ public final class VelocityConfiguration implements ProxyConfig {
                                 PacketLimiterConfig packetLimiterConfig,
                                 boolean logPlayerConnections, boolean logPlayerDisconnections,
                                 boolean logOfflineConnections, boolean removeReconfig,
-                                boolean disableForge,
+                                boolean keepClientWorldOnSwitch, boolean disableForge,
                                 boolean enforceChatSigning, boolean preventsChatReports, boolean translateHeaderFooter,
                                 boolean logMinimumVersion, String minimumVersion,
                                 String maximumVersion,
@@ -309,6 +315,7 @@ public final class VelocityConfiguration implements ProxyConfig {
     this.logPlayerDisconnections = logPlayerDisconnections;
     this.logOfflineConnections = logOfflineConnections;
     this.removeReconfig = removeReconfig;
+    this.keepClientWorldOnSwitch = keepClientWorldOnSwitch;
     this.disableForge = disableForge;
     this.enforceChatSigning = enforceChatSigning;
     this.preventsChatReports = preventsChatReports;
@@ -1057,6 +1064,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         .add("logPlayerDisconnections", logPlayerDisconnections)
         .add("logOfflineConnections", logOfflineConnections)
         .add("removeReconfig", removeReconfig)
+        .add("keepClientWorldOnSwitch", keepClientWorldOnSwitch)
         .add("disableForge", disableForge)
         .add("enforceChatSigning", enforceChatSigning)
         .add("preventsChatReports", preventsChatReports)
@@ -1200,6 +1208,7 @@ public final class VelocityConfiguration implements ProxyConfig {
       boolean logPlayerDisconnections = config.getOrElse("log-player-disconnections", true);
       boolean logOfflineConnections = config.getOrElse("log-offline-connections", true);
       boolean removeReconfig = config.getOrElse("remove-reconfig", false);
+      boolean keepClientWorldOnSwitch = config.getOrElse("keep-client-world-on-switch", false);
       boolean disableForge = config.getOrElse("disable-forge", false);
       boolean enforceChatSigning = config.getOrElse("enforce-chat-signing", false);
       boolean preventsChatReports = config.getOrElse("prevents-chat-reports", false);
@@ -1312,6 +1321,7 @@ public final class VelocityConfiguration implements ProxyConfig {
           logPlayerDisconnections,
           logOfflineConnections,
           removeReconfig,
+          keepClientWorldOnSwitch,
           disableForge,
           enforceChatSigning,
           preventsChatReports,
@@ -1457,6 +1467,20 @@ public final class VelocityConfiguration implements ProxyConfig {
    */
   public boolean isRemoveReconfig() {
     return removeReconfig;
+  }
+
+  /**
+   * Returns whether the client keeps its loaded world when it switches backend servers.
+   *
+   * <p>When enabled, the proxy stops relaying the backend's join game and respawn packets on a
+   * switch, so the client never tears down its level and never shows the terrain loading screen.
+   * This is only safe when the destination reuses the player's existing entity id and dimension;
+   * the proxy checks both and falls back to the normal switch when they do not match.
+   *
+   * @return true if the client's world is preserved across a server switch
+   */
+  public boolean isKeepClientWorldOnSwitch() {
+    return keepClientWorldOnSwitch;
   }
 
   /**

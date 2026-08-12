@@ -41,6 +41,7 @@ import com.velocitypowered.proxy.connection.backend.BungeeCordMessageResponder;
 import com.velocitypowered.proxy.connection.backend.VelocityServerConnection;
 import com.velocitypowered.proxy.connection.forge.legacy.LegacyForgeConstants;
 import com.velocitypowered.proxy.connection.player.resourcepack.ResourcePackResponseBundle;
+import com.velocitypowered.proxy.connection.registry.DimensionInfo;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.StateRegistry;
 import com.velocitypowered.proxy.protocol.netty.MinecraftDecoder;
@@ -88,6 +89,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -127,6 +129,8 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   private boolean spawned = false;
 
   private final List<UUID> serverBossBars = new ArrayList<>();
+  private int clientEntityId = -1;
+  private @Nullable String clientDimension;
   private final Set<String> serverObjectives = new HashSet<>();
   private final Set<String> serverTeams = new HashSet<>();
 
@@ -675,6 +679,12 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       player.getConnection().delayedWrite(joinGame);
       // Required for Legacy Forge
       player.getPhase().onFirstJoin(player);
+      rememberClientWorld(joinGame);
+    } else if (canKeepClientWorld(joinGame)) {
+      // The destination reuses the entity id and dimension the client already has, so the client
+      // does not need to rebuild its level. Withholding the join game and respawn packets is what
+      // keeps the terrain loading screen from appearing.
+      player.getTabList().clearAll();
     } else {
       // Clear tab list to avoid duplicate entries
       player.getTabList().clearAll();
@@ -686,6 +696,8 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       } else {
         this.doFastClientServerSwitch(joinGame);
       }
+
+      rememberClientWorld(joinGame);
     }
 
     destination.setEntityId(joinGame.getEntityId()); // Sound API function
@@ -760,6 +772,54 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
     player.getConnection().flush();
     serverMc.flush();
     destination.completeJoin();
+  }
+
+  private void rememberClientWorld(JoinGamePacket joinGame) {
+    clientEntityId = joinGame.getEntityId();
+    clientDimension = dimensionKey(joinGame);
+  }
+
+  private static @Nullable String dimensionKey(JoinGamePacket joinGame) {
+    DimensionInfo info = joinGame.getDimensionInfo();
+    if (info == null) {
+      return Integer.toString(joinGame.getDimension());
+    }
+
+    return info.getRegistryIdentifier() + "\u0000" + info.getLevelName();
+  }
+
+  /**
+   * Decides whether the client can stay in the world it already has for this switch.
+   *
+   * <p>Both the entity id and the dimension have to match what the client was last told. A backend
+   * that reuses the entity id is what makes this safe: the client keeps addressing its own entity
+   * by the same id the destination uses, so no packet rewriting is needed. Anything else falls back
+   * to the regular switch, which costs a loading screen but is always correct.
+   */
+  private boolean canKeepClientWorld(JoinGamePacket joinGame) {
+    if (!server.getConfiguration().isKeepClientWorldOnSwitch()) {
+      return false;
+    }
+
+    if (player.getConnection().getType() == ConnectionTypes.LEGACY_FORGE
+        || player.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_16)) {
+      return false;
+    }
+
+    if (joinGame.getEntityId() != clientEntityId) {
+      LOGGER.debug("Not keeping the world for {}: destination assigned entity id {}, client has {}",
+          player, joinGame.getEntityId(), clientEntityId);
+      return false;
+    }
+
+    String dimension = dimensionKey(joinGame);
+    if (!Objects.equals(dimension, clientDimension)) {
+      LOGGER.debug("Not keeping the world for {}: destination dimension {} differs from {}",
+          player, dimension, clientDimension);
+      return false;
+    }
+
+    return true;
   }
 
   private void doFastClientServerSwitch(JoinGamePacket joinGame) {

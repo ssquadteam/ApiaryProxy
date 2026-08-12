@@ -108,6 +108,18 @@ public class CtdConfigMigrations {
             false
         ),
         migration(
+            "If true, the client keeps the world it already has when it switches backend servers,\n"
+                + "instead of rebuilding it. This removes the terrain loading screen that still appears on a\n"
+                + "switch even when \"remove-reconfig\" is on, because the proxy stops relaying the\n"
+                + "destination's join game and respawn packets.\n"
+                + "\n"
+                + "This only works when the destination server reuses the entity id the client was already\n"
+                + "given and stays in the same dimension. The proxy checks both on every switch and quietly\n"
+                + "falls back to the normal switch when either does not hold.",
+            "keep-client-world-on-switch",
+            false
+        ),
+        migration(
             "If true, disables handling of inbound Forge handshakes.",
             "disable-forge",
             false

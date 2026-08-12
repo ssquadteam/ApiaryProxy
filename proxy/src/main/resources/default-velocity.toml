@@ -17,6 +17,20 @@ bind = "0.0.0.0:25565"
 # not all on the same version.
 remove-reconfig = false
 
+# If true, the client keeps the world it already has when it switches backend servers, instead of
+# rebuilding it. This removes the terrain loading screen that still appears on a switch even when
+# "remove-reconfig" is on, because the proxy stops relaying the destination's join game and respawn
+# packets.
+#
+# This only works when the destination server reuses the entity id the client was already given
+# (for example AdvancedServerZones, which calls Entity#setId on arrival) and stays in the same
+# dimension. The proxy checks both on every switch and quietly falls back to the normal switch when
+# either does not hold, so turning this on can cost you nothing but never breaks a session.
+#
+# Requires "remove-reconfig" to be useful; on its own the configuration state still rebuilds the
+# client's world.
+keep-client-world-on-switch = false
+
 # The MOTD shown in the server list when a player adds your server. Accepts a list of lines.
 # Supports the "{players}" placeholder (documented under "motd-hover") as well as the other
 # placeholders listed under "fallback-version-ping".
