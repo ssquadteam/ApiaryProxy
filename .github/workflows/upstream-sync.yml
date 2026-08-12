@@ -1,0 +1,156 @@
+# Merges Velocity-CTD into ApiaryProxy and opens a pull request when the result builds.
+#
+# Nothing is ever pushed to main. A clean, building merge becomes a PR; a conflicted or broken
+# merge becomes an issue naming what went wrong. Both are reused across runs rather than piling up.
+
+name: Upstream Sync
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: "Velocity-CTD branch to merge"
+        required: false
+        default: "libdeflate"
+
+env:
+  UPSTREAM_URL: https://github.com/GemstoneGG/Velocity-CTD.git
+  UPSTREAM_REF: ${{ github.event.inputs.upstream_ref || 'libdeflate' }}
+  SYNC_BRANCH: upstream-sync
+  ISSUE_LABEL: upstream-sync
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch upstream
+        id: fetch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git remote add upstream "$UPSTREAM_URL"
+          git fetch --no-tags upstream "$UPSTREAM_REF"
+
+          UPSTREAM_SHA=$(git rev-parse FETCH_HEAD)
+          echo "sha=$UPSTREAM_SHA" >> "$GITHUB_OUTPUT"
+          echo "short=${UPSTREAM_SHA:0:9}" >> "$GITHUB_OUTPUT"
+
+          if git merge-base --is-ancestor "$UPSTREAM_SHA" HEAD; then
+            echo "behind=0" >> "$GITHUB_OUTPUT"
+            echo "Already up to date with $UPSTREAM_REF."
+          else
+            echo "behind=$(git rev-list --count HEAD.."$UPSTREAM_SHA")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge upstream
+        id: merge
+        if: steps.fetch.outputs.behind != '0'
+        run: |
+          git checkout -B "$SYNC_BRANCH"
+
+          if git merge --no-edit --no-ff FETCH_HEAD \
+              -m "Merge Velocity-CTD $UPSTREAM_REF at ${{ steps.fetch.outputs.short }}"; then
+            echo "conflicted=false" >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "conflicted=true"
+              echo "files<<EOF"
+              git diff --name-only --diff-filter=U
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            git merge --abort
+          fi
+
+      - name: Set up JDK 25
+        if: steps.merge.outputs.conflicted == 'false'
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        if: steps.merge.outputs.conflicted == 'false'
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+
+      - name: Build merged tree
+        id: build
+        if: steps.merge.outputs.conflicted == 'false'
+        continue-on-error: true
+        run: ./gradlew build
+
+      - name: Push and open pull request
+        if: steps.merge.outputs.conflicted == 'false' && steps.build.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push --force origin "$SYNC_BRANCH"
+
+          if gh pr list --head "$SYNC_BRANCH" --state open --json number --jq 'length' | grep -qv '^0$'; then
+            echo "Pull request already open, branch updated in place."
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head "$SYNC_BRANCH" \
+            --title "Merge Velocity-CTD $UPSTREAM_REF (${{ steps.fetch.outputs.short }})" \
+            --body "Merges [\`$UPSTREAM_REF\`](https://github.com/GemstoneGG/Velocity-CTD/commits/$UPSTREAM_REF) at \`${{ steps.fetch.outputs.sha }}\`, ${{ steps.fetch.outputs.behind }} commits ahead of main.
+
+          The merge applied cleanly and \`./gradlew build\` passed on the result.
+
+          Worth a look before merging: ApiaryProxy carries branding, the \`remove-reconfig\` and \`keep-client-world-on-switch\` options, and its own workflows. A clean merge does not prove upstream did not change behaviour underneath those."
+
+      - name: Report a problem
+        if: |
+          steps.fetch.outputs.behind != '0' &&
+          (steps.merge.outputs.conflicted == 'true' || steps.build.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ steps.merge.outputs.conflicted }}" = "true" ]; then
+            TITLE="Upstream sync: conflicts merging Velocity-CTD $UPSTREAM_REF"
+            BODY="Merging \`$UPSTREAM_REF\` at \`${{ steps.fetch.outputs.sha }}\` hit conflicts, so nothing was pushed.
+
+          Conflicting files:
+          \`\`\`
+          ${{ steps.merge.outputs.files }}
+          \`\`\`
+
+          Resolve locally:
+          \`\`\`bash
+          git remote add ctd $UPSTREAM_URL   # once
+          git fetch ctd $UPSTREAM_REF
+          git checkout -b $SYNC_BRANCH main
+          git merge FETCH_HEAD
+          \`\`\`"
+          else
+            TITLE="Upstream sync: build failed after merging Velocity-CTD $UPSTREAM_REF"
+            BODY="\`$UPSTREAM_REF\` at \`${{ steps.fetch.outputs.sha }}\` merged cleanly but \`./gradlew build\` failed on the result, so no pull request was opened.
+
+          See [the run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for the compiler output."
+          fi
+
+          EXISTING=$(gh issue list --label "$ISSUE_LABEL" --state open --json number,title \
+            --jq "map(select(.title == \"$TITLE\")) | .[0].number // empty")
+
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh label create "$ISSUE_LABEL" --color ededed --description "Automated Velocity-CTD sync" 2>/dev/null || true
+            gh issue create --title "$TITLE" --label "$ISSUE_LABEL" --body "$BODY"
+          fi
