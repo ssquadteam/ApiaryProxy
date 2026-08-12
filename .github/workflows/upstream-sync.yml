@@ -20,6 +20,8 @@ env:
   UPSTREAM_REF: ${{ github.event.inputs.upstream_ref || 'libdeflate' }}
   SYNC_BRANCH: upstream-sync
   ISSUE_LABEL: upstream-sync
+  # Adding the upstream git remote makes gh guess the wrong repository, so pin it.
+  GH_REPO: ${{ github.repository }}
 
 jobs:
   sync:
