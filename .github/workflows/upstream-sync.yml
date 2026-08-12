@@ -139,8 +139,9 @@ jobs:
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body "$BODY"
           else
-            gh label create "$ISSUE_LABEL" --color ededed --description "Automated Velocity-CTD sync" 2>/dev/null || true
-            gh issue create --title "$TITLE" --label "$ISSUE_LABEL" --body "$BODY"
+            gh label create "$ISSUE_LABEL" --color ededed --description "Automated Velocity-CTD sync" || true
+            gh issue create --title "$TITLE" --label "$ISSUE_LABEL" --body "$BODY" \
+              || gh issue create --title "$TITLE" --body "$BODY"
           fi
 
       - name: Report a problem
@@ -179,6 +180,7 @@ jobs:
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body "$BODY"
           else
-            gh label create "$ISSUE_LABEL" --color ededed --description "Automated Velocity-CTD sync" 2>/dev/null || true
-            gh issue create --title "$TITLE" --label "$ISSUE_LABEL" --body "$BODY"
+            gh label create "$ISSUE_LABEL" --color ededed --description "Automated Velocity-CTD sync" || true
+            gh issue create --title "$TITLE" --label "$ISSUE_LABEL" --body "$BODY" \
+              || gh issue create --title "$TITLE" --body "$BODY"
           fi
