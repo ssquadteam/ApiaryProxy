@@ -140,6 +140,11 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
     return false;
   }
 
+  private boolean clientStayedInPlay() {
+    return !(serverConn.getPlayer().getConnection().getActiveSessionHandler()
+        instanceof ClientConfigSessionHandler);
+  }
+
   @Override
   public boolean handle(StartUpdatePacket packet) {
     serverConn.ensureConnected().write(packet);
@@ -148,6 +153,10 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
 
   @Override
   public boolean handle(TagsUpdatePacket packet) {
+    if (clientStayedInPlay()) {
+      return true;
+    }
+
     serverConn.getPlayer().getConnection().write(packet);
     return true;
   }
@@ -380,6 +389,10 @@ public class ConfigSessionHandler implements MinecraftSessionHandler {
 
   @Override
   public boolean handle(RegistrySyncPacket packet) {
+    if (clientStayedInPlay()) {
+      return true;
+    }
+
     serverConn.getPlayer().getConnection().write(packet.retain());
     return true;
   }
