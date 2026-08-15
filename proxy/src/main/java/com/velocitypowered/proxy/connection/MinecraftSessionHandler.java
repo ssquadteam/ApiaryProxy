@@ -21,9 +21,6 @@ import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.packet.AvailableCommandsPacket;
 import com.velocitypowered.proxy.protocol.packet.BossBarPacket;
 import com.velocitypowered.proxy.protocol.packet.BundleDelimiterPacket;
-import com.velocitypowered.proxy.protocol.packet.ChunkBatchEndPacket;
-import com.velocitypowered.proxy.protocol.packet.ChunkBatchStartPacket;
-import com.velocitypowered.proxy.protocol.packet.ChunkDataPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientSettingsPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientboundCookieRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientboundSoundEntityPacket;
@@ -66,7 +63,6 @@ import com.velocitypowered.proxy.protocol.packet.TabCompleteRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.TabCompleteResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.TeamPacket;
 import com.velocitypowered.proxy.protocol.packet.TransferPacket;
-import com.velocitypowered.proxy.protocol.packet.UnloadChunkPacket;
 import com.velocitypowered.proxy.protocol.packet.UpsertPlayerInfoPacket;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatAcknowledgementPacket;
 import com.velocitypowered.proxy.protocol.packet.chat.PlayerChatCompletionPacket;
@@ -346,21 +342,9 @@ public interface MinecraftSessionHandler {
     return false;
   }
 
-  default boolean handle(ChunkDataPacket packet) {
-    return false;
-  }
 
-  default boolean handle(UnloadChunkPacket packet) {
-    return false;
-  }
 
-  default boolean handle(ChunkBatchStartPacket packet) {
-    return false;
-  }
 
-  default boolean handle(ChunkBatchEndPacket packet) {
-    return false;
-  }
 
   default boolean handle(TransferPacket transfer) {
     return false;
