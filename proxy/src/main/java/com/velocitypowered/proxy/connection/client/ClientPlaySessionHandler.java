@@ -692,6 +692,20 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       // does not need to rebuild its level. Withholding the join game and respawn packets is what
       // keeps the terrain loading screen from appearing.
       player.getTabList().clearAll();
+
+      // Because the client never receives a join game, it never reports that it finished loading
+      // the world. The destination waits for that before it accepts any movement, so the player
+      // stands still server side for several seconds while their client walks away from them.
+      // The client is already loaded by definition here, so say so on its behalf.
+      //
+      // The destination only streams the chunks around the player's position. Replay what the
+      // client already holds first, before the destination can start streaming its own chunks.
+      if (player.getProtocolVersion().noLessThan(ProtocolVersion.MINECRAFT_1_21)) {
+        chunkTracker.replayCurrentChunks(player.getConnection());
+      }
+
+      serverMc.write(ServerboundPlayerLoadedPacket.INSTANCE);
+      destination.setClientLoaded(true);
     } else {
       // Clear tab list to avoid duplicate entries
       player.getTabList().clearAll();
