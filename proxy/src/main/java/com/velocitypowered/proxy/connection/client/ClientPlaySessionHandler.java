@@ -40,6 +40,7 @@ import com.velocitypowered.proxy.connection.backend.BackendConnectionPhases;
 import com.velocitypowered.proxy.connection.backend.BungeeCordMessageResponder;
 import com.velocitypowered.proxy.connection.backend.VelocityServerConnection;
 import com.velocitypowered.proxy.connection.forge.legacy.LegacyForgeConstants;
+import com.velocitypowered.proxy.connection.player.ChunkTracker;
 import com.velocitypowered.proxy.connection.player.resourcepack.ResourcePackResponseBundle;
 import com.velocitypowered.proxy.connection.registry.DimensionInfo;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
@@ -134,6 +135,8 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   private final Set<String> serverObjectives = new HashSet<>();
   private final Set<String> serverTeams = new HashSet<>();
 
+  private final ChunkTracker chunkTracker = new ChunkTracker();
+
   private final Queue<PluginMessagePacket> loginPluginMessages = new ConcurrentLinkedQueue<>();
 
   private final AtomicLong loginPluginMessagesBytes = new AtomicLong();
@@ -214,6 +217,9 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
 
   @Override
   public void deactivated() {
+    // With "remove-reconfig" off a fresh handler is created after every configuration state, so
+    // the retained chunk copies have to be released here.
+    chunkTracker.clearAll();
     player.discardChatQueue();
     PluginMessagePacket message;
     while ((message = loginPluginMessages.poll()) != null) {
@@ -588,6 +594,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
 
   @Override
   public void disconnected() {
+    chunkTracker.clearAll();
     player.teardown();
   }
 
@@ -688,6 +695,9 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
     } else {
       // Clear tab list to avoid duplicate entries
       player.getTabList().clearAll();
+
+      // The client is rebuilding its world; the retained chunk copies are obsolete.
+      chunkTracker.discardCurrent();
 
       // The player is switching from a server already, so we need to tell the client to change
       // entity IDs and send new dimension information.
@@ -872,6 +882,10 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
 
   public Set<String> getServerTeams() {
     return serverTeams;
+  }
+
+  public ChunkTracker getChunkTracker() {
+    return chunkTracker;
   }
 
   private boolean handleCommandTabComplete(TabCompleteRequestPacket packet) {

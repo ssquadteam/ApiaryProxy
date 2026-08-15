@@ -47,6 +47,7 @@ import com.velocitypowered.proxy.protocol.netty.MinecraftVarintFrameDecoder;
 import com.velocitypowered.proxy.protocol.packet.AvailableCommandsPacket;
 import com.velocitypowered.proxy.protocol.packet.BossBarPacket;
 import com.velocitypowered.proxy.protocol.packet.BundleDelimiterPacket;
+import com.velocitypowered.proxy.protocol.packet.ChunkDataPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientSettingsPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientboundCookieRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientboundStoreCookiePacket;
@@ -63,6 +64,7 @@ import com.velocitypowered.proxy.protocol.packet.ServerDataPacket;
 import com.velocitypowered.proxy.protocol.packet.TabCompleteResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.TeamPacket;
 import com.velocitypowered.proxy.protocol.packet.TransferPacket;
+import com.velocitypowered.proxy.protocol.packet.UnloadChunkPacket;
 import com.velocitypowered.proxy.protocol.packet.UpsertPlayerInfoPacket;
 import com.velocitypowered.proxy.protocol.packet.chat.ComponentHolder;
 import com.velocitypowered.proxy.protocol.packet.config.StartUpdatePacket;
@@ -203,6 +205,26 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
       }
     }
 
+    return false; // Forward
+  }
+
+  @Override
+  public boolean handle(ChunkDataPacket packet) {
+    if (server.getConfiguration().isKeepClientWorldOnSwitch()) {
+      playerSessionHandler.getChunkTracker().onChunkData(serverConn, packet);
+    }
+
+    // Retain so the packet survives the connection's release after handling, like plugin messages.
+    packet.retain();
+    return false; // Forward
+  }
+
+  @Override
+  public boolean handle(UnloadChunkPacket packet) {
+    if (server.getConfiguration().isKeepClientWorldOnSwitch()) {
+      playerSessionHandler.getChunkTracker()
+          .onChunkUnload(serverConn, packet.getChunkX(), packet.getChunkZ());
+    }
     return false; // Forward
   }
 
