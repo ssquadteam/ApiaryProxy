@@ -59,9 +59,6 @@ import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.protocol.packet.AvailableCommandsPacket;
 import com.velocitypowered.proxy.protocol.packet.BossBarPacket;
 import com.velocitypowered.proxy.protocol.packet.BundleDelimiterPacket;
-import com.velocitypowered.proxy.protocol.packet.ChunkBatchEndPacket;
-import com.velocitypowered.proxy.protocol.packet.ChunkBatchStartPacket;
-import com.velocitypowered.proxy.protocol.packet.ChunkDataPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientSettingsPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientboundCookieRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientboundSoundEntityPacket;
@@ -102,7 +99,6 @@ import com.velocitypowered.proxy.protocol.packet.TabCompleteRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.TabCompleteResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.TeamPacket;
 import com.velocitypowered.proxy.protocol.packet.TransferPacket;
-import com.velocitypowered.proxy.protocol.packet.UnloadChunkPacket;
 import com.velocitypowered.proxy.protocol.packet.UpsertPlayerInfoPacket;
 import com.velocitypowered.proxy.protocol.packet.chat.ChatAcknowledgementPacket;
 import com.velocitypowered.proxy.protocol.packet.chat.PlayerChatCompletionPacket;
@@ -894,33 +890,6 @@ public enum StateRegistry {
           map(0x66, MINECRAFT_1_21_5, false),
           map(0x6B, MINECRAFT_1_21_9, false),
           map(0x6D, MINECRAFT_26_1, false));
-      clientbound.register(
-          ChunkDataPacket.class,
-          ChunkDataPacket::new,
-          map(0x25, MINECRAFT_1_20_2, false),
-          map(0x27, MINECRAFT_1_20_5, false),
-          map(0x28, MINECRAFT_1_21_2, false),
-          map(0x27, MINECRAFT_1_21_5, false),
-          map(0x2C, MINECRAFT_1_21_9, false),
-          map(0x2D, MINECRAFT_26_1, false));
-      clientbound.register(
-          UnloadChunkPacket.class,
-          UnloadChunkPacket::new,
-          map(0x1F, MINECRAFT_1_20_2, false),
-          map(0x21, MINECRAFT_1_20_5, false),
-          map(0x22, MINECRAFT_1_21_2, false),
-          map(0x21, MINECRAFT_1_21_5, false),
-          map(0x25, MINECRAFT_1_21_9, false));
-      clientbound.register(
-          ChunkBatchStartPacket.class,
-          () -> ChunkBatchStartPacket.INSTANCE,
-          map(0x0D, MINECRAFT_1_21, false),
-          map(0x0C, MINECRAFT_1_21_2, false));
-      clientbound.register(
-          ChunkBatchEndPacket.class,
-          ChunkBatchEndPacket::new,
-          map(0x0C, MINECRAFT_1_21, false),
-          map(0x0B, MINECRAFT_1_21_2, false));
     }
   },
 

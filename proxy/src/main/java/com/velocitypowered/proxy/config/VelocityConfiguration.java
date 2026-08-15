@@ -1483,6 +1483,7 @@ public final class VelocityConfiguration implements ProxyConfig {
     return keepClientWorldOnSwitch;
   }
 
+
   /**
    * Returns whether support for Forge clients and plugin messages is disabled.
    *
