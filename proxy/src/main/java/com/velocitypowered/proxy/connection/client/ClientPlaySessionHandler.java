@@ -22,6 +22,7 @@ import static com.velocitypowered.proxy.protocol.util.PluginMessageUtil.construc
 import com.google.common.collect.ImmutableList;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.velocityctd.api.event.player.TabCompleteRequestEvent;
+import com.velocityctd.api.player.ClientWorldSwitches;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.player.CookieReceiveEvent;
 import com.velocitypowered.api.event.player.PlayerChannelRegisterEvent;
@@ -681,9 +682,9 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       player.getPhase().onFirstJoin(player);
       rememberClientWorld(joinGame);
     } else if (canKeepClientWorld(joinGame)) {
-      // The destination reuses the entity id and dimension the client already has, so the client
-      // does not need to rebuild its level. Withholding the join game and respawn packets is what
-      // keeps the terrain loading screen from appearing.
+      // The destination can preserve the dimension the client already has, so the client does not
+      // need to rebuild its level. Withholding the join game and respawn packets is what keeps the
+      // terrain loading screen from appearing.
       player.getTabList().clearAll();
 
       // Because the client never receives a join game, it never reports that it finished loading
@@ -785,6 +786,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   private void rememberClientWorld(JoinGamePacket joinGame) {
     clientEntityId = joinGame.getEntityId();
     clientDimension = dimensionKey(joinGame);
+    ClientWorldSwitches.rememberClientEntityId(player.getUniqueId(), clientEntityId);
   }
 
   private static @Nullable String dimensionKey(JoinGamePacket joinGame) {
@@ -799,10 +801,10 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   /**
    * Decides whether the client can stay in the world it already has for this switch.
    *
-   * <p>Both the entity id and the dimension have to match what the client was last told. A backend
-   * that reuses the entity id is what makes this safe: the client keeps addressing its own entity
-   * by the same id the destination uses, so no packet rewriting is needed. Anything else falls back
-   * to the regular switch, which costs a loading screen but is always correct.
+   * <p>The dimension has to match what the client was last told, and the destination has to assign
+   * the entity id the client already has for the player. The destination now assigns that id itself
+   * via Paper's internal entity-id API, so the proxy no longer rewrites packets for a preserved
+   * world.
    */
   private boolean canKeepClientWorld(JoinGamePacket joinGame) {
     if (!server.getConfiguration().isKeepClientWorldOnSwitch()) {

@@ -31,6 +31,7 @@ import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
 import com.velocityctd.api.event.permission.PermissionsChangeEvent;
 import com.velocityctd.api.permission.PermissionResolver;
+import com.velocityctd.api.player.ClientWorldSwitches;
 import com.velocityctd.api.queue.QueueState;
 import com.velocityctd.proxy.permission.PermissionUtils;
 import com.velocityctd.proxy.queue.VelocityQueue;
@@ -1478,6 +1479,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
       connectedServer.disconnect();
     }
 
+    ClientWorldSwitches.forget(getUniqueId());
     server.getPlayerRegistry().unregisterConnection(this);
   }
 
