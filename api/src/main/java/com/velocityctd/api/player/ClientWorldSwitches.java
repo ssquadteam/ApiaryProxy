@@ -13,10 +13,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Coordinates an explicitly requested client-world-preserving server switch.
  *
- * <p>A coordinating proxy plugin requests preservation immediately before it connects a player
- * to its staged destination. ApiaryProxy consumes that one request when the destination sends its
- * join-game packet. Requests expire quickly so a failed connection cannot affect a later, normal
- * server switch.
+ * <p>A coordinating proxy plugin requests preservation before it starts staging a destination.
+ * ApiaryProxy consumes that one request when the destination sends its join-game packet. Requests
+ * expire quickly so a failed connection cannot affect a later, normal server switch.
  */
 public final class ClientWorldSwitches {
 
