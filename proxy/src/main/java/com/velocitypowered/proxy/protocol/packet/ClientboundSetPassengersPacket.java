@@ -47,12 +47,4 @@ public final class ClientboundSetPassengersPacket implements MinecraftPacket {
   public boolean handle(MinecraftSessionHandler handler) {
     return handler.handle(this);
   }
-
-  public void replacePassengerEntityId(int expectedEntityId, int replacementEntityId) {
-    for (int index = 0; index < passengerEntityIds.length; index++) {
-      if (passengerEntityIds[index] == expectedEntityId) {
-        passengerEntityIds[index] = replacementEntityId;
-      }
-    }
-  }
 }

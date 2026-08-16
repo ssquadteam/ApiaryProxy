@@ -11,17 +11,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Coordinates an explicitly requested client-world-preserving server switch.
- *
- * <p>A coordinating proxy plugin requests preservation before it starts staging a destination.
- * ApiaryProxy consumes that one request when the destination sends its join-game packet. Requests
- * expire quickly so a failed connection cannot affect a later, normal server switch.
+ * Tracks the entity ID the client currently uses for its own player, so a coordinating proxy
+ * plugin can pass it to the destination server for a seamless, world-preserving switch.
  */
 public final class ClientWorldSwitches {
 
-  private static final long REQUEST_TTL_MILLIS = 5_000L;
   private static final ConcurrentHashMap<UUID, Integer> CLIENT_ENTITY_IDS = new ConcurrentHashMap<>();
-  private static final ConcurrentHashMap<UUID, Long> PRESERVATION_REQUESTS = new ConcurrentHashMap<>();
 
   private ClientWorldSwitches() {
   }
@@ -35,34 +30,6 @@ public final class ClientWorldSwitches {
    */
   public static int clientEntityId(UUID playerId) {
     return CLIENT_ENTITY_IDS.getOrDefault(playerId, 0);
-  }
-
-  /**
-   * Requests that the next destination join for {@code playerId} retain the client's loaded world.
-   *
-   * <p>The request only takes effect when ApiaryProxy's world-preservation setting is enabled and
-   * the destination reports the same dimension. It intentionally does not apply to ordinary
-   * server switches.
-   *
-   * @param playerId the player being transferred
-   * @return {@code true} when a request was recorded; {@code false} before the initial join
-   */
-  public static boolean requestWorldPreservation(UUID playerId) {
-    if (clientEntityId(playerId) <= 0) {
-      return false;
-    }
-
-    PRESERVATION_REQUESTS.put(playerId, System.currentTimeMillis() + REQUEST_TTL_MILLIS);
-    return true;
-  }
-
-  /**
-   * Cancels a previously requested world-preserving switch.
-   *
-   * @param playerId the player whose pending request should be cancelled
-   */
-  public static void cancelWorldPreservation(UUID playerId) {
-    PRESERVATION_REQUESTS.remove(playerId);
   }
 
   /**
@@ -89,19 +56,5 @@ public final class ClientWorldSwitches {
    */
   public static void forget(UUID playerId) {
     CLIENT_ENTITY_IDS.remove(playerId);
-    PRESERVATION_REQUESTS.remove(playerId);
-  }
-
-  /**
-   * Consumes a pending request if it has not expired.
-   *
-   * <p>This method is used by ApiaryProxy's connection implementation.
-   *
-   * @param playerId the player whose request should be consumed
-   * @return whether a live request existed
-   */
-  public static boolean consumeWorldPreservation(UUID playerId) {
-    Long deadline = PRESERVATION_REQUESTS.remove(playerId);
-    return deadline != null && System.currentTimeMillis() <= deadline;
   }
 }

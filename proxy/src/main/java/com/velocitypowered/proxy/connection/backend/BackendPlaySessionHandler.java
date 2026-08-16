@@ -21,7 +21,6 @@ import static com.velocitypowered.proxy.connection.backend.BungeeCordMessageResp
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.velocityctd.api.player.ClientWorldSwitches;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.connection.PreTransferEvent;
 import com.velocitypowered.api.event.player.CookieRequestEvent;
@@ -50,7 +49,6 @@ import com.velocitypowered.proxy.protocol.packet.BossBarPacket;
 import com.velocitypowered.proxy.protocol.packet.BundleDelimiterPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientSettingsPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientboundCookieRequestPacket;
-import com.velocitypowered.proxy.protocol.packet.ClientboundSetPassengersPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientboundStoreCookiePacket;
 import com.velocitypowered.proxy.protocol.packet.DisconnectPacket;
 import com.velocitypowered.proxy.protocol.packet.KeepAlivePacket;
@@ -483,17 +481,6 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
           }
         }, playerConnection.eventLoop());
 
-    return true;
-  }
-
-  @Override
-  public boolean handle(ClientboundSetPassengersPacket packet) {
-    Integer backendEntityId = serverConn.getEntityId();
-    int clientEntityId = ClientWorldSwitches.clientEntityId(serverConn.getPlayer().getUniqueId());
-    if (backendEntityId != null && clientEntityId > 0 && backendEntityId != clientEntityId) {
-      packet.replacePassengerEntityId(backendEntityId, clientEntityId);
-    }
-    handleGeneric(packet);
     return true;
   }
 

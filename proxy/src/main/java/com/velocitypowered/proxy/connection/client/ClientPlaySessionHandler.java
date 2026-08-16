@@ -672,8 +672,6 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
    */
   public void handleBackendJoinGame(JoinGamePacket joinGame, VelocityServerConnection destination) {
     MinecraftConnection serverMc = destination.ensureConnected();
-    boolean worldPreservationRequested = ClientWorldSwitches.consumeWorldPreservation(
-        player.getUniqueId());
 
     if (!spawned) {
       // The player wasn't spawned in yet, so we don't need to do anything special.
@@ -683,7 +681,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       // Required for Legacy Forge
       player.getPhase().onFirstJoin(player);
       rememberClientWorld(joinGame);
-    } else if (canKeepClientWorld(joinGame, worldPreservationRequested)) {
+    } else if (canKeepClientWorld(joinGame)) {
       // The destination can preserve the dimension the client already has, so the client does not
       // need to rebuild its level. Withholding the join game and respawn packets is what keeps the
       // terrain loading screen from appearing.
@@ -803,12 +801,12 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   /**
    * Decides whether the client can stay in the world it already has for this switch.
    *
-   * <p>The dimension always has to match what the client was last told. Ordinary switches must also
-   * retain the entity id. A one-shot coordinated request may preserve the world with a different
-   * backend entity id; only a staging-aware proxy plugin can create that request. Other switches
-   * fall back to the regular, visible transition.
+   * <p>The dimension has to match what the client was last told, and the destination has to assign
+   * the entity id the client already has for the player. The destination now assigns that id itself
+   * via Paper's internal entity-id API, so the proxy no longer rewrites packets for a preserved
+   * world.
    */
-  private boolean canKeepClientWorld(JoinGamePacket joinGame, boolean worldPreservationRequested) {
+  private boolean canKeepClientWorld(JoinGamePacket joinGame) {
     if (!server.getConfiguration().isKeepClientWorldOnSwitch()) {
       return false;
     }
@@ -818,15 +816,10 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       return false;
     }
 
-    if (!worldPreservationRequested && joinGame.getEntityId() != clientEntityId) {
+    if (joinGame.getEntityId() != clientEntityId) {
       LOGGER.debug("Not keeping the world for {}: destination assigned entity id {}, client has {}",
           player, joinGame.getEntityId(), clientEntityId);
       return false;
-    }
-
-    if (worldPreservationRequested && joinGame.getEntityId() != clientEntityId) {
-      LOGGER.debug("Keeping the world for {} with the coordinated entity-id bridge: destination assigned {}, "
-              + "client keeps {}", player, joinGame.getEntityId(), clientEntityId);
     }
 
     String dimension = dimensionKey(joinGame);
