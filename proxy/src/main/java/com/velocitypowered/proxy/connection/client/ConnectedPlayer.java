@@ -17,7 +17,6 @@
 
 package com.velocitypowered.proxy.connection.client;
 
-import com.velocityctd.api.player.ClientWorldSwitches;
 import static com.velocityctd.proxy.permission.PermissionResolverAdapterFactory.createPermissionResolverAdapter;
 import static com.velocitypowered.api.proxy.ConnectionRequestBuilder.Status.ALREADY_CONNECTED;
 import static com.velocitypowered.proxy.connection.PlayerDataForwarding.LEGACY_MODERN_FORWARDING;
@@ -32,6 +31,7 @@ import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
 import com.velocityctd.api.event.permission.PermissionsChangeEvent;
 import com.velocityctd.api.permission.PermissionResolver;
+import com.velocityctd.api.player.ClientWorldSwitches;
 import com.velocityctd.api.queue.QueueState;
 import com.velocityctd.proxy.permission.PermissionUtils;
 import com.velocityctd.proxy.queue.VelocityQueue;
