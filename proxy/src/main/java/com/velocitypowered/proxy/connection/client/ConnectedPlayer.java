@@ -17,6 +17,7 @@
 
 package com.velocitypowered.proxy.connection.client;
 
+import com.velocityctd.api.player.ClientWorldSwitches;
 import static com.velocityctd.proxy.permission.PermissionResolverAdapterFactory.createPermissionResolverAdapter;
 import static com.velocitypowered.api.proxy.ConnectionRequestBuilder.Status.ALREADY_CONNECTED;
 import static com.velocitypowered.proxy.connection.PlayerDataForwarding.LEGACY_MODERN_FORWARDING;
@@ -1478,6 +1479,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
       connectedServer.disconnect();
     }
 
+    ClientWorldSwitches.forget(getUniqueId());
     server.getPlayerRegistry().unregisterConnection(this);
   }
 

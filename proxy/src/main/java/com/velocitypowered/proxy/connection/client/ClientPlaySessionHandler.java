@@ -22,6 +22,7 @@ import static com.velocitypowered.proxy.protocol.util.PluginMessageUtil.construc
 import com.google.common.collect.ImmutableList;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.velocityctd.api.event.player.TabCompleteRequestEvent;
+import com.velocityctd.api.player.ClientWorldSwitches;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.player.CookieReceiveEvent;
 import com.velocitypowered.api.event.player.PlayerChannelRegisterEvent;
@@ -671,6 +672,8 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
    */
   public void handleBackendJoinGame(JoinGamePacket joinGame, VelocityServerConnection destination) {
     MinecraftConnection serverMc = destination.ensureConnected();
+    boolean worldPreservationRequested = ClientWorldSwitches.consumeWorldPreservation(
+        player.getUniqueId());
 
     if (!spawned) {
       // The player wasn't spawned in yet, so we don't need to do anything special.
@@ -680,10 +683,10 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       // Required for Legacy Forge
       player.getPhase().onFirstJoin(player);
       rememberClientWorld(joinGame);
-    } else if (canKeepClientWorld(joinGame)) {
-      // The destination reuses the entity id and dimension the client already has, so the client
-      // does not need to rebuild its level. Withholding the join game and respawn packets is what
-      // keeps the terrain loading screen from appearing.
+    } else if (canKeepClientWorld(joinGame, worldPreservationRequested)) {
+      // The destination can preserve the dimension the client already has, so the client does not
+      // need to rebuild its level. Withholding the join game and respawn packets is what keeps the
+      // terrain loading screen from appearing.
       player.getTabList().clearAll();
 
       // Because the client never receives a join game, it never reports that it finished loading
@@ -785,6 +788,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   private void rememberClientWorld(JoinGamePacket joinGame) {
     clientEntityId = joinGame.getEntityId();
     clientDimension = dimensionKey(joinGame);
+    ClientWorldSwitches.rememberClientEntityId(player.getUniqueId(), clientEntityId);
   }
 
   private static @Nullable String dimensionKey(JoinGamePacket joinGame) {
@@ -799,12 +803,12 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   /**
    * Decides whether the client can stay in the world it already has for this switch.
    *
-   * <p>Both the entity id and the dimension have to match what the client was last told. A backend
-   * that reuses the entity id is what makes this safe: the client keeps addressing its own entity
-   * by the same id the destination uses, so no packet rewriting is needed. Anything else falls back
-   * to the regular switch, which costs a loading screen but is always correct.
+   * <p>The dimension always has to match what the client was last told. Ordinary switches must also
+   * retain the entity id. A one-shot coordinated request may preserve the world with a different
+   * backend entity id; only a staging-aware proxy plugin can create that request. Other switches
+   * fall back to the regular, visible transition.
    */
-  private boolean canKeepClientWorld(JoinGamePacket joinGame) {
+  private boolean canKeepClientWorld(JoinGamePacket joinGame, boolean worldPreservationRequested) {
     if (!server.getConfiguration().isKeepClientWorldOnSwitch()) {
       return false;
     }
@@ -814,10 +818,15 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       return false;
     }
 
-    if (joinGame.getEntityId() != clientEntityId) {
+    if (!worldPreservationRequested && joinGame.getEntityId() != clientEntityId) {
       LOGGER.debug("Not keeping the world for {}: destination assigned entity id {}, client has {}",
           player, joinGame.getEntityId(), clientEntityId);
       return false;
+    }
+
+    if (worldPreservationRequested && joinGame.getEntityId() != clientEntityId) {
+      LOGGER.debug("Keeping the world for {} with the coordinated entity-id bridge: destination assigned {}, "
+              + "client keeps {}", player, joinGame.getEntityId(), clientEntityId);
     }
 
     String dimension = dimensionKey(joinGame);
