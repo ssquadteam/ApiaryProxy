@@ -799,6 +799,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
    */
   public void rememberClientDimension(RespawnPacket respawn) {
     clientDimension = dimensionKey(respawn);
+    LOGGER.info("SW-DIAG respawn seen for {}: client dimension now {}", player, clientDimension);
   }
 
   private static @Nullable String dimensionKey(RespawnPacket respawn) {
@@ -838,14 +839,14 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
     }
 
     if (joinGame.getEntityId() != clientEntityId) {
-      LOGGER.debug("Not keeping the world for {}: destination assigned entity id {}, client has {}",
+      LOGGER.info("SW-DIAG not keeping world for {}: entity id {} != client {}",
           player, joinGame.getEntityId(), clientEntityId);
       return false;
     }
 
     String dimension = dimensionKey(joinGame);
     if (!Objects.equals(dimension, clientDimension)) {
-      LOGGER.debug("Not keeping the world for {}: destination dimension {} differs from {}",
+      LOGGER.info("SW-DIAG not keeping world for {}: dimension {} != client {}",
           player, dimension, clientDimension);
       return false;
     }
