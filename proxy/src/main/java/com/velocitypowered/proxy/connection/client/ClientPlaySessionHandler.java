@@ -789,6 +789,27 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
     ClientWorldSwitches.rememberClientEntityId(player.getUniqueId(), clientEntityId);
   }
 
+  /**
+   * Records the dimension a backend moved the client into without a server switch, such as a
+   * nether portal. Without this the proxy keeps the dimension it last saw in a join-game packet,
+   * goes stale as soon as the player changes world locally, and then refuses to preserve the
+   * client world on the next switch.
+   *
+   * @param respawn the respawn packet the backend sent to the client
+   */
+  public void rememberClientDimension(RespawnPacket respawn) {
+    clientDimension = dimensionKey(respawn);
+  }
+
+  private static @Nullable String dimensionKey(RespawnPacket respawn) {
+    DimensionInfo info = respawn.getDimensionInfo();
+    if (info == null) {
+      return Integer.toString(respawn.getDimension());
+    }
+
+    return info.getRegistryIdentifier() + "\u0000" + info.getLevelName();
+  }
+
   private static @Nullable String dimensionKey(JoinGamePacket joinGame) {
     DimensionInfo info = joinGame.getDimensionInfo();
     if (info == null) {

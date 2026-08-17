@@ -96,6 +96,10 @@ public class RespawnPacket implements MinecraftPacket {
     return dimension;
   }
 
+  public DimensionInfo getDimensionInfo() {
+    return dimensionInfo;
+  }
+
   public void setDimension(int dimension) {
     this.dimension = dimension;
   }

@@ -57,6 +57,7 @@ import com.velocitypowered.proxy.protocol.packet.ObjectivePacket;
 import com.velocitypowered.proxy.protocol.packet.PluginMessagePacket;
 import com.velocitypowered.proxy.protocol.packet.RemovePlayerInfoPacket;
 import com.velocitypowered.proxy.protocol.packet.RemoveResourcePackPacket;
+import com.velocitypowered.proxy.protocol.packet.RespawnPacket;
 import com.velocitypowered.proxy.protocol.packet.ResourcePackRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.ResourcePackResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.ServerDataPacket;
@@ -188,6 +189,13 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
     serverConn.disconnect();
     serverConn.getPlayer().handleConnectionException(serverConn.getServer(), packet, true);
     return true;
+  }
+
+  @Override
+  public boolean handle(RespawnPacket packet) {
+    // Record dimension so the next switch can still tell whether the client world can be preserved.
+    playerSessionHandler.rememberClientDimension(packet);
+    return false;
   }
 
   @Override
