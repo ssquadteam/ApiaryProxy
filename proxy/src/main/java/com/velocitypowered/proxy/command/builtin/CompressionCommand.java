@@ -567,8 +567,8 @@ public final class CompressionCommand {
               NamedTextColor.GRAY,
               Argument.string("player", player.identity().name()),
               Argument.string("bytes", humanBytes(player.bytes())),
-              Argument.string("packetPercent", percentOf(player.bytes(), row.bytes())),
-              Argument.string("totalPercent", percentOf(player.bytes(), report.totalBytes()))
+              Argument.string("packet_percent", percentOf(player.bytes(), row.bytes())),
+              Argument.string("total_percent", percentOf(player.bytes(), report.totalBytes()))
           ));
         }
         if (row.unattributedBytes() > 0L) {
@@ -579,9 +579,9 @@ public final class CompressionCommand {
                   "velocity.command.compression.bandwidth-unattributed-name")),
               Argument.string("bytes", humanBytes(row.unattributedBytes())),
               Argument.string(
-                  "packetPercent", percentOf(row.unattributedBytes(), row.bytes())),
+                  "packet_percent", percentOf(row.unattributedBytes(), row.bytes())),
               Argument.string(
-                  "totalPercent", percentOf(row.unattributedBytes(), report.totalBytes()))
+                  "total_percent", percentOf(row.unattributedBytes(), report.totalBytes()))
           ));
         }
       }
