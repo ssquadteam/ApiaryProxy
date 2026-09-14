@@ -760,6 +760,15 @@ public final class VelocityConfiguration implements ProxyConfig {
     return commands.isOverrideServerCommandUsage();
   }
 
+  /**
+   * Returns whether the <code>/shutdown</code> command can be used by a player.
+   *
+   * @return {@code true} if enabled
+   */
+  public boolean isShutdownEnabledAsPlayer() {
+    return commands.isShutdownEnabledAsPlayer();
+  }
+
   @Override
   public int getReadTimeout() {
     return advanced.getReadTimeout();
@@ -1968,6 +1977,14 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private boolean transferEnabled = true;
 
+    /**
+     * Whether the /shutdown command can be used by players.
+     * If enabled, players with "velocity.command.shutdown" can use the command instead of
+     * it being restricted to the console.
+     */
+    @Expose
+    private boolean shutdownEnabledAsPlayer = false;
+
     private Commands() {
     }
 
@@ -1986,6 +2003,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.sendCommand = config.getOrElse("send-enabled", true);
         this.overrideServerCommandUsage = config.getOrElse("override-server-command-usage", false);
         this.transferEnabled = config.getOrElse("transfer-enabled", true);
+        this.shutdownEnabledAsPlayer = config.getOrElse("shutdown-enabled-as-player", false);
       }
     }
 
@@ -2041,6 +2059,10 @@ public final class VelocityConfiguration implements ProxyConfig {
       return transferEnabled;
     }
 
+    public boolean isShutdownEnabledAsPlayer() {
+      return shutdownEnabledAsPlayer;
+    }
+
     @Override
     public String toString() {
       return MoreObjects.toStringHelper(this)
@@ -2057,6 +2079,7 @@ public final class VelocityConfiguration implements ProxyConfig {
           .add("sendCommand", sendCommand)
           .add("overrideServerCommandUsage", overrideServerCommandUsage)
           .add("transferEnabled", transferEnabled)
+          .add("shutdownEnabledAsPlayer", shutdownEnabledAsPlayer)
           .toString();
     }
   }
