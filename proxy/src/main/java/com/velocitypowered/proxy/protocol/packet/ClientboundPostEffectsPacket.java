@@ -15,44 +15,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.velocitypowered.proxy.protocol.packet.title;
+package com.velocitypowered.proxy.protocol.packet;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.proxy.connection.MinecraftSessionHandler;
+import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
-import com.velocitypowered.proxy.protocol.packet.chat.ComponentHolder;
+import com.velocitypowered.proxy.protocol.ProtocolUtils.Direction;
 import io.netty.buffer.ByteBuf;
-import org.jetbrains.annotations.NotNull;
+import net.kyori.adventure.key.Key;
 
-public class TitleTextPacket extends GenericTitlePacket {
+public final class ClientboundPostEffectsPacket implements MinecraftPacket {
 
-  private ComponentHolder component;
+  private Key[] postEffects;
 
-  @Override
-  public @NotNull ActionType getAction() {
-    return ActionType.SET_TITLE;
+  public ClientboundPostEffectsPacket() {
+  }
+
+  public ClientboundPostEffectsPacket(Key[] postEffects) {
+    this.postEffects = postEffects;
   }
 
   @Override
-  public void encode(ByteBuf buf, ProtocolUtils.Direction direction, ProtocolVersion version) {
-    component.write(buf);
+  public void decode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+    this.postEffects = ProtocolUtils.readKeyArray(buf);
   }
 
   @Override
-  public ComponentHolder getComponent() {
-    return component;
-  }
-
-  @Override
-  public void setComponent(ComponentHolder component) {
-    this.component = component;
-  }
-
-  @Override
-  public String toString() {
-    return "TitleTextPacket{"
-        + ", component='" + component + '\''
-        + '}';
+  public void encode(ByteBuf buf, Direction direction, ProtocolVersion protocolVersion) {
+    ProtocolUtils.writeKeyArray(buf, this.postEffects);
   }
 
   @Override

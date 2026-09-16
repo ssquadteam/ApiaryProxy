@@ -1109,6 +1109,27 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
     handleKickEvent(originalEvent, friendlyReason, kickedFromCurrent);
   }
 
+  /**
+   * Handles a connection request that ended with
+   * {@link ConnectionRequestBuilder.Status#SERVER_DISCONNECTED} by firing a
+   * {@link KickedFromServerEvent} carrying the backend's disconnect reason.
+   *
+   * @param server the server the player attempted to connect to
+   * @param result the result of the connection request
+   */
+  public void handleServerDisconnectResult(VelocityRegisteredServer server,
+                                           ConnectionRequestBuilder.Result result) {
+    if (result.getStatus() != ConnectionRequestBuilder.Status.SERVER_DISCONNECTED) {
+      return;
+    }
+
+    Component reason = result.getReasonComponent()
+        .orElse(ConnectionMessages.INTERNAL_SERVER_CONNECTION_ERROR);
+    boolean safe = !(result instanceof Impl impl) || impl.isSafe();
+    handleConnectionException(server,
+        DisconnectPacket.create(reason, getProtocolVersion(), connection.getState()), safe);
+  }
+
   private void handleKickEvent(KickedFromServerEvent originalEvent, Component friendlyReason,
                                boolean kickedFromCurrent) {
     server.getEventManager().fire(originalEvent).thenAcceptAsync(event -> {
@@ -1294,7 +1315,8 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
    * window, so its read-timeout must not fire -- otherwise a backend that stalls after accepting
    * the TCP connection times the idle client out before the backend connection's own timeout can
    * drive the fallback chain, dropping the player instead of moving them on. Restored by
-   * {@link #resumeReadTimeout()} once a server is reached (issue GemstoneGG#938).
+   * {@link #resumeReadTimeout()} once a server is reached, or once the attempt fails
+   * (issues GemstoneGG#938 and GemstoneGG#1055).
    */
   private void pauseReadTimeout() {
     final var pipeline = connection.getChannel().pipeline();
@@ -2161,6 +2183,13 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
             }
 
             this.resetIfInFlightIs(con);
+
+            if (connectedServer == null) {
+              // The attempt reached no server, so setConnectedServer never restored the read-timeout
+              // suspended above. Callers that don't kick on failure would otherwise leave this
+              // connection unable to ever time out (issue GemstoneGG#1055).
+              resumeReadTimeout();
+            }
           }, connection.eventLoop());
         }, connection.eventLoop());
       });
@@ -2191,19 +2220,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player, 
           case CONNECTION_CANCELLED -> {
             // Ignored; the plugin probably already handled this.
           }
-          case SERVER_DISCONNECTED -> {
-            Component reason = status.getReasonComponent()
-                    .orElse(ConnectionMessages.INTERNAL_SERVER_CONNECTION_ERROR);
-            handleConnectionException(toConnect, DisconnectPacket.create(reason, getProtocolVersion(), connection.getState()), status.isSafe());
-
-            if (server.isQueueEnabled()) {
-              for (String r : server.getConfiguration().getQueue().getBannedReason()) {
-                if (ComponentUtils.containsString(reason, r)) {
-                  server.getQueueManager().removePlayerEntirely(ConnectedPlayer.this);
-                }
-              }
-            }
-          }
+          case SERVER_DISCONNECTED -> handleServerDisconnectResult(toConnect, status);
           default -> {
             // The only remaining value is successful (no need to do anything!)
           }

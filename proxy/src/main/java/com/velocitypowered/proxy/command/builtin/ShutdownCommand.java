@@ -54,7 +54,9 @@ public class ShutdownCommand implements BuiltinCommandDefinition {
   @Override
   public BrigadierCommand build() {
     return new BrigadierCommand(LiteralArgumentBuilder.<CommandSource>literal(label())
-            .requires(source -> source instanceof ConsoleCommandSource)
+            .requires(source -> source instanceof ConsoleCommandSource
+                    || (server.getConfiguration().isShutdownEnabledAsPlayer()
+                    && source.hasPermission("velocity.command.shutdown")))
             .executes(context -> {
               server.shutdown(true);
               return SINGLE_SUCCESS;

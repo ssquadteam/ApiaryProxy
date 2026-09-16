@@ -23,6 +23,7 @@ import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.gson.annotations.Expose;
 import com.velocityctd.proxy.config.migration.CtdConfigMigrations;
 import com.velocityctd.proxy.util.ComponentUtils;
@@ -37,6 +38,7 @@ import com.velocitypowered.proxy.config.migration.KeyAuthenticationMigration;
 import com.velocitypowered.proxy.config.migration.MiniMessageTranslationsMigration;
 import com.velocitypowered.proxy.config.migration.MotdMigration;
 import com.velocitypowered.proxy.config.migration.PacketLimiterMigration;
+import com.velocitypowered.proxy.config.migration.PingPassthroughMigration;
 import com.velocitypowered.proxy.config.migration.ReadTimeoutMigration;
 import com.velocitypowered.proxy.config.migration.TransferIntegrationMigration;
 import com.velocitypowered.proxy.util.AddressUtil;
@@ -57,6 +59,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.apache.logging.log4j.LogManager;
@@ -112,7 +115,7 @@ public final class VelocityConfiguration implements ProxyConfig {
   private final boolean kickExistingPlayersCheckIp;
 
   @Expose
-  private final PingPassthroughMode pingPassthrough;
+  private PingPassthroughMode pingPassthrough = PingPassthroughMode.DEFAULT;
 
   @Expose
   private final Servers servers;
@@ -396,6 +399,13 @@ public final class VelocityConfiguration implements ProxyConfig {
     for (String s : servers.getAttemptConnectionOrder()) {
       if (!servers.getBackendServers().containsKey(s)) {
         LOGGER.error("Fallback server {} is not registered in your configuration!", s);
+        valid = false;
+      }
+    }
+
+    for (String s : servers.getHubServers()) {
+      if (!servers.getBackendServers().containsKey(s)) {
+        LOGGER.error("Hub server {} is not registered in your configuration!", s);
         valid = false;
       }
     }
@@ -766,6 +776,15 @@ public final class VelocityConfiguration implements ProxyConfig {
     return commands.isOverrideServerCommandUsage();
   }
 
+  /**
+   * Returns whether the <code>/shutdown</code> command can be used by a player.
+   *
+   * @return {@code true} if enabled
+   */
+  public boolean isShutdownEnabledAsPlayer() {
+    return commands.isShutdownEnabledAsPlayer();
+  }
+
   @Override
   public int getReadTimeout() {
     return advanced.getReadTimeout();
@@ -1130,7 +1149,8 @@ public final class VelocityConfiguration implements ProxyConfig {
           new MiniMessageTranslationsMigration(),
           new TransferIntegrationMigration(),
           new PacketLimiterMigration(),
-          new ReadTimeoutMigration()
+          new ReadTimeoutMigration(),
+          new PingPassthroughMigration()
       ));
 
       migrations.addAll(CtdConfigMigrations.createCtdMigrations());
@@ -1192,7 +1212,7 @@ public final class VelocityConfiguration implements ProxyConfig {
       CommentedConfig proxyAddressesConfig = config.get("proxy-addresses");
       CommentedConfig playerCapsConfig = config.get("playercaps");
       PlayerInfoForwarding forwardingMode = config.getEnumOrElse("player-info-forwarding-mode", PlayerInfoForwarding.NONE);
-      PingPassthroughMode pingPassthroughMode = config.getEnumOrElse("ping-passthrough", PingPassthroughMode.DISABLED);
+      PingPassthroughMode pingPassthrough = PingPassthroughMode.fromConfig(config.get("ping-passthrough"));
       String bind = config.getOrElse("bind", "0.0.0.0:25565");
       int maxPlayers = config.getIntOrElse("show-max-players", 500);
       boolean onlineMode = config.getOrElse("online-mode", true);
@@ -1305,7 +1325,7 @@ public final class VelocityConfiguration implements ProxyConfig {
           forwardingSecret,
           kickExisting,
           kickExistingCheckIp,
-          pingPassthroughMode,
+          pingPassthrough,
           enablePlayerAddressLogging,
           new Servers(serversConfig),
           new ForcedHosts(forcedHostsConfig),
@@ -1595,7 +1615,22 @@ public final class VelocityConfiguration implements ProxyConfig {
     return servers.getServerAliases();
   }
 
+  /**
+   * Gets the servers {@code /hub} sends players to, or an empty list to have it use the regular
+   * fallback chain instead.
+   */
+  public List<String> getHubServers() {
+    return servers.getHubServers();
+  }
+
   private static final class Servers {
+
+    /**
+     * The lowercased keys of the {@code [servers]} section that configure the section itself
+     * rather than declaring a backend server.
+     */
+    private static final Set<String> SERVERS_SECTION_SETTINGS = ImmutableSet.of(
+        "try", "dynamic-fallbacks-filter", "server-aliases", "hub-servers");
 
     @Expose
     private Map<String, BackendServerConfig> servers = ImmutableMap.of(
@@ -1632,6 +1667,13 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private List<String> serverAliases = List.of("joinqueue", "queue", "server");
 
+    /**
+     * The servers {@code /hub} sends players to, in order of preference. When empty, {@code /hub}
+     * uses the player's regular fallback chain instead.
+     */
+    @Expose
+    private List<String> hubServers = ImmutableList.of();
+
     private Servers() {
     }
 
@@ -1643,7 +1685,10 @@ public final class VelocityConfiguration implements ProxyConfig {
         Map<String, String> serverMinimumVersions = new HashMap<>();
         Map<String, String> serverMaximumVersions = new HashMap<>();
         for (UnmodifiableConfig.Entry entry : config.entrySet()) {
-          if (entry.getKey().equalsIgnoreCase("dynamic-fallbacks-filter")) {
+          // The section's own settings are read below. They have to be skipped before the value is
+          // inspected: a setting written as a bare string ("hub-servers = \"lobby\"") would
+          // otherwise be silently registered as a backend server named after the setting.
+          if (SERVERS_SECTION_SETTINGS.contains(entry.getKey().toLowerCase(Locale.ROOT))) {
             continue;
           }
 
@@ -1679,12 +1724,8 @@ public final class VelocityConfiguration implements ProxyConfig {
           } else if (entry.getValue() instanceof String v) {
             servers.put(cleanValue(entry.getKey()), new BackendServerConfig(v));
           } else {
-            if (!entry.getKey().equalsIgnoreCase("try")
-                && !entry.getKey().equalsIgnoreCase("dynamic-fallbacks-filter")
-                && !entry.getKey().equalsIgnoreCase("server-aliases")) {
-              throw new IllegalArgumentException(
-                  "Server entry " + entry.getKey() + " is not a server!");
-            }
+            throw new IllegalArgumentException(
+                "Server entry " + entry.getKey() + " is not a server!");
           }
         }
 
@@ -1694,11 +1735,38 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.attemptConnectionOrder = config.getOrElse("try", attemptConnectionOrder).stream().toList();
         this.dynamicFallbackFilter = config.getEnumOrElse("dynamic-fallbacks-filter", DynamicFallbackFilter.FIRST_AVAILABLE);
         this.serverAliases = config.getOrElse("server-aliases", List.of("joinqueue", "queue", "server"));
+        this.hubServers = parseServerList("hub-servers", config.get("hub-servers"));
       }
+    }
+
+    /**
+     * Reads a setting that names backend servers, accepting either a single name or a list of them.
+     * Anything that is not a non-empty name is dropped with a warning.
+     */
+    private static List<String> parseServerList(String key, @Nullable Object raw) {
+      if (raw == null) {
+        return ImmutableList.of();
+      }
+
+      List<?> entries = raw instanceof List<?> list ? list : List.of(raw);
+      ImmutableList.Builder<String> names = ImmutableList.builder();
+      for (Object entry : entries) {
+        if (entry instanceof String name && !name.isEmpty()) {
+          names.add(name);
+        } else {
+          LOGGER.warn("Ignoring invalid entry '{}' in \"{}\".", entry, key);
+        }
+      }
+
+      return names.build();
     }
 
     public List<String> getServerAliases() {
       return serverAliases;
+    }
+
+    public List<String> getHubServers() {
+      return hubServers;
     }
 
     private Map<String, BackendServerConfig> getBackendServers() {
@@ -1741,6 +1809,7 @@ public final class VelocityConfiguration implements ProxyConfig {
           .add("serverMaximumVersions", serverMaximumVersions)
           .add("dynamicFallbackFilter", dynamicFallbackFilter)
           .add("serverAliases", serverAliases)
+          .add("hubServers", hubServers)
           .toString();
     }
   }
@@ -1958,6 +2027,14 @@ public final class VelocityConfiguration implements ProxyConfig {
     @Expose
     private boolean transferEnabled = true;
 
+    /**
+     * Whether the /shutdown command can be used by players.
+     * If enabled, players with "velocity.command.shutdown" can use the command instead of
+     * it being restricted to the console.
+     */
+    @Expose
+    private boolean shutdownEnabledAsPlayer = false;
+
     private Commands() {
     }
 
@@ -1976,6 +2053,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.sendCommand = config.getOrElse("send-enabled", true);
         this.overrideServerCommandUsage = config.getOrElse("override-server-command-usage", false);
         this.transferEnabled = config.getOrElse("transfer-enabled", true);
+        this.shutdownEnabledAsPlayer = config.getOrElse("shutdown-enabled-as-player", false);
       }
     }
 
@@ -2031,6 +2109,10 @@ public final class VelocityConfiguration implements ProxyConfig {
       return transferEnabled;
     }
 
+    public boolean isShutdownEnabledAsPlayer() {
+      return shutdownEnabledAsPlayer;
+    }
+
     @Override
     public String toString() {
       return MoreObjects.toStringHelper(this)
@@ -2047,6 +2129,7 @@ public final class VelocityConfiguration implements ProxyConfig {
           .add("sendCommand", sendCommand)
           .add("overrideServerCommandUsage", overrideServerCommandUsage)
           .add("transferEnabled", transferEnabled)
+          .add("shutdownEnabledAsPlayer", shutdownEnabledAsPlayer)
           .toString();
     }
   }
