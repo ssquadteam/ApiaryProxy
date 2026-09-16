@@ -670,7 +670,9 @@ public class MinecraftConnection extends ChannelInboundHandlerAdapter {
         VelocityCompressor compressor = Natives.compress.get().create(level);
         MinecraftDecoder minecraftDecoder = (MinecraftDecoder) channel.pipeline().get(MINECRAFT_DECODER);
 
-        encoder = new MinecraftCompressorAndLengthEncoder(threshold, compressor);
+        encoder = new MinecraftCompressorAndLengthEncoder(threshold, compressor,
+            server.getConfiguration().getCompressBoundHeadroom(),
+            server.getConfiguration().isCompressionStatsEnabled());
         decoder = new MinecraftCompressDecoder(threshold, compressor, minecraftDecoder.getDirection());
 
         channel.pipeline().remove(FRAME_ENCODER);

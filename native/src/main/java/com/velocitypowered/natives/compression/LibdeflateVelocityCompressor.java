@@ -51,10 +51,7 @@ public final class LibdeflateVelocityCompressor implements VelocityCompressor {
   private boolean disposed = false;
 
   private LibdeflateVelocityCompressor(int level) {
-    int correctedLevel = level == -1 ? 6 : level;
-    if (correctedLevel > 12 || correctedLevel < 1) {
-      throw new IllegalArgumentException("Invalid compression level " + level);
-    }
+    int correctedLevel = CompressionLevelUtil.forLibdeflate(level);
 
     this.inflateCtx = NativeZlibInflate.init();
     this.deflateCtx = NativeZlibDeflate.init(correctedLevel);

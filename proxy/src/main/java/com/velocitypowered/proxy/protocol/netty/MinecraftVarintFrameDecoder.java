@@ -20,6 +20,7 @@ package com.velocitypowered.proxy.protocol.netty;
 import static io.netty.util.ByteProcessor.FIND_NON_NUL;
 
 import com.velocitypowered.api.network.ProtocolVersion;
+import com.velocitypowered.proxy.bandwidth.BandwidthContext;
 import com.velocitypowered.proxy.network.limiter.PacketLimiter;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
@@ -107,6 +108,7 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
       if (packetStart == in.readerIndex()) {
         return;
       }
+      final int framePrefixBytes = in.readerIndex() - packetStart;
       if (length < 0) {
         throw BAD_PACKET_LENGTH;
       }
@@ -133,6 +135,7 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
                               ctx.channel().remoteAddress()));
             }
           }
+          BandwidthContext.enqueueInboundWireSize(ctx, framePrefixBytes + length);
           out.add(in.readRetainedSlice(length));
         }
       }

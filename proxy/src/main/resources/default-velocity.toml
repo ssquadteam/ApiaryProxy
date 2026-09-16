@@ -294,11 +294,37 @@ examplealias = [
 [advanced]
 # How large a Minecraft packet has to be before we compress it. Setting this to zero will
 # compress all packets, and setting it to -1 will disable compression entirely.
-compression-threshold = 256
+# ApiaryProxy defaults to 128 (upstream Velocity uses 256) so more Minecraft traffic is compressed.
+compression-threshold = 128
 
-# How much compression should be done (from 0-9). The default is -1, which uses the
-# default level of 6.
+# How much compression should be done. ApiaryProxy accepts 0-12 here:
+# - Java fallback supports up to 9.
+# - Native libdeflate supports up to 12.
+# The default is -1, which uses a proxy-preferred level tuned for the compression-ratio
+# sweet spot on typical Minecraft traffic (native=6 / java=6).
 compression-level = -1
+
+# Consolidate outbound writes into fewer flushes. Minecraft traffic is bursty; without
+# consolidation each packet triggers its own flush syscall. Disable to restore per-packet
+# flush behaviour. Takes effect for newly initialized connections.
+flush-consolidation-enabled = true
+
+# Maximum number of pending writes buffered before a flush is issued. 256 is large enough
+# to absorb a full backend tick burst for one player.
+flush-consolidation-threshold = 256
+
+# Headroom, in bytes, added above the uncompressed size when pre-allocating the compressed
+# output buffer, so the compressor's grow-loop almost never has to retry.
+compress-bound-headroom = 16
+
+# Collect per-packet compression statistics for /velocity compression. Cheap but not free;
+# disable it to make the encode hot path fully zero-overhead.
+compression-stats-enabled = true
+
+# Collect packet-type and per-player public bandwidth statistics for
+# /velocity compression bandwidth. Tracks Minecraft frame bytes on player-facing
+# connections after compression (excludes TCP/IP overhead). Takes effect after restart.
+packet-bandwidth-stats-enabled = true
 
 # How fast (in milliseconds) are clients allowed to connect after the last connection? By
 # default, this is three seconds. Disable this by setting this to 0.

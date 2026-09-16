@@ -80,4 +80,22 @@ public class MinecraftEncoder extends MessageToByteEncoder<MinecraftPacket> {
   public ProtocolUtils.Direction getDirection() {
     return direction;
   }
+
+  /**
+   * Returns the current protocol state used by this encoder.
+   *
+   * @return the protocol state
+   */
+  public StateRegistry getState() {
+    return state;
+  }
+
+  /**
+   * Returns the current protocol version used by this encoder.
+   *
+   * @return the protocol version
+   */
+  public ProtocolVersion getProtocolVersion() {
+    return registry.version;
+  }
 }

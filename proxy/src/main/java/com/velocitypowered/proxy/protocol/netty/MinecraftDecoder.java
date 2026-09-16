@@ -19,6 +19,9 @@ package com.velocitypowered.proxy.protocol.netty;
 
 import com.google.common.base.Preconditions;
 import com.velocitypowered.api.network.ProtocolVersion;
+import com.velocitypowered.proxy.bandwidth.BandwidthContext;
+import com.velocitypowered.proxy.bandwidth.BandwidthStats.PacketKey;
+import com.velocitypowered.proxy.bandwidth.BandwidthStats.TrafficDirection;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.StateRegistry;
@@ -27,6 +30,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.CorruptedFrameException;
+import io.netty.util.collection.IntObjectHashMap;
+import io.netty.util.collection.IntObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -45,6 +50,7 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
   private StateRegistry state;
 
   private StateRegistry.PacketRegistry.ProtocolRegistry registry;
+  private final IntObjectMap<PacketKey> bandwidthUnknownPacketKeys = new IntObjectHashMap<>();
 
   /**
    * Creates a new {@code MinecraftDecoder} decoding packets from the specified {@code direction}.
@@ -84,6 +90,16 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
         throw this.handleInvalidPacketId(packetId);
       }
 
+      if (BandwidthContext.hasInboundSample(ctx)) {
+        PacketKey packetKey = bandwidthUnknownPacketKeys.get(packetId);
+        if (packetKey == null) {
+          packetKey = PacketKey.unknown(
+              TrafficDirection.INBOUND, state, registry.version, packetId);
+          bandwidthUnknownPacketKeys.put(packetId, packetKey);
+        }
+        BandwidthContext.recordInbound(ctx, packetKey);
+      }
+
       ctx.fireChannelRead(buf.retain());
     } else {
       doLengthSanityChecks(buf, packet);
@@ -96,6 +112,11 @@ public class MinecraftDecoder extends ChannelInboundHandlerAdapter {
 
       if (buf.isReadable()) {
         throw handleOverflow(packet, buf.readerIndex(), buf.writerIndex());
+      }
+
+      if (BandwidthContext.hasInboundSample(ctx)) {
+        BandwidthContext.recordInbound(
+            ctx, PacketKey.known(TrafficDirection.INBOUND, packet.getClass()));
       }
 
       ctx.fireChannelRead(packet);

@@ -21,17 +21,17 @@ import static io.netty.channel.ChannelHandler.Sharable;
 
 import com.velocitypowered.natives.encryption.JavaVelocityCipher;
 import com.velocitypowered.natives.util.Natives;
+import com.velocitypowered.proxy.bandwidth.BandwidthContext;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
-import java.util.List;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
  * Handler for appending a length for Minecraft packets.
  */
 @Sharable
-public final class MinecraftVarintLengthEncoder extends MessageToMessageEncoder<ByteBuf> {
+public final class MinecraftVarintLengthEncoder extends MessageToByteEncoder<ByteBuf> {
 
   public static final MinecraftVarintLengthEncoder INSTANCE = new MinecraftVarintLengthEncoder();
 
@@ -41,15 +41,27 @@ public final class MinecraftVarintLengthEncoder extends MessageToMessageEncoder<
   }
 
   @Override
-  protected void encode(ChannelHandlerContext ctx, ByteBuf buf,
-                        List<Object> list) throws Exception {
+  protected void encode(ChannelHandlerContext ctx, ByteBuf buf, ByteBuf out) throws Exception {
+    // Collapse the length varint and payload into a single outbound buffer instead of
+    // allocating a separate 1-5 byte length buffer per packet and handing two ByteBufs downstream.
+    // The previous MessageToMessageEncoder implementation allocated a tiny length buffer on every
+    // outbound packet (tens of thousands of times per second on a loaded proxy), each flowing
+    // through the allocator and cipher's ensureCompatible path independently. Writing the length
+    // inline reuses the single pre-allocated `out` buffer (sized via allocateBuffer below), which
+    // downstream cipher/compressor handlers process as one buffer.
+    int initialWriterIndex = out.writerIndex();
+    ProtocolUtils.writeVarInt(out, buf.readableBytes());
+    out.writeBytes(buf);
+    BandwidthContext.recordOutbound(ctx, out.writerIndex() - initialWriterIndex);
+  }
+
+  @Override
+  protected ByteBuf allocateBuffer(ChannelHandlerContext ctx, ByteBuf buf, boolean preferDirect)
+      throws Exception {
     int length = buf.readableBytes();
-    int varintLength = ProtocolUtils.varIntBytes(length);
-
-    ByteBuf lenBuf = IS_JAVA_CIPHER ? ctx.alloc().heapBuffer(varintLength) : ctx.alloc().directBuffer(varintLength);
-
-    ProtocolUtils.writeVarInt(lenBuf, length);
-    list.add(lenBuf);
-    list.add(buf.retain());
+    int capacity = ProtocolUtils.varIntBytes(length) + length;
+    return IS_JAVA_CIPHER
+        ? ctx.alloc().heapBuffer(capacity)
+        : ctx.alloc().directBuffer(capacity);
   }
 }
