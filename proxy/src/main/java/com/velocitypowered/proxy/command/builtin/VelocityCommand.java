@@ -188,8 +188,11 @@ public class VelocityCommand implements BuiltinCommandDefinition {
             .executes(new ConfigCheck(server))
             .build();
 
+    LiteralCommandNode<CommandSource> compression = CompressionCommand.create(server);
+
     List<LiteralCommandNode<CommandSource>> commands = List
-            .of(dump, heap, info, plugins, reload.build(), sudo, uptime.build(), configcheck);
+            .of(dump, heap, info, plugins, reload.build(), sudo, uptime.build(), configcheck,
+                    compression);
     return new BrigadierCommand(
             commands.stream()
                     .reduce(

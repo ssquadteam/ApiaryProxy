@@ -30,6 +30,12 @@ public final class Connections {
 
   public static final String COMPRESSION_ENCODER = "compression-encoder";
 
+  public static final String BANDWIDTH_INBOUND = "bandwidth-inbound";
+
+  public static final String BANDWIDTH_OUTBOUND = "bandwidth-outbound";
+
+  public static final String FLUSH_CONSOLIDATION = "flush-consolidation";
+
   public static final String FLOW_HANDLER = "flow-handler";
 
   public static final String FRAME_DECODER = "frame-decoder";

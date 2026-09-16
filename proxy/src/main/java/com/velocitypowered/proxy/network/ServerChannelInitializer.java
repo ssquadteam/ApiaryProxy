@@ -17,6 +17,9 @@
 
 package com.velocitypowered.proxy.network;
 
+import static com.velocitypowered.proxy.network.Connections.BANDWIDTH_INBOUND;
+import static com.velocitypowered.proxy.network.Connections.BANDWIDTH_OUTBOUND;
+import static com.velocitypowered.proxy.network.Connections.FLUSH_CONSOLIDATION;
 import static com.velocitypowered.proxy.network.Connections.FRAME_DECODER;
 import static com.velocitypowered.proxy.network.Connections.FRAME_ENCODER;
 import static com.velocitypowered.proxy.network.Connections.LEGACY_PING_DECODER;
@@ -34,6 +37,8 @@ import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.StateRegistry;
 import com.velocitypowered.proxy.protocol.netty.LegacyPingDecoder;
 import com.velocitypowered.proxy.protocol.netty.LegacyPingEncoder;
+import com.velocitypowered.proxy.protocol.netty.MinecraftBandwidthInboundHandler;
+import com.velocitypowered.proxy.protocol.netty.MinecraftBandwidthOutboundHandler;
 import com.velocitypowered.proxy.protocol.netty.MinecraftDecoder;
 import com.velocitypowered.proxy.protocol.netty.MinecraftEncoder;
 import com.velocitypowered.proxy.protocol.netty.MinecraftVarintFrameDecoder;
@@ -41,6 +46,7 @@ import com.velocitypowered.proxy.protocol.netty.MinecraftVarintLengthEncoder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.haproxy.HAProxyMessageDecoder;
+import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import java.util.concurrent.TimeUnit;
 
@@ -62,11 +68,26 @@ public class ServerChannelInitializer extends ChannelInitializer<Channel> {
         .addLast(FRAME_DECODER, new MinecraftVarintFrameDecoder(ProtocolUtils.Direction.SERVERBOUND))
         .addLast(READ_TIMEOUT, new ReadTimeoutHandler(this.server.getConfiguration().getReadTimeout(), TimeUnit.MILLISECONDS))
         .addLast(LEGACY_PING_ENCODER, LegacyPingEncoder.INSTANCE)
-        .addLast(FRAME_ENCODER, MinecraftVarintLengthEncoder.INSTANCE)
+        .addLast(FRAME_ENCODER, MinecraftVarintLengthEncoder.INSTANCE);
+
+    if (this.server.getConfiguration().isFlushConsolidationEnabled()) {
+      ch.pipeline().addLast(FLUSH_CONSOLIDATION, new FlushConsolidationHandler(
+          this.server.getConfiguration().getFlushConsolidationThreshold(), true));
+    }
+
+    MinecraftEncoder minecraftEncoder = new MinecraftEncoder(ProtocolUtils.Direction.CLIENTBOUND);
+    ch.pipeline()
         .addLast(MINECRAFT_DECODER, new MinecraftDecoder(ProtocolUtils.Direction.SERVERBOUND))
-        .addLast(MINECRAFT_ENCODER, new MinecraftEncoder(ProtocolUtils.Direction.CLIENTBOUND));
+        .addLast(MINECRAFT_ENCODER, minecraftEncoder);
 
     MinecraftConnection connection = new MinecraftConnection(ch, this.server);
+    if (this.server.getConfiguration().isPacketBandwidthStatsEnabled()) {
+      ch.pipeline()
+          .addAfter(FRAME_DECODER, BANDWIDTH_INBOUND,
+              new MinecraftBandwidthInboundHandler(connection))
+          .addAfter(MINECRAFT_ENCODER, BANDWIDTH_OUTBOUND,
+              new MinecraftBandwidthOutboundHandler(connection, minecraftEncoder));
+    }
     connection.setActiveSessionHandler(StateRegistry.HANDSHAKE,
         new HandshakeSessionHandler(connection, this.server));
     ch.pipeline().addLast(Connections.HANDLER, connection);
