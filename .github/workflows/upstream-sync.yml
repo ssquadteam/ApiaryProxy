@@ -67,13 +67,22 @@ jobs:
               -m "Merge Velocity-CTD $UPSTREAM_REF at ${{ steps.fetch.outputs.short }}"; then
             echo "conflicted=false" >> "$GITHUB_OUTPUT"
           else
-            {
-              echo "conflicted=true"
-              echo "files<<EOF"
-              git diff --name-only --diff-filter=U
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-            git merge --abort
+            # ApiaryProxy owns this workflow. Velocity-CTD's copy targets their branch, JDK, and jar names.
+            conflicts=$(git diff --name-only --diff-filter=U)
+            if [ "$conflicts" = ".github/workflows/gradle.yml" ]; then
+              git checkout --ours .github/workflows/gradle.yml
+              git add .github/workflows/gradle.yml
+              git commit --no-edit
+              echo "conflicted=false" >> "$GITHUB_OUTPUT"
+            else
+              {
+                echo "conflicted=true"
+                echo "files<<EOF"
+                echo "$conflicts"
+                echo "EOF"
+              } >> "$GITHUB_OUTPUT"
+              git merge --abort
+            fi
           fi
 
       - name: Set up JDK 25
