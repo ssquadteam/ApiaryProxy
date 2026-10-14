@@ -256,7 +256,7 @@ public class ClientConfigSessionHandler implements MinecraftSessionHandler {
       return null;
     });
 
-    return false;
+    return true;
   }
 
   @Override
