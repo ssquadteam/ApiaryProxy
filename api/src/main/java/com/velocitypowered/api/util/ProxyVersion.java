@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2021 Velocity Contributors
  *
  * The Velocity API is licensed under the terms of the MIT License. For more details,
  * reference the LICENSE file in the api top-level directory.
@@ -26,15 +26,7 @@ public final class ProxyVersion {
    * The name of the proxy implementation (e.g., "Velocity").
    */
   private final String name;
-
-  /**
-   * The vendor of the proxy implementation (e.g., "Velocity Contributors").
-   */
   private final String vendor;
-
-  /**
-   * The version string of the proxy implementation.
-   */
   private final String version;
 
   /**
@@ -68,20 +60,10 @@ public final class ProxyVersion {
     this.specVersion = Preconditions.checkNotNull(specVersion, "specVersion");
   }
 
-  /**
-   * Gets the name of the proxy implementation.
-   *
-   * @return the name of the proxy
-   */
   public String getName() {
     return name;
   }
 
-  /**
-   * Gets the vendor of the proxy implementation.
-   *
-   * @return the vendor of the proxy
-   */
   public String getVendor() {
     return vendor;
   }
@@ -134,11 +116,9 @@ public final class ProxyVersion {
     if (this == o) {
       return true;
     }
-
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
     ProxyVersion that = (ProxyVersion) o;
     return Objects.equals(name, that.name)
         && Objects.equals(vendor, that.vendor)

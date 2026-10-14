@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2024 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 package com.velocitypowered.proxy.connection.player.resourcepack.handler;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import com.velocitypowered.api.event.player.PlayerResourcePackStatusEvent;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.player.ResourcePackInfo;
@@ -25,6 +26,7 @@ import com.velocitypowered.proxy.connection.backend.VelocityServerConnection;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.connection.player.resourcepack.ResourcePackResponseBundle;
 import com.velocitypowered.proxy.connection.player.resourcepack.VelocityResourcePackInfo;
+import com.velocitypowered.proxy.plugin.virtual.VelocityVirtualPlugin;
 import com.velocitypowered.proxy.protocol.packet.ResourcePackRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.ResourcePackResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.chat.ComponentHolder;
@@ -35,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import net.kyori.adventure.resource.ResourcePackCallback;
 import net.kyori.adventure.resource.ResourcePackRequest;
 import org.apache.logging.log4j.LogManager;
@@ -56,16 +59,19 @@ public abstract sealed class ResourcePackHandler permits LegacyResourcePackHandl
   private static final Logger LOGGER = LogManager.getLogger(ResourcePackHandler.class);
 
   protected final ConnectedPlayer player;
-
   protected final VelocityServer server;
 
   private final Map<UUID, ResourcePackCallback> packCallbacks = new ConcurrentHashMap<>();
+
+  private final Executor packCallbackExecutor;
 
   private final Set<PackAwait> packAwaits = ConcurrentHashMap.newKeySet();
 
   protected ResourcePackHandler(ConnectedPlayer player, VelocityServer server) {
     this.player = player;
     this.server = server;
+    this.packCallbackExecutor = MoreExecutors.newSequentialExecutor(server.getPluginManager()
+        .ensurePluginContainer(VelocityVirtualPlugin.INSTANCE).getExecutorService());
   }
 
   /**
@@ -76,16 +82,15 @@ public abstract sealed class ResourcePackHandler permits LegacyResourcePackHandl
    *
    * @return a new ResourcePackHandler
    */
-  public static @NotNull ResourcePackHandler create(ConnectedPlayer player, VelocityServer server) {
-    ProtocolVersion protocolVersion = player.getProtocolVersion();
+  public static @NotNull ResourcePackHandler create(final ConnectedPlayer player,
+                                           final VelocityServer server) {
+    final ProtocolVersion protocolVersion = player.getProtocolVersion();
     if (protocolVersion.lessThan(ProtocolVersion.MINECRAFT_1_17)) {
       return new LegacyResourcePackHandler(player, server);
     }
-
     if (protocolVersion.lessThan(ProtocolVersion.MINECRAFT_1_20_3)) {
       return new Legacy117ResourcePackHandler(player, server);
     }
-
     return new ModernResourcePackHandler(player, server);
   }
 
@@ -103,7 +108,6 @@ public abstract sealed class ResourcePackHandler permits LegacyResourcePackHandl
    * Clears the applied resource pack field.
    */
   public final void clearAppliedResourcePacks() {
-    packCallbacks.clear();
     doClearAppliedResourcePacks();
   }
 
@@ -117,10 +121,8 @@ public abstract sealed class ResourcePackHandler permits LegacyResourcePackHandl
   /**
    * Queues a resource-pack for sending to the player and sends it immediately if the queue is
    * empty.
-   *
-   * @param info the resource pack to queue
    */
-  public abstract void queueResourcePack(@NotNull ResourcePackInfo info);
+  public abstract void queueResourcePack(final @NotNull ResourcePackInfo info);
 
   /**
    * Queues a resource-request for sending to the player and sends it immediately if the queue is
@@ -181,58 +183,57 @@ public abstract sealed class ResourcePackHandler permits LegacyResourcePackHandl
     } else {
       request.setHash("");
     }
-
     request.setRequired(queued.getShouldForce());
-    request.setPrompt(queued.getPrompt() == null
-            ? null : new ComponentHolder(player.getProtocolVersion(), player.translateMessage(queued.getPrompt())));
+    request.setPrompt(queued.getPrompt() == null ? null :
+            new ComponentHolder(player.getProtocolVersion(), player.translateMessage(queued.getPrompt())));
 
     player.getConnection().write(request);
   }
 
   /**
-   * Processes a client response to a "sent" resource-pack.
+   * Processes a client response to a sent resource-pack.
    *
    * <p>Cases in which no action will be taken:</p>
-   *
    * <ul>
-   *   <li><b>DOWNLOADED</b><br>
-   *       In this case, the resource pack is downloaded and will be applied to the client;
-   *       no action is required in Velocity.
-   *   </li>
    *
-   *   <li><b>INVALID_URL</b><br>
-   *       In this case, the client has received a resource pack request,
-   *       and the first check it performs is if the URL is valid, if not,
-   *       it will return this value
-   *   </li>
+   * <li><b>DOWNLOADED</b>
+   * <p>In this case the resource pack is downloaded and will be applied to the client,
+   * no action is required in Velocity.</p>
    *
-   *   <li><b>FAILED_RELOAD</b><br>
-   *       In this case, when trying to reload the client's resources,
-   *       an error occurred while reloading a resource pack
-   *   </li>
+   * <li><b>INVALID_URL</b>
+   * <p>In this case, the client has received a resource pack request
+   * and the first check it performs is if the URL is valid, if not,
+   * it will return this value</p>
    *
-   *   <li><b>DECLINED</b><br>
-   *       Only in modern versions, as the resource pack has already been rejected,
-   *       there is nothing to do. If the resource pack is required,
-   *       the client will be kicked out of the server.
-   *   </li>
+   * <li><b>FAILED_RELOAD</b>
+   * <p>In this case, when trying to reload the client's resources,
+   * an error occurred while reloading a resource pack</p>
+   *
+   * <li><b>DECLINED</b>
+   * <p>Only in modern versions, as the resource pack has already been rejected,
+   * there is nothing to do, if the resource pack is required,
+   * the client will be kicked out of the server.</p>
    * </ul>
    *
    * @param bundle the resource pack response bundle
-   * @return whether the response was handled
    */
-  public abstract boolean onResourcePackResponse(@NotNull ResourcePackResponseBundle bundle);
+  public abstract boolean onResourcePackResponse(
+          final @NotNull ResourcePackResponseBundle bundle);
 
-  protected boolean handleResponseResult(@Nullable ResourcePackInfo queued,
-                                         @NotNull ResourcePackResponseBundle bundle) {
+  protected boolean handleResponseResult(
+          final @Nullable ResourcePackInfo queued,
+          final @NotNull ResourcePackResponseBundle bundle
+  ) {
     // If Velocity, through a plugin, has sent a resource pack to the client,
     // there is no need to report the status of the response to the server
     // since it has no information that a resource pack has been sent
-    boolean handled = queued != null && queued.getOriginalOrigin() == ResourcePackInfo.Origin.PLUGIN_ON_PROXY;
+    final boolean handled = queued != null
+            && queued.getOriginalOrigin() == ResourcePackInfo.Origin.PLUGIN_ON_PROXY;
     if (!handled) {
-      VelocityServerConnection connectionInFlight = player.getConnectionInFlight();
+      final VelocityServerConnection connectionInFlight = player.getConnectionInFlight();
       if (connectionInFlight != null && connectionInFlight.getConnection() != null) {
-        connectionInFlight.getConnection().write(new ResourcePackResponsePacket(bundle.uuid(), bundle.hash(), bundle.status()));
+        connectionInFlight.getConnection().write(new ResourcePackResponsePacket(
+                bundle.uuid(), bundle.hash(), bundle.status()));
       }
     }
     return handled;
@@ -241,20 +242,15 @@ public abstract sealed class ResourcePackHandler permits LegacyResourcePackHandl
   /**
    * Invokes the Adventure {@link ResourcePackCallback} (if any) registered for the given pack
    * UUID via {@code sendResourcePacks(ResourcePackRequest)}, then evicts the entry on a terminal
-   * status. Called by the per-version handlers when a {@code ResourcePackResponsePacket} arrives,
-   * before the {@link PlayerResourcePackStatusEvent} fire so the two cannot observe each other
-   * mid-flight. Callback execution is dispatched asynchronously off the player's connection event
-   * loop, since slow plugin callback handlers would otherwise stall the player's IO thread.
+   * status. Callbacks run off the player's event loop, in the order the client responses arrived.
    *
-   * @param uuid   the pack UUID from the client response
-   * @param status the Velocity-side status reported by the client
-   * @return a future that completes once the registered callback returns, or an already-completed
-   *         future when no callback was registered
+   * @param uuid   the pack UUID, or {@code null} if it is unknown
+   * @param status the status reported by the client
    */
-  protected CompletableFuture<Void> dispatchPackCallback(@Nullable UUID uuid,
-                                                         @NotNull PlayerResourcePackStatusEvent.Status status) {
+  protected void dispatchPackCallback(@Nullable UUID uuid,
+                                      @NotNull PlayerResourcePackStatusEvent.Status status) {
     if (uuid == null) {
-      return CompletableFuture.completedFuture(null);
+      return;
     }
 
     if (!status.isIntermediate()) {
@@ -267,14 +263,15 @@ public abstract sealed class ResourcePackHandler permits LegacyResourcePackHandl
         ? packCallbacks.get(uuid)
         : packCallbacks.remove(uuid);
     if (callback == null) {
-      return CompletableFuture.completedFuture(null);
+      return;
     }
 
-    return CompletableFuture.runAsync(() -> {
+    packCallbackExecutor.execute(() -> {
       try {
         callback.packEventReceived(uuid, status.adventureStatus(), player);
       } catch (Throwable t) {
-        LOGGER.error("Couldn't pass resource pack callback for pack {} to {}", uuid, player, t);
+        LOGGER.error("Couldn't pass resource pack callback {} for pack {} to {}",
+            callback.getClass().getName(), uuid, player, t);
       }
     });
   }
@@ -283,9 +280,8 @@ public abstract sealed class ResourcePackHandler permits LegacyResourcePackHandl
    * Checks if a resource pack has already been applied based on its hash.
    *
    * @param hash the resource pack hash
-   * @return {@code true} if a pack with the same hash has already been applied
    */
-  public abstract boolean hasPackAppliedByHash(byte[] hash);
+  public abstract boolean hasPackAppliedByHash(final byte[] hash);
 
   public void checkAlreadyAppliedPack(byte[] hash) {
     if (this.hasPackAppliedByHash(hash)) {

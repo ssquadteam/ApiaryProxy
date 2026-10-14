@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,29 +42,22 @@ import org.jspecify.annotations.Nullable;
 public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
 
   private static final Logger LOGGER = LogManager.getLogger(MinecraftVarintFrameDecoder.class);
-
   private static final QuietRuntimeException FRAME_DECODER_FAILED =
       new QuietRuntimeException("A packet frame decoder failed. For more information, launch "
           + "Velocity with -Dvelocity.packet-decode-logging=true to see more.");
-
   private static final QuietDecoderException BAD_PACKET_LENGTH =
       new QuietDecoderException("Bad packet length");
-
   private static final QuietDecoderException INVALID_PREAMBLE =
-      new QuietDecoderException("Invalid packet preamble");
-
+          new QuietDecoderException("Invalid packet preamble");
   private static final QuietDecoderException VARINT_TOO_BIG =
       new QuietDecoderException("VarInt too big");
-
   private static final QuietDecoderException UNKNOWN_PACKET =
       new QuietDecoderException("Unknown packet");
 
   private final ProtocolUtils.Direction direction;
-
-  private final StateRegistry.PacketRegistry.ProtocolRegistry registry;
-
   private StateRegistry state;
-
+  private ProtocolVersion protocolVersion;
+  private boolean compressionEnabled;
   @Nullable
   private PacketLimiter packetLimiter;
 
@@ -75,12 +68,13 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
    */
   public MinecraftVarintFrameDecoder(ProtocolUtils.Direction direction) {
     this.direction = direction;
-    this.registry = StateRegistry.HANDSHAKE.getProtocolRegistry(direction, ProtocolVersion.MINIMUM_VERSION);
     this.state = StateRegistry.HANDSHAKE;
+    this.protocolVersion = ProtocolVersion.MINIMUM_VERSION;
   }
 
   @Override
-  protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+  protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out)
+      throws Exception {
     if (!ctx.channel().isActive()) {
       in.clear();
       return;
@@ -96,10 +90,8 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
       if (direction == ProtocolUtils.Direction.SERVERBOUND && wlen > 16) {
         throw INVALID_PREAMBLE;
       }
-
       return;
     }
-
     in.readerIndex(packetStart);
 
     // try to read the length of the packet
@@ -113,12 +105,10 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
         throw BAD_PACKET_LENGTH;
       }
 
-      if (length > 0) {
-        if (state == StateRegistry.HANDSHAKE && direction == ProtocolUtils.Direction.SERVERBOUND) {
-          if (validateServerboundHandshakePacket(in, length)) {
-            in.readerIndex(packetStart);
-            return;
-          }
+      if (length > 0 && shouldValidateFrame()) {
+        if (validateServerboundPacket(in, length)) {
+          in.readerIndex(packetStart);
+          return;
         }
       }
 
@@ -146,19 +136,42 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
     }
   }
 
-  private boolean validateServerboundHandshakePacket(ByteBuf in, int length) throws Exception {
-    StateRegistry.PacketRegistry.ProtocolRegistry registry =
-        state.getProtocolRegistry(direction, ProtocolVersion.MINIMUM_VERSION);
+  /**
+   * Every packet a client may send before login completes is small and bounded, so in those
+   * states we check the frame against the bounds of the packet it contains as soon as we have its
+   * header, rather than letting an unauthenticated connection make us buffer up to 2MiB.
+   */
+  private boolean shouldValidateFrame() {
+    return direction == ProtocolUtils.Direction.SERVERBOUND
+        && (state == StateRegistry.HANDSHAKE
+            || state == StateRegistry.STATUS
+            || state == StateRegistry.LOGIN);
+  }
 
-    int index = in.readerIndex();
+  private boolean validateServerboundPacket(ByteBuf in, int length) throws Exception {
+    StateRegistry.PacketRegistry.ProtocolRegistry registry =
+        state.getProtocolRegistry(direction, protocolVersion);
+
+    final int index = in.readerIndex();
+    if (compressionEnabled) {
+      final int dataLength = readRawVarInt21(in);
+      if (index == in.readerIndex()) {
+        return true;
+      }
+      if (dataLength != 0) {
+        // We can't see the packet id of a compressed frame; the compression decoder enforces its
+        // own limit on the uncompressed size. Compression is only enabled at the end of login.
+        in.readerIndex(index);
+        return false;
+      }
+    }
+    final int idIndex = in.readerIndex();
+    final int packetId = readRawVarInt21(in);
     // Index hasn't changed, we've read nothing
-    int packetId = readRawVarInt21(in);
-    // Index hasn't changed, we've read nothing
-    if (index == in.readerIndex()) {
+    if (idIndex == in.readerIndex()) {
       return true;
     }
-
-    int payloadLength = length - ProtocolUtils.varIntBytes(packetId);
+    final int payloadLength = length - (in.readerIndex() - index);
 
     MinecraftPacket packet = registry.createPacket(packetId);
 
@@ -174,7 +187,6 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
     if (expectedMaxLen != -1 && payloadLength > expectedMaxLen) {
       throw handleOverflow(packet, expectedMaxLen, payloadLength);
     }
-
     if (payloadLength < expectedMinLen) {
       throw handleUnderflow(packet, expectedMinLen, payloadLength);
     }
@@ -190,7 +202,6 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
           .withThrowable(cause)
           .log("Exception caught while decoding frame for {}", ctx.channel().remoteAddress());
     }
-
     super.exceptionCaught(ctx, cause);
   }
 
@@ -207,7 +218,6 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
       // the slow path.
       return readRawVarintSmallBuf(buffer);
     }
-
     int wholeOrMore = buffer.getIntLE(buffer.readerIndex());
 
     // take the last three bytes and check if any of them have the high bit set
@@ -220,17 +230,17 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
     int bitsToKeep = Integer.numberOfTrailingZeros(atStop) + 1;
     buffer.skipBytes(bitsToKeep >> 3);
 
-    // Remove all bits we don't need to keep, a trick from
+    // remove all bits we don't need to keep, a trick from
     // https://github.com/netty/netty/pull/14050#issuecomment-2107750734:
     //
-    // > The idea is that thisVarintMask has 0 s above the first one of firstOneOnStop, and 1 s at
-    // > and below it. For example, if firstOneOnStop is 0x800080 (where the last 0x80 is the only
+    // > The idea is that thisVarintMask has 0s above the first one of firstOneOnStop, and 1s at
+    // > and below it. For example if firstOneOnStop is 0x800080 (where the last 0x80 is the only
     // > one that matters), then thisVarintMask is 0xFF.
     //
-    // This is also documented in Hacker's Delight, section 2-1 "Manipulating Rightmost Bits."
+    // this is also documented in Hacker's Delight, section 2-1 "Manipulating Rightmost Bits"
     int preservedBytes = wholeOrMore & (atStop ^ (atStop - 1));
 
-    // merge using this trick: https://github.com/netty/netty/pull/14050#discussion_r1597896639
+    // merge together using this trick: https://github.com/netty/netty/pull/14050#discussion_r1597896639
     preservedBytes = (preservedBytes & 0x007F007F) | ((preservedBytes & 0x00007F00) >> 1);
     preservedBytes = (preservedBytes & 0x00003FFF) | ((preservedBytes & 0x3FFF0000) >> 2);
     return preservedBytes;
@@ -240,34 +250,28 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
     if (!buffer.isReadable()) {
       return 0;
     }
-
     buffer.markReaderIndex();
 
     byte tmp = buffer.readByte();
     if (tmp >= 0) {
       return tmp;
     }
-
     int result = tmp & 0x7F;
     if (!buffer.isReadable()) {
       buffer.resetReaderIndex();
       return 0;
     }
-
     if ((tmp = buffer.readByte()) >= 0) {
       return result | tmp << 7;
     }
-
     result |= (tmp & 0x7F) << 7;
     if (!buffer.isReadable()) {
       buffer.resetReaderIndex();
       return 0;
     }
-
     if ((tmp = buffer.readByte()) >= 0) {
       return result | tmp << 14;
     }
-
     return result | (tmp & 0x7F) << 14;
   }
 
@@ -291,6 +295,14 @@ public class MinecraftVarintFrameDecoder extends ByteToMessageDecoder {
 
   public void setState(StateRegistry stateRegistry) {
     this.state = stateRegistry;
+  }
+
+  public void setProtocolVersion(ProtocolVersion protocolVersion) {
+    this.protocolVersion = protocolVersion;
+  }
+
+  public void setCompressionEnabled(boolean compressionEnabled) {
+    this.compressionEnabled = compressionEnabled;
   }
 
   public void setPacketLimiter(@Nullable PacketLimiter packetLimiter) {

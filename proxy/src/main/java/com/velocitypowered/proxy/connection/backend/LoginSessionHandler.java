@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@ import com.velocitypowered.proxy.connection.client.ClientPlaySessionHandler;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.connection.util.ConnectionRequestResults;
 import com.velocitypowered.proxy.connection.util.ConnectionRequestResults.Impl;
+import com.velocitypowered.proxy.network.Connections;
+import com.velocitypowered.proxy.network.netty.VelocityReadTimeoutHandler;
 import com.velocitypowered.proxy.protocol.StateRegistry;
 import com.velocitypowered.proxy.protocol.packet.ClientboundCookieRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.ClientboundStoreCookiePacket;
@@ -47,6 +49,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.apache.logging.log4j.LogManager;
@@ -60,18 +63,16 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
     LogManager.getLogger(LoginSessionHandler.class);
   }
 
-  private static final Component MODERN_IP_FORWARDING_FAILURE = Component.translatable("velocity.error.modern-forwarding-failed");
+  private static final Component MODERN_IP_FORWARDING_FAILURE =
+      Component.translatable("velocity.error.modern-forwarding-failed");
 
   private final VelocityServer server;
-
   private final VelocityServerConnection serverConn;
-
   private final CompletableFuture<Impl> resultFuture;
-
   private boolean informationForwarded;
 
   LoginSessionHandler(VelocityServer server, VelocityServerConnection serverConn,
-                      CompletableFuture<Impl> resultFuture) {
+      CompletableFuture<Impl> resultFuture) {
     this.server = server;
     this.serverConn = serverConn;
     this.resultFuture = resultFuture;
@@ -93,11 +94,10 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
         && packet.getChannel().equals(PlayerDataForwarding.CHANNEL)) {
 
       int requestedForwardingVersion = PlayerDataForwarding.MODERN_DEFAULT;
-      // Check the forwarding version
+      // Check version
       if (packet.content().readableBytes() == 1) {
         requestedForwardingVersion = packet.content().readByte();
       }
-
       ConnectedPlayer player = serverConn.getPlayer();
       ByteBuf forwardingData = PlayerDataForwarding.createForwardingData(
           configuration.getForwardingSecret(),
@@ -107,7 +107,8 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
           player.getIdentifiedKey(),
           requestedForwardingVersion);
 
-      LoginPluginResponsePacket response = new LoginPluginResponsePacket(packet.getId(), true, forwardingData);
+      LoginPluginResponsePacket response = new LoginPluginResponsePacket(
+              packet.getId(), true, forwardingData);
       mc.write(response);
       informationForwarded = true;
     } else {
@@ -117,8 +118,9 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
         return true;
       }
 
-      byte[] contents = ByteBufUtil.getBytes(packet.content());
-      MinecraftChannelIdentifier identifier = MinecraftChannelIdentifier.from(packet.getChannel());
+      final byte[] contents = ByteBufUtil.getBytes(packet.content());
+      final MinecraftChannelIdentifier identifier = MinecraftChannelIdentifier
+          .from(packet.getChannel());
       this.server.getEventManager().fire(new ServerLoginPluginMessageEvent(serverConn, identifier,
               contents, packet.getId()))
           .thenAcceptAsync(event -> {
@@ -130,7 +132,6 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
             }
           }, mc.eventLoop());
     }
-
     return true;
   }
 
@@ -162,6 +163,15 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
 
     // Move into the PLAY phase.
     MinecraftConnection smc = serverConn.ensureConnected();
+
+    // The backend has logged in, which is all the short login-timeout bounds. Configuration can
+    // leave the backend silent for longer while the player catches up (known packs, a resource
+    // pack hold), so the regular read-timeout applies from here on (issue GemstoneGG#938).
+    if (smc.getChannel().pipeline().context(Connections.READ_TIMEOUT) != null) {
+      smc.getChannel().pipeline().replace(Connections.READ_TIMEOUT, Connections.READ_TIMEOUT,
+          new VelocityReadTimeoutHandler(server.getConfiguration().getReadTimeout(),
+              TimeUnit.MILLISECONDS));
+    }
     if (smc.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_20_2)) {
       smc.setActiveSessionHandler(StateRegistry.PLAY, new TransitionSessionHandler(server, serverConn, resultFuture));
     } else {
@@ -171,7 +181,6 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
       if (player.getClientSettingsPacket() != null) {
         smc.write(player.getClientSettingsPacket());
       }
-
       if (player.getConnection().getActiveSessionHandler() instanceof ClientPlaySessionHandler clientPlaySessionHandler) {
         if (!server.getConfiguration().isRemoveReconfig()) {
           smc.setAutoReading(false);
@@ -196,8 +205,9 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
     server.getEventManager().fire(new CookieRequestEvent(serverConn.getPlayer(), packet.getKey()))
         .thenAcceptAsync(event -> {
           if (event.getResult().isAllowed()) {
-            Key resultedKey = event.getResult().getKey() == null
+            final Key resultedKey = event.getResult().getKey() == null
                 ? event.getOriginalKey() : event.getResult().getKey();
+
             serverConn.getPlayer().getConnection().write(new ClientboundCookieRequestPacket(resultedKey));
           }
         }, serverConn.ensureConnected().eventLoop());
@@ -220,8 +230,7 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
               This is usually because the remote server does not have \
               BungeeCord IP forwarding correctly enabled.
               See https://docs.papermc.io/velocity/player-information-forwarding for instructions \
-              on how to configure player info forwarding correctly."""
-      ));
+              on how to configure player info forwarding correctly."""));
     } else {
       resultFuture.completeExceptionally(
           new QuietRuntimeException("The connection to the remote server was unexpectedly closed.")

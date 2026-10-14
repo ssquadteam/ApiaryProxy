@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ import com.velocitypowered.proxy.protocol.netty.MinecraftDecoder;
 import com.velocitypowered.proxy.protocol.packet.ClientboundCookieRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.EncryptionRequestPacket;
 import com.velocitypowered.proxy.protocol.packet.EncryptionResponsePacket;
+import com.velocitypowered.proxy.protocol.packet.LoginAcknowledgedPacket;
 import com.velocitypowered.proxy.protocol.packet.LoginPluginResponsePacket;
 import com.velocitypowered.proxy.protocol.packet.ServerLoginPacket;
 import com.velocitypowered.proxy.protocol.packet.ServerboundCookieResponsePacket;
@@ -83,22 +84,18 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
           .concat(MOJANG_HASJOINED_GET_PARAMS);
 
   private final VelocityServer server;
-
   private final MinecraftConnection mcConnection;
-
   private final LoginInboundConnection inbound;
-
   private @MonotonicNonNull ServerLoginPacket login;
-
   private byte[] verify = EMPTY_BYTE_ARRAY;
 
   private boolean authenticateWithMojang;
 
   private LoginState currentState = LoginState.LOGIN_PACKET_EXPECTED;
-
   private final boolean forceKeyAuthentication;
 
   private CompletableFuture<byte[]> appliedResourcePacksFuture;
+  private boolean appliedResourcePacksCookieRequested;
 
   InitialLoginSessionHandler(VelocityServer server, MinecraftConnection mcConnection,
                              LoginInboundConnection inbound) {
@@ -120,6 +117,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
   public void activated() {
     if (inbound.getHandshakeIntent() == HandshakeIntent.TRANSFER) {
       appliedResourcePacksFuture = new CompletableFuture<byte[]>().completeOnTimeout(null, 20, TimeUnit.SECONDS);
+      appliedResourcePacksCookieRequested = true;
       mcConnection.write(new ClientboundCookieRequestPacket(ResourcePackTransfer.APPLIED_RESOURCE_PACKS_KEY));
     } else {
       appliedResourcePacksFuture = CompletableFuture.completedFuture(null);
@@ -128,7 +126,9 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
 
   @Override
   public boolean handle(ServerLoginPacket packet) {
-    assertState(LoginState.LOGIN_PACKET_EXPECTED);
+    if (!assertState(LoginState.LOGIN_PACKET_EXPECTED)) {
+      return true;
+    }
     this.currentState = LoginState.LOGIN_PACKET_RECEIVED;
     IdentifiedKey playerKey = packet.getPlayerKey();
     if (playerKey != null) {
@@ -140,7 +140,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
 
       boolean isKeyValid;
       if (playerKey.getKeyRevision() == IdentifiedKey.Revision.LINKED_V2
-          && playerKey instanceof IdentifiedKeyImpl keyImpl) {
+          && playerKey instanceof final IdentifiedKeyImpl keyImpl) {
         isKeyValid = keyImpl.internalAddHolder(packet.getHolderUuid());
       } else {
         isKeyValid = playerKey.isSignatureValid();
@@ -156,11 +156,10 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
       inbound.disconnect(Component.translatable("multiplayer.disconnect.missing_public_key"));
       return true;
     }
-
     inbound.setPlayerKey(playerKey);
     this.login = packet;
 
-    PreLoginEvent event = new PreLoginEvent(inbound, login.getUsername(), login.getHolderUuid());
+    final PreLoginEvent event = new PreLoginEvent(inbound, login.getUsername(), login.getHolderUuid());
     server.getEventManager().fire(event).thenRunAsync(() -> {
       if (mcConnection.isClosed()) {
         // The player was disconnected
@@ -212,13 +211,26 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
 
   @Override
   public boolean handle(LoginPluginResponsePacket packet) {
-    this.inbound.handleLoginPluginResponse(packet);
+    if (!this.inbound.handleLoginPluginResponse(packet)) {
+      // An answer to a query this connection was never sent. Dropping it silently would still
+      // count as activity, letting a client that never logs in hold its connection open.
+      mcConnection.close(true);
+    }
+    return true;
+  }
+
+  @Override
+  public boolean handle(LoginAcknowledgedPacket packet) {
+    // Acknowledges a login success, which is only sent once authentication has finished.
+    mcConnection.close(true);
     return true;
   }
 
   @Override
   public boolean handle(EncryptionResponsePacket packet) {
-    assertState(LoginState.ENCRYPTION_REQUEST_SENT);
+    if (!assertState(LoginState.ENCRYPTION_REQUEST_SENT)) {
+      return true;
+    }
     this.currentState = LoginState.ENCRYPTION_RESPONSE_RECEIVED;
     ServerLoginPacket login = this.login;
     if (login == null) {
@@ -288,7 +300,7 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
               // Not so fast, now we verify the public key for 1.19.1+
               if (inbound.getIdentifiedKey() != null
                   && inbound.getIdentifiedKey().getKeyRevision() == IdentifiedKey.Revision.LINKED_V2
-                  && inbound.getIdentifiedKey() instanceof IdentifiedKeyImpl key) {
+                  && inbound.getIdentifiedKey() instanceof final IdentifiedKeyImpl key) {
                 if (!key.internalAddHolder(profile.getId())) {
                   inbound.disconnect(
                       Component.translatable("multiplayer.disconnect.invalid_public_key"));
@@ -319,18 +331,21 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
       LOGGER.error("Unable to enable encryption", e);
       mcConnection.close(true);
     }
-
     return true;
   }
 
   @Override
   public boolean handle(ServerboundCookieResponsePacket packet) {
-    if (packet.getKey().equals(ResourcePackTransfer.APPLIED_RESOURCE_PACKS_KEY)) {
+    if (appliedResourcePacksCookieRequested
+        && packet.getKey().equals(ResourcePackTransfer.APPLIED_RESOURCE_PACKS_KEY)) {
+      appliedResourcePacksCookieRequested = false;
       appliedResourcePacksFuture.complete(packet.getPayload());
       return true;
     }
 
-    return false;
+    // The only cookie requested here is the applied resource packs one, once, for a transfer.
+    mcConnection.close(true);
+    return true;
   }
 
   private EncryptionRequestPacket generateEncryptionRequest(boolean shouldAuthenticate) {
@@ -354,16 +369,17 @@ public class InitialLoginSessionHandler implements MinecraftSessionHandler {
     this.inbound.cleanup();
   }
 
-  private void assertState(LoginState expectedState) {
+  private boolean assertState(LoginState expectedState) {
     if (this.currentState != expectedState) {
       if (MinecraftDecoder.DEBUG) {
         LOGGER.error("{} Received an unexpected packet requiring state {}, but we are in {}",
             inbound,
             expectedState, this.currentState);
       }
-
       mcConnection.close(true);
+      return false;
     }
+    return true;
   }
 
   private enum LoginState {

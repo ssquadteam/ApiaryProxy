@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -54,15 +55,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public final class PluginMessageUtil {
 
   private static final String BRAND_CHANNEL_LEGACY = "MC|Brand";
-
   private static final String BRAND_CHANNEL = "minecraft:brand";
-
   private static final String REGISTER_CHANNEL_LEGACY = "REGISTER";
-
   private static final String REGISTER_CHANNEL = "minecraft:register";
-
   private static final String UNREGISTER_CHANNEL_LEGACY = "UNREGISTER";
-
   private static final String UNREGISTER_CHANNEL = "minecraft:unregister";
 
   private PluginMessageUtil() {
@@ -70,10 +66,10 @@ public final class PluginMessageUtil {
   }
 
   /**
-   * Determines whether this is a brand plugin message. This is shown on the client.
+   * Determines whether or not this is a brand plugin message. This is shown on the client.
    *
    * @param message the plugin message
-   * @return whether this is a brand plugin message
+   * @return whether or not this is a brand plugin message
    */
   public static boolean isMcBrand(PluginMessagePacket message) {
     checkNotNull(message, "message");
@@ -82,7 +78,7 @@ public final class PluginMessageUtil {
   }
 
   /**
-   * Determines whether this plugin message is being used to register plugin channels.
+   * Determines whether or not this plugin message is being used to register plugin channels.
    *
    * @param message the plugin message
    * @return whether we are registering plugin channels or not
@@ -94,7 +90,7 @@ public final class PluginMessageUtil {
   }
 
   /**
-   * Determines whether this plugin message is being used to unregister plugin channels.
+   * Determines whether or not this plugin message is being used to unregister plugin channels.
    *
    * @param message the plugin message
    * @return whether we are unregistering plugin channels or not
@@ -125,12 +121,10 @@ public final class PluginMessageUtil {
     checkArgument(isRegister(message) || isUnregister(message), "Unknown channel type %s",
         message.getChannel());
     if (!message.content().isReadable()) {
-      // If we try to split this, we will get a one-element array with the empty string, which
-      // has caused issues with 1.13+ compatibility.
-      // Return an empty list.
+      // If we try to split this, we will get an one-element array with the empty string, which
+      // has caused issues with 1.13+ compatibility. Just return an empty list.
       return ImmutableList.of();
     }
-
     String payload = message.content().toString(StandardCharsets.UTF_8);
     checkArgument(payload.length() <= Short.MAX_VALUE, "payload too long: %s", payload.length());
     String[] channels = payload.split("\0");
@@ -152,7 +146,6 @@ public final class PluginMessageUtil {
         throw ILLEGAL_CHANNEL;
       }
     }
-
     return channelIdentifiers.build();
   }
 
@@ -186,7 +179,6 @@ public final class PluginMessageUtil {
         sb.append('\0');
       }
     }
-
     return sb.toString();
   }
 
@@ -244,8 +236,8 @@ public final class PluginMessageUtil {
   }
 
   /**
-   * Some clients (mostly poorly implemented bots) do not send validly formed brand messages.
-   * To accommodate their broken behavior, we'll first try to read in the 1.8 format, and if
+   * Some clients (mostly poorly-implemented bots) do not send validly-formed brand messages. In
+   * order to accommodate their broken behavior, we'll first try to read in the 1.8 format, and if
    * that fails, treat it as a 1.7-format message (which has no prefixed length). (The message
    * Velocity sends will be in the correct format depending on the protocol.)
    *
@@ -281,15 +273,14 @@ public final class PluginMessageUtil {
       case REGISTER_CHANNEL_LEGACY -> REGISTER_CHANNEL;
       case UNREGISTER_CHANNEL_LEGACY -> UNREGISTER_CHANNEL;
       case BRAND_CHANNEL_LEGACY -> BRAND_CHANNEL;
-      case "BungeeCord" ->
-          // This is a special historical case we are compelled to support for the benefit of
-          // BungeeQuack.
-          "bungeecord:main";
+      // This is a special historical case we are compelled to support for the benefit of
+      // BungeeQuack.
+      case "BungeeCord" -> "bungeecord:main";
       default -> {
         // This is very likely a legacy name, so transform it. Velocity uses the same scheme as
-        // BungeeCord does to transform channels, but removes clearly invalid characters as
+        // BungeeCord does to transform channels, but also removes clearly invalid characters as
         // well.
-        String lower = name.toLowerCase(Locale.ROOT);
+        final String lower = name.toLowerCase(Locale.ROOT);
         yield "legacy:" + INVALID_IDENTIFIER_REGEX.matcher(lower).replaceAll("");
       }
     };
@@ -319,7 +310,7 @@ public final class PluginMessageUtil {
     }
 
     @Override
-    public @Nullable String resolve(String name, Map<String, String> arguments) {
+    public @Nullable String resolve(@NonNull String name, @NonNull Map<String, String> arguments) {
       return switch (name) {
         case "protocol-min" -> minimumVersion;
         case "protocol-max" -> ProtocolVersion.MAXIMUM_VERSION.getMostRecentSupportedVersion();

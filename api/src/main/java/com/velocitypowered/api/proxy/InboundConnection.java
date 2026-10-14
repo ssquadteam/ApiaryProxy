@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2022 Velocity Contributors
  *
  * The Velocity API is licensed under the terms of the MIT License. For more details,
  * reference the LICENSE file in the api top-level directory.
@@ -12,6 +12,7 @@ import com.velocitypowered.api.network.ProtocolState;
 import com.velocitypowered.api.network.ProtocolVersion;
 import java.net.InetSocketAddress;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Represents an incoming connection to the proxy.
@@ -29,7 +30,7 @@ public interface InboundConnection {
    * Returns the hostname that the user entered into the client, if applicable.
    * <br/>
    * This is partially processed, including removing a trailing dot, and discarding data after a null byte.
-   *
+
    * @return the hostname from the client
    */
   Optional<InetSocketAddress> getVirtualHost();
@@ -42,9 +43,9 @@ public interface InboundConnection {
   Optional<String> getRawVirtualHost();
 
   /**
-   * Determine whether the player remains online.
+   * Determine whether or not the player remains online.
    *
-   * @return whether the player active
+   * @return whether or not the player active
    */
   boolean isActive();
 
@@ -68,4 +69,21 @@ public interface InboundConnection {
    * @return the intent of the connection
    */
   HandshakeIntent getHandshakeIntent();
+
+  /**
+   * Returns the unique, stable session UUID for this connection, generated when
+   * the client initially connects to the proxy. The session id remains consistent
+   * across all login-phase events and all proxy-to-backend connections for the
+   * same player session.
+   *
+   * <p>A session is bound to a single client connection: if the player disconnects and
+   * reconnects (or is transferred back to the proxy), a new session id is generated.</p>
+   *
+   * <p>This should not be confused with Mojang's server-wide play session ID introduced
+   * in Minecraft 26.2.</p>
+   *
+   * @return the session UUID, never {@code null}
+   * @since 4.2.1
+   */
+  UUID getSessionId();
 }

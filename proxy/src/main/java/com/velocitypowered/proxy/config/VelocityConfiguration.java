@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -116,7 +116,6 @@ public final class VelocityConfiguration implements ProxyConfig {
 
   @Expose
   private PingPassthroughMode pingPassthrough = PingPassthroughMode.DEFAULT;
-
   @Expose
   private final Servers servers;
 
@@ -144,7 +143,6 @@ public final class VelocityConfiguration implements ProxyConfig {
 
   @Expose
   private final Advanced advanced;
-
   @Expose
   private final Query query;
 
@@ -1154,12 +1152,13 @@ public final class VelocityConfiguration implements ProxyConfig {
       Files.writeString(defaultForwardingSecretPath, generateRandomString(12));
     }
 
-    try (CommentedFileConfig config = CommentedFileConfig.builder(path)
-        .defaultData(defaultConfigLocation)
-        .autosave()
-        .preserveInsertionOrder()
-        .sync()
-        .build()) {
+    try (final CommentedFileConfig config = CommentedFileConfig.builder(path)
+            .defaultData(defaultConfigLocation)
+            .autosave()
+            .preserveInsertionOrder()
+            .sync()
+            .build()
+    ) {
       config.load();
 
       try {
@@ -1194,12 +1193,12 @@ public final class VelocityConfiguration implements ProxyConfig {
       }
 
       String forwardingSecretString = System.getenv().getOrDefault(
-          "VELOCITY_FORWARDING_SECRET", "");
+              "VELOCITY_FORWARDING_SECRET", "");
       if (forwardingSecretString.isBlank()) {
-        String forwardSecretFile = config.get("forwarding-secret-file");
-        Path secretPath = forwardSecretFile == null
-            ? defaultForwardingSecretPath
-            : Path.of(forwardSecretFile);
+        final String forwardSecretFile = config.get("forwarding-secret-file");
+        final Path secretPath = forwardSecretFile == null
+                ? defaultForwardingSecretPath
+                : Path.of(forwardSecretFile);
         if (Files.exists(secretPath)) {
           if (Files.isRegularFile(secretPath)) {
             forwardingSecretString = String.join("", Files.readAllLines(secretPath));
@@ -1339,8 +1338,8 @@ public final class VelocityConfiguration implements ProxyConfig {
       // Throw an exception if the forwarding-secret file is empty and the proxy is using a
       // forwarding mode that requires it.
       if (forwardingSecret.length == 0
-          && (forwardingMode == PlayerInfoForwarding.MODERN
-          || forwardingMode == PlayerInfoForwarding.BUNGEEGUARD)) {
+              && (forwardingMode == PlayerInfoForwarding.MODERN
+              || forwardingMode == PlayerInfoForwarding.BUNGEEGUARD)) {
         throw new RuntimeException("The forwarding-secret file must not be empty.");
       }
 
@@ -1446,13 +1445,12 @@ public final class VelocityConfiguration implements ProxyConfig {
    * @return a new random string.
    */
   public static String generateRandomString(int length) {
-    String chars = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890";
-    StringBuilder builder = new StringBuilder();
-    Random rnd = new SecureRandom();
+    final String chars = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890";
+    final StringBuilder builder = new StringBuilder();
+    final Random rnd = new SecureRandom();
     for (int i = 0; i < length; i++) {
       builder.append(chars.charAt(rnd.nextInt(chars.length())));
     }
-
     return builder.toString();
   }
 
@@ -1760,7 +1758,6 @@ public final class VelocityConfiguration implements ProxyConfig {
                 "Server entry " + entry.getKey() + " is not a server!");
           }
         }
-
         this.servers = ImmutableMap.copyOf(servers);
         this.serverMinimumVersions = ImmutableMap.copyOf(serverMinimumVersions);
         this.serverMaximumVersions = ImmutableMap.copyOf(serverMaximumVersions);
@@ -2253,7 +2250,6 @@ public final class VelocityConfiguration implements ProxyConfig {
 
     @Expose
     private int compressionLevel = -1;
-
     @Expose
     private boolean flushConsolidationEnabled = true;
     @Expose
@@ -2266,10 +2262,8 @@ public final class VelocityConfiguration implements ProxyConfig {
     private boolean packetBandwidthStatsEnabled = true;
     @Expose
     private int loginRatelimit = 3000;
-
     @Expose
     private int connectionTimeout = 5000;
-
     @Expose
     private int readTimeout = 25000;
 
@@ -2278,37 +2272,27 @@ public final class VelocityConfiguration implements ProxyConfig {
 
     @Expose
     private boolean proxyProtocol = false;
-
     @Expose
     private boolean tcpFastOpen = false;
-
     @Expose
     private boolean bungeePluginMessageChannel = true;
-
     @Expose
     private boolean showPingRequests = false;
-
     @Expose
     private boolean failoverOnUnexpectedServerDisconnect = true;
-
     @Expose
     private boolean announceProxyCommands = true;
-
     @Expose
     private boolean logCommandExecutions = false;
 
     @Expose
     private boolean acceptTransfers = false;
-
     @Expose
     private boolean enableReusePort = false;
-
     @Expose
     private int commandRateLimit = 50;
-
     @Expose
     private boolean forwardCommandsIfRateLimited = true;
-
     @Expose
     private int kickAfterRateLimitedCommands = 0;
 
@@ -2405,7 +2389,7 @@ public final class VelocityConfiguration implements ProxyConfig {
         this.commandRateLimit = config.getIntOrElse("command-rate-limit", 50);
         this.forwardCommandsIfRateLimited = config.getOrElse("forward-commands-if-rate-limited", true);
         this.kickAfterRateLimitedCommands = config.getIntOrElse("kick-after-rate-limited-commands", 0);
-        this.tabCompleteRateLimit = config.getIntOrElse("tab-complete-rate-limit", 10);
+        this.tabCompleteRateLimit = config.getIntOrElse("tab-complete-rate-limit", 10); // very lenient
         this.kickAfterRateLimitedTabCompletes = config.getIntOrElse("kick-after-rate-limited-tab-completes", 0);
         this.allowIllegalCharactersInChat = config.getOrElse("allow-illegal-characters-in-chat", false);
         this.serverBrand = reserializeToLegacy(
@@ -2601,14 +2585,12 @@ public final class VelocityConfiguration implements ProxyConfig {
     }
   }
 
-  private static final class Query {
+  private static class Query {
 
     @Expose
     private boolean queryEnabled = false;
-
     @Expose
     private int queryPort = 25565;
-
     @Expose
     private String queryMap = "Velocity-CTD";
 
@@ -2657,7 +2639,7 @@ public final class VelocityConfiguration implements ProxyConfig {
   /**
    * Configuration for metrics.
    */
-  public static final class Metrics {
+  public static class Metrics {
 
     @Expose
     private boolean enabled = true;
@@ -3003,10 +2985,11 @@ public final class VelocityConfiguration implements ProxyConfig {
       this.enabled = config.getOrElse("enabled", false);
       this.noQueueServers = config.getOrElse("no-queue-servers", List.of());
       this.allowMultiQueue = config.getOrElse("allow-multi-queue", false);
-      this.sendDelay = config.getOrElse("send-delay", 1.0);
-      this.queueDelay = config.getOrElse("queue-delay", 0.0);
-      this.messageDelay = config.getOrElse("message-delay", 1.0);
-      this.backendPingInterval = config.getOrElse("backend-ping-interval", 5.0);
+      this.sendDelay = config.<Number>getOrElse("send-delay", 1.0).doubleValue();
+      this.queueDelay = config.<Number>getOrElse("queue-delay", 0.0).doubleValue();
+      this.messageDelay = config.<Number>getOrElse("message-delay", 1.0).doubleValue();
+      this.backendPingInterval = config.<Number>getOrElse("backend-ping-interval", 5.0)
+          .doubleValue();
       this.maxSendRetries = config.getOrElse("max-send-retries", 10);
       this.dynamicPriority = config.getOrElse("dynamic-priority", false);
       this.minutesPerPriorityIncrease = config.getOrElse("minutes-per-priority-increase", 30);

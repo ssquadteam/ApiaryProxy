@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,12 +54,16 @@ import org.apache.logging.log4j.LogManager;
 public class GameSpyQueryHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
   private static final short QUERY_MAGIC_FIRST = 0xFE;
-
   private static final short QUERY_MAGIC_SECOND = 0xFD;
-
   private static final byte QUERY_TYPE_HANDSHAKE = 0x09;
-
   private static final byte QUERY_TYPE_STAT = 0x00;
+
+  /**
+   * Minimum valid query message length: 2 magic bytes + 1 type byte + 4 session id bytes.
+   * The {@link #QUERY_TYPE_HANDSHAKE} branch is the shortest handler — it only reads this
+   * header, so any message shorter than 7 bytes is always malformed.
+   */
+  private static final int MINIMUM_MESSAGE_LENGTH = 7;
 
   private static final byte[] QUERY_RESPONSE_FULL_PADDING = {
       0x73, 0x70, 0x6C, 0x69, 0x74, 0x6E, 0x75, 0x6D, 0x00, (byte) 0x80, 0x00
@@ -79,12 +83,15 @@ public class GameSpyQueryHandler extends SimpleChannelInboundHandler<DatagramPac
       "hostip"
   );
 
+  // A handshake stores a challenge for its sender address, and a UDP sender address can be forged,
+  // so without a bound a flood of handshakes from made-up addresses grows this for 30 seconds each.
+  private static final int MAX_SESSIONS = 10_000;
+
   private final Cache<InetAddress, Integer> sessions = Caffeine.newBuilder()
       .expireAfterWrite(30, TimeUnit.SECONDS)
+      .maximumSize(MAX_SESSIONS)
       .build();
-
   private final SecureRandom random;
-
   private final VelocityServer server;
 
   public GameSpyQueryHandler(VelocityServer server) {
@@ -94,7 +101,8 @@ public class GameSpyQueryHandler extends SimpleChannelInboundHandler<DatagramPac
 
   private QueryResponse createInitialResponse() {
     return QueryResponse.builder()
-        .hostname(PlainTextComponentSerializer.plainText().serialize(server.getConfiguration().getMotd()))
+        .hostname(
+            PlainTextComponentSerializer.plainText().serialize(server.getConfiguration().getMotd()))
         .gameVersion(ProtocolVersion.SUPPORTED_VERSION_STRING)
         .map(server.getConfiguration().getQueryMap())
         .currentPlayers(server.getClusterPlayerService().getTotalPlayerCount())
@@ -112,6 +120,10 @@ public class GameSpyQueryHandler extends SimpleChannelInboundHandler<DatagramPac
     ByteBuf queryMessage = msg.content();
     InetAddress senderAddress = msg.sender().getAddress();
 
+    if (queryMessage.readableBytes() < MINIMUM_MESSAGE_LENGTH) {
+      return;
+    }
+
     // Verify query packet magic
     if (queryMessage.readUnsignedByte() != QUERY_MAGIC_FIRST
         || queryMessage.readUnsignedByte() != QUERY_MAGIC_SECOND) {
@@ -124,7 +136,7 @@ public class GameSpyQueryHandler extends SimpleChannelInboundHandler<DatagramPac
 
     switch (type) {
       case QUERY_TYPE_HANDSHAKE -> {
-        // Generate a new challenge token and put it into the session cache
+        // Generate new challenge token and put it into the sessions cache
         int challengeToken = random.nextInt();
         sessions.put(senderAddress, challengeToken);
 
@@ -137,8 +149,14 @@ public class GameSpyQueryHandler extends SimpleChannelInboundHandler<DatagramPac
         DatagramPacket responsePacket = new DatagramPacket(queryResponse, msg.sender());
         ctx.writeAndFlush(responsePacket, ctx.voidPromise());
       }
+
       case QUERY_TYPE_STAT -> {
-        // Check if a query was done with session previously generated using a handshake packet
+        // Need at least 4 more bytes for challenge token
+        if (queryMessage.readableBytes() < 4) {
+          return;
+        }
+
+        // Check if query was done with session previously generated using a handshake packet
         int challengeToken = queryMessage.readInt();
         Integer session = sessions.getIfPresent(senderAddress);
         if (session == null || session != challengeToken) {
@@ -211,14 +229,12 @@ public class GameSpyQueryHandler extends SimpleChannelInboundHandler<DatagramPac
       result.add(QueryResponse.PluginInformation.of(description.getName()
           .orElse(description.getId()), description.getVersion().orElse(null)));
     }
-
     return result;
   }
 
   private static class ResponseWriter {
 
     private final ByteBuf buf;
-
     private final boolean isBasic;
 
     ResponseWriter(ByteBuf buf, boolean isBasic) {
@@ -231,12 +247,12 @@ public class GameSpyQueryHandler extends SimpleChannelInboundHandler<DatagramPac
     }
 
     // Writes k/v to stat packet body if this writer is initialized
-    // for full stat response. Otherwise, this follows
+    // for full stat response. Otherwise this follows
     // GS4QueryHandler#QUERY_BASIC_RESPONSE_CONTENTS to decide what
-    // to write into the packet body
+    // to write into packet body
     void write(String key, Object value) {
       if (isBasic) {
-        // Basic contains only specific-set of data
+        // Basic contains only specific set of data
         if (!QUERY_BASIC_RESPONSE_CONTENTS.contains(key)) {
           return;
         }
@@ -253,7 +269,7 @@ public class GameSpyQueryHandler extends SimpleChannelInboundHandler<DatagramPac
       }
     }
 
-    // "Ends" packet k/v body writing and writes a stat player list to
+    // Ends packet k/v body writing and writes stat player list to
     // the packet if this writer is initialized for full stat response
     void writePlayers(Collection<String> players) {
       if (isBasic) {

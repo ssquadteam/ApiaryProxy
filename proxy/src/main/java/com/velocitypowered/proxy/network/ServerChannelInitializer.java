@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import com.velocitypowered.proxy.config.VelocityConfiguration;
 import com.velocitypowered.proxy.connection.MinecraftConnection;
 import com.velocitypowered.proxy.connection.client.HandshakeSessionHandler;
 import com.velocitypowered.proxy.network.limiter.SimpleBytesPerSecondLimiter;
+import com.velocitypowered.proxy.network.netty.VelocityReadTimeoutHandler;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.StateRegistry;
 import com.velocitypowered.proxy.protocol.netty.LegacyPingDecoder;
@@ -47,7 +48,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.haproxy.HAProxyMessageDecoder;
 import io.netty.handler.flush.FlushConsolidationHandler;
-import io.netty.handler.timeout.ReadTimeoutHandler;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -57,16 +58,18 @@ public class ServerChannelInitializer extends ChannelInitializer<Channel> {
 
   private final VelocityServer server;
 
-  public ServerChannelInitializer(VelocityServer server) {
+  public ServerChannelInitializer(final VelocityServer server) {
     this.server = server;
   }
 
   @Override
-  protected void initChannel(Channel ch) {
+  protected void initChannel(final Channel ch) {
     ch.pipeline()
         .addLast(LEGACY_PING_DECODER, new LegacyPingDecoder())
         .addLast(FRAME_DECODER, new MinecraftVarintFrameDecoder(ProtocolUtils.Direction.SERVERBOUND))
-        .addLast(READ_TIMEOUT, new ReadTimeoutHandler(this.server.getConfiguration().getReadTimeout(), TimeUnit.MILLISECONDS))
+        .addLast(READ_TIMEOUT,
+            new VelocityReadTimeoutHandler(this.server.getConfiguration().getReadTimeout(),
+                TimeUnit.MILLISECONDS))
         .addLast(LEGACY_PING_ENCODER, LegacyPingEncoder.INSTANCE)
         .addLast(FRAME_ENCODER, MinecraftVarintLengthEncoder.INSTANCE);
 
@@ -80,7 +83,7 @@ public class ServerChannelInitializer extends ChannelInitializer<Channel> {
         .addLast(MINECRAFT_DECODER, new MinecraftDecoder(ProtocolUtils.Direction.SERVERBOUND))
         .addLast(MINECRAFT_ENCODER, minecraftEncoder);
 
-    MinecraftConnection connection = new MinecraftConnection(ch, this.server);
+    final MinecraftConnection connection = new MinecraftConnection(ch, this.server, UUID.randomUUID());
     if (this.server.getConfiguration().isPacketBandwidthStatsEnabled()) {
       ch.pipeline()
           .addAfter(FRAME_DECODER, BANDWIDTH_INBOUND,

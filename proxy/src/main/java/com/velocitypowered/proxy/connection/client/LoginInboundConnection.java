@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2021-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import java.net.InetSocketAddress;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import net.kyori.adventure.text.Component;
@@ -50,20 +51,15 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
       AtomicIntegerFieldUpdater.newUpdater(LoginInboundConnection.class, "sequenceCounter");
 
   private final InitialInboundConnection delegate;
-
   private final Int2ObjectMap<MessageConsumer> outstandingResponses;
-
   private volatile int sequenceCounter;
-
   private final Queue<LoginPluginMessagePacket> loginMessagesToSend;
-
   private volatile Runnable onAllMessagesHandled;
-
   private volatile boolean loginEventFired;
-
   private @MonotonicNonNull IdentifiedKey playerKey;
 
-  LoginInboundConnection(InitialInboundConnection delegate) {
+  LoginInboundConnection(
+      InitialInboundConnection delegate) {
     this.delegate = delegate;
     this.outstandingResponses = Int2ObjectSyncMap.hashmap();
     this.loginMessagesToSend = new ConcurrentLinkedQueue<>();
@@ -96,15 +92,13 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
 
   @Override
   public void sendLoginPluginMessage(ChannelIdentifier identifier, byte[] contents,
-                                     MessageConsumer consumer) {
+      MessageConsumer consumer) {
     if (identifier == null) {
       throw new NullPointerException("identifier");
     }
-
     if (contents == null) {
       throw new NullPointerException("contents");
     }
-
     if (consumer == null) {
       throw new NullPointerException("consumer");
     }
@@ -114,10 +108,10 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
           + "Minecraft 1.13 and above");
     }
 
-    int id = SEQUENCE_UPDATER.incrementAndGet(this);
+    final int id = SEQUENCE_UPDATER.incrementAndGet(this);
     this.outstandingResponses.put(id, consumer);
 
-    LoginPluginMessagePacket message = new LoginPluginMessagePacket(id, identifier.getId(),
+    final LoginPluginMessagePacket message = new LoginPluginMessagePacket(id, identifier.getId(),
         Unpooled.wrappedBuffer(contents));
     if (!this.loginEventFired) {
       this.loginMessagesToSend.add(message);
@@ -142,21 +136,24 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
     this.onAllMessagesHandled = null;
   }
 
-  void handleLoginPluginResponse(LoginPluginResponsePacket response) {
-    MessageConsumer consumer = this.outstandingResponses.remove(response.getId());
-    if (consumer != null) {
-      try {
-        consumer.onMessageResponse(response.isSuccess() ? ByteBufUtil.getBytes(response.content()) : null);
-      } finally {
-        Runnable onAllMessagesHandled = this.onAllMessagesHandled;
-        if (this.outstandingResponses.isEmpty() && onAllMessagesHandled != null) {
-          onAllMessagesHandled.run();
-        }
+  boolean handleLoginPluginResponse(final LoginPluginResponsePacket response) {
+    final MessageConsumer consumer = this.outstandingResponses.remove(response.getId());
+    if (consumer == null) {
+      return false;
+    }
+    try {
+      consumer.onMessageResponse(response.isSuccess() ? ByteBufUtil.getBytes(response.content())
+          : null);
+    } finally {
+      final Runnable onAllMessagesHandled = this.onAllMessagesHandled;
+      if (this.outstandingResponses.isEmpty() && onAllMessagesHandled != null) {
+        onAllMessagesHandled.run();
       }
     }
+    return true;
   }
 
-  void loginEventFired(Runnable onAllMessagesHandled) {
+  void loginEventFired(final Runnable onAllMessagesHandled) {
     this.loginEventFired = true;
     this.onAllMessagesHandled = onAllMessagesHandled;
     if (!this.loginMessagesToSend.isEmpty()) {
@@ -164,7 +161,6 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
       while ((message = this.loginMessagesToSend.poll()) != null) {
         this.delegate.getConnection().delayedWrite(message);
       }
-
       this.delegate.getConnection().flush();
     } else {
       onAllMessagesHandled.run();
@@ -192,5 +188,10 @@ public class LoginInboundConnection implements LoginPhaseConnection, KeyIdentifi
   @Override
   public HandshakeIntent getHandshakeIntent() {
     return delegate.getHandshakeIntent();
+  }
+
+  @Override
+  public UUID getSessionId() {
+    return delegate.getSessionId();
   }
 }

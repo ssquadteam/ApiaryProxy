@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * The Velocity API is licensed under the terms of the MIT License. For more details,
  * reference the LICENSE file in the api top-level directory.
@@ -11,108 +11,53 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.velocitypowered.api.plugin.Plugin;
-import com.velocitypowered.api.plugin.PluginDescription;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Serialized version of {@link PluginDescription}.
+ * Serialized version of {@link com.velocitypowered.api.plugin.PluginDescription}.
+ *
+ * <p>A value the plugin leaves out is held as {@code null}, which Gson leaves out of the
+ * serialized file.
+ *
+ * @param id the plugin ID
+ * @param name the display name, or {@code null} for none
+ * @param version the version, or {@code null} for none
+ * @param description the description, or {@code null} for none
+ * @param url the website, or {@code null} for none
+ * @param authors the authors
+ * @param dependencies the plugins this one depends on
+ * @param provides the other IDs this plugin claims
+ * @param main the fully qualified name of the main class
  */
-public final class SerializedPluginDescription {
+public record SerializedPluginDescription(String id, @Nullable String name,
+    @Nullable String version, @Nullable String description, @Nullable String url,
+    @Nullable List<String> authors, @Nullable List<Dependency> dependencies,
+    @Nullable List<String> provides, String main) {
 
-  /**
-   * The string pattern used to validate plugin IDs.
-   *
-   * <p>Plugin IDs must start with a lowercase letter and may contain lowercase letters,
-   * digits, hyphens, and underscores. The total length must not exceed 64 characters.</p>
-   */
   public static final String ID_PATTERN_STRING = "[a-z][a-z0-9-_]{0,63}";
-
-  /**
-   * The compiled pattern used to validate plugin IDs.
-   *
-   * <p>Plugin IDs must start with a lowercase letter and may contain lowercase letters,
-   * digits, hyphens, and underscores. The total length must not exceed 64 characters.</p>
-   */
   public static final Pattern ID_PATTERN = Pattern.compile(ID_PATTERN_STRING);
 
-  // @Nullable is used here to make GSON skip these in the serialized file
-
   /**
-   * The plugin's unique identifier.
-   *
-   * <p>This field is required and must match {@link #ID_PATTERN}.</p>
+   * Checks the ID and the main class, and settles what is absent: empty text becomes
+   * {@code null}, and a missing or empty list becomes an empty one.
    */
-  private final String id;
-
-  /**
-   * The plugin's human-readable name.
-   *
-   * <p>This field is optional and may be {@code null} if not specified.</p>
-   */
-  private final @Nullable String name;
-
-  /**
-   * The plugin's version string.
-   *
-   * <p>This field is optional and may be {@code null} if not specified.</p>
-   */
-  private final @Nullable String version;
-
-  /**
-   * A short description of the plugin.
-   *
-   * <p>This field is optional and may be {@code null} if not specified.</p>
-   */
-  private final @Nullable String description;
-
-  /**
-   * The URL associated with the plugin (e.g., homepage or documentation).
-   *
-   * <p>This field is optional and may be {@code null} if not specified.</p>
-   */
-  private final @Nullable String url;
-
-  /**
-   * The list of authors who contributed to the plugin.
-   *
-   * <p>This field may be {@code null} or empty if no authors were declared.</p>
-   */
-  private final @Nullable List<String> authors;
-
-  /**
-   * The list of dependencies declared by the plugin.
-   *
-   * <p>This field may be {@code null} or empty if no dependencies were declared.</p>
-   */
-  private final @Nullable List<Dependency> dependencies;
-
-  private final @Nullable List<String> provides;
-
-  /**
-   * The fully qualified name of the plugin's main class.
-   */
-  private final String main;
-
-  private SerializedPluginDescription(String id, String name, String version, String description,
-                                      String url, List<String> authors, List<Dependency> dependencies, List<String> provides, String main) {
+  public SerializedPluginDescription {
     Preconditions.checkNotNull(id, "id");
     Preconditions.checkArgument(ID_PATTERN.matcher(id).matches(), "id is not valid");
-    this.id = id;
-    this.name = Strings.emptyToNull(name);
-    this.version = Strings.emptyToNull(version);
-    this.description = Strings.emptyToNull(description);
-    this.url = Strings.emptyToNull(url);
-    this.authors = authors == null || authors.isEmpty() ? ImmutableList.of() : authors;
-    this.dependencies =
+    Preconditions.checkNotNull(main, "main");
+    name = Strings.emptyToNull(name);
+    version = Strings.emptyToNull(version);
+    description = Strings.emptyToNull(description);
+    url = Strings.emptyToNull(url);
+    authors = authors == null || authors.isEmpty() ? ImmutableList.of() : authors;
+    dependencies =
         dependencies == null || dependencies.isEmpty() ? ImmutableList.of() : dependencies;
-    this.provides = provides == null || provides.isEmpty() ? ImmutableList.of() : provides;
-    this.main = Preconditions.checkNotNull(main, "main");
+    provides = provides == null || provides.isEmpty() ? ImmutableList.of() : provides;
   }
 
   static SerializedPluginDescription from(Plugin plugin, String qualifiedName) {
@@ -120,7 +65,6 @@ public final class SerializedPluginDescription {
     for (com.velocitypowered.api.plugin.Dependency dependency : plugin.dependencies()) {
       dependencies.add(new Dependency(dependency.id(), dependency.optional()));
     }
-
     return new SerializedPluginDescription(plugin.id(), plugin.name(), plugin.version(),
         plugin.description(), plugin.url(),
         Arrays.stream(plugin.authors()).filter(author -> !author.isEmpty())
@@ -129,208 +73,148 @@ public final class SerializedPluginDescription {
             .collect(Collectors.toList()), qualifiedName);
   }
 
-  /**
-   * Gets the ID of the plugin.
-   *
-   * <p>The ID must conform to {@link #ID_PATTERN} and is a unique identifier for the plugin.</p>
-   *
-   * @return the plugin's ID
-   */
-  public String getId() {
-    return id;
-  }
-
-  /**
-   * Gets the human-readable name of the plugin.
-   *
-   * @return the plugin's name, or {@code null} if not specified
-   */
-  public @Nullable String getName() {
-    return name;
-  }
-
-  /**
-   * Gets the version string of the plugin.
-   *
-   * @return the plugin version, or {@code null} if not specified
-   */
-  public @Nullable String getVersion() {
-    return version;
-  }
-
-  /**
-   * Gets the plugin's description, typically a short summary of its functionality.
-   *
-   * @return the description, or {@code null} if not specified
-   */
-  public @Nullable String getDescription() {
-    return description;
-  }
-
-  /**
-   * Gets the website URL for the plugin.
-   *
-   * <p>This is often used to link to documentation, support, or the plugin's homepage.</p>
-   *
-   * @return the plugin URL, or {@code null} if not specified
-   */
-  public @Nullable String getUrl() {
-    return url;
-  }
-
-  /**
-   * Gets the list of authors who contributed to the plugin.
-   *
-   * @return an immutable list of authors; empty if none were specified
-   */
-  public List<String> getAuthors() {
+  @Override
+  public List<String> authors() {
     return authors == null ? ImmutableList.of() : authors;
   }
 
-  /**
-   * Gets the list of declared dependencies for the plugin.
-   *
-   * <p>Dependencies may be required or optional and describe other plugins, this one depends.</p>
-   *
-   * @return an immutable list of plugin dependencies
-   */
-  public List<Dependency> getDependencies() {
+  @Override
+  public List<Dependency> dependencies() {
     return dependencies == null ? ImmutableList.of() : dependencies;
   }
 
-  public List<String> getProvides() {
+  @Override
+  public List<String> provides() {
     return provides == null ? ImmutableList.of() : provides;
   }
 
   /**
-   * Gets the fully qualified name of the plugin's main class.
+   * Returns the plugin ID.
    *
-   * @return the main class name
+   * @return the plugin ID
+   * @deprecated this is a record now; use {@link #id()}
    */
-  public String getMain() {
-    return main;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    SerializedPluginDescription that = (SerializedPluginDescription) o;
-    return Objects.equals(id, that.id)
-        && Objects.equals(name, that.name)
-        && Objects.equals(version, that.version)
-        && Objects.equals(description, that.description)
-        && Objects.equals(url, that.url)
-        && Objects.equals(authors, that.authors)
-        && Objects.equals(dependencies, that.dependencies)
-        && Objects.equals(provides, that.provides)
-        && Objects.equals(main, that.main);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, name, version, description, url, authors, dependencies, provides);
-  }
-
-  @Override
-  public String toString() {
-    return "SerializedPluginDescription{"
-        + "id='" + id + '\''
-        + ", name='" + name + '\''
-        + ", version='" + version + '\''
-        + ", description='" + description + '\''
-        + ", url='" + url + '\''
-        + ", authors=" + authors
-        + ", dependencies=" + dependencies
-        + ", provides=" + provides
-        + ", main='" + main + '\''
-        + '}';
+  @Deprecated(forRemoval = true)
+  public String getId() {
+    return this.id();
   }
 
   /**
-   * Represents a dependency declared by a plugin.
+   * Returns the display name.
    *
-   * <p>A dependency consists of an identifier (typically the plugin ID) and a flag
-   * indicating whether the dependency is optional. Required dependencies must be present
-   * for the plugin to load, whereas optional dependencies may or may not be available at runtime.</p>
+   * @return the display name, or {@code null} for none
+   * @deprecated this is a record now; use {@link #name()}
    */
-  public static final class Dependency {
+  @Deprecated(forRemoval = true)
+  public @Nullable String getName() {
+    return this.name();
+  }
+
+  /**
+   * Returns the version.
+   *
+   * @return the version, or {@code null} for none
+   * @deprecated this is a record now; use {@link #version()}
+   */
+  @Deprecated(forRemoval = true)
+  public @Nullable String getVersion() {
+    return this.version();
+  }
+
+  /**
+   * Returns the description.
+   *
+   * @return the description, or {@code null} for none
+   * @deprecated this is a record now; use {@link #description()}
+   */
+  @Deprecated(forRemoval = true)
+  public @Nullable String getDescription() {
+    return this.description();
+  }
+
+  /**
+   * Returns the website.
+   *
+   * @return the website, or {@code null} for none
+   * @deprecated this is a record now; use {@link #url()}
+   */
+  @Deprecated(forRemoval = true)
+  public @Nullable String getUrl() {
+    return this.url();
+  }
+
+  /**
+   * Returns the authors.
+   *
+   * @return the authors
+   * @deprecated this is a record now; use {@link #authors()}
+   */
+  @Deprecated(forRemoval = true)
+  public List<String> getAuthors() {
+    return this.authors();
+  }
+
+  /**
+   * Returns the plugins this one depends on.
+   *
+   * @return the dependencies
+   * @deprecated this is a record now; use {@link #dependencies()}
+   */
+  @Deprecated(forRemoval = true)
+  public List<Dependency> getDependencies() {
+    return this.dependencies();
+  }
+
+  /**
+   * Returns the other IDs this plugin claims.
+   *
+   * @return the provided IDs
+   * @deprecated this is a record now; use {@link #provides()}
+   */
+  @Deprecated(forRemoval = true)
+  public List<String> getProvides() {
+    return this.provides();
+  }
+
+  /**
+   * Returns the fully qualified name of the main class.
+   *
+   * @return the main class
+   * @deprecated this is a record now; use {@link #main()}
+   */
+  @Deprecated(forRemoval = true)
+  public String getMain() {
+    return this.main();
+  }
+
+  /**
+   * Represents a dependency.
+   *
+   * @param id the ID of the plugin depended on
+   * @param optional whether this plugin loads without it
+   */
+  public record Dependency(String id, boolean optional) {
 
     /**
-     * The plugin's unique identifier.
+     * Returns the ID of the plugin depended on.
      *
-     * <p>This field is required and must match {@link #ID_PATTERN}.</p>
+     * @return the dependency's ID
+     * @deprecated this is a record now; use {@link #id()}
      */
-    private final String id;
-
-    /**
-     * Whether this dependency is optional.
-     *
-     * <p>If {@code true}, the plugin will still load even if this dependency is not present.</p>
-     */
-    private final boolean optional;
-
-    /**
-     * Constructs a new dependency class.
-     *
-     * @param id the ID of the dependent plugin
-     * @param optional whether the dependency is optional
-     */
-    public Dependency(String id, boolean optional) {
-      this.id = id;
-      this.optional = optional;
-    }
-
-    /**
-     * Gets the ID of the plugin this dependency refers to.
-     *
-     * @return the plugin ID
-     */
+    @Deprecated(forRemoval = true)
     public String getId() {
-      return id;
+      return this.id();
     }
 
     /**
-     * Indicates whether this dependency is optional.
+     * Returns whether this plugin loads without the dependency.
      *
-     * <p>Optional dependencies are not required for the plugin to load.</p>
-     *
-     * @return {@code true} if the dependency is optional; {@code false} otherwise
+     * @return {@code true} when the dependency is optional
+     * @deprecated this is a record now; use {@link #optional()}
      */
+    @Deprecated(forRemoval = true)
     public boolean isOptional() {
-      return optional;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      Dependency that = (Dependency) o;
-      return optional == that.optional
-          && Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(id, optional);
-    }
-
-    @Override
-    public String toString() {
-      return "Dependency{"
-          + "id='" + id + '\''
-          + ", optional=" + optional
-          + '}';
+      return this.optional();
     }
   }
 }

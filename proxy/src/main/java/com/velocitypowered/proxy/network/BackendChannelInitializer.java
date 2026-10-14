@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import static com.velocitypowered.proxy.network.Connections.MINECRAFT_ENCODER;
 import static com.velocitypowered.proxy.network.Connections.READ_TIMEOUT;
 
 import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.network.netty.VelocityReadTimeoutHandler;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.netty.AutoReadHolderHandler;
 import com.velocitypowered.proxy.protocol.netty.MinecraftDecoder;
@@ -35,7 +36,6 @@ import com.velocitypowered.proxy.protocol.netty.MinecraftVarintLengthEncoder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.flush.FlushConsolidationHandler;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,9 +54,11 @@ public class BackendChannelInitializer extends ChannelInitializer<Channel> {
   protected void initChannel(Channel ch) {
     ch.pipeline()
         .addLast(FRAME_DECODER, new MinecraftVarintFrameDecoder(ProtocolUtils.Direction.CLIENTBOUND))
-        // Short login timeout while establishing the connection, so a stalled backend is abandoned
-        // quickly for the fallback chain. Swapped for read-timeout at PLAY (TransitionSessionHandler).
-        .addLast(READ_TIMEOUT, new ReadTimeoutHandler(server.getConfiguration().getLoginTimeout(), TimeUnit.MILLISECONDS))
+        // Short login timeout while establishing the connection, so an unresponsive backend is
+        // abandoned quickly for the fallback chain. Swapped for read-timeout once the backend has
+        // logged in (LoginSessionHandler).
+        .addLast(READ_TIMEOUT, new VelocityReadTimeoutHandler(
+            server.getConfiguration().getLoginTimeout(), TimeUnit.MILLISECONDS))
         .addLast(FRAME_ENCODER, MinecraftVarintLengthEncoder.INSTANCE);
 
     if (server.getConfiguration().isFlushConsolidationEnabled()) {
@@ -67,6 +69,7 @@ public class BackendChannelInitializer extends ChannelInitializer<Channel> {
     ch.pipeline()
         .addLast(MINECRAFT_DECODER, new MinecraftDecoder(ProtocolUtils.Direction.CLIENTBOUND))
         .addLast(FLOW_HANDLER, new AutoReadHolderHandler())
-        .addLast(MINECRAFT_ENCODER, new MinecraftEncoder(ProtocolUtils.Direction.SERVERBOUND));
+        .addLast(MINECRAFT_ENCODER,
+            new MinecraftEncoder(ProtocolUtils.Direction.SERVERBOUND));
   }
 }

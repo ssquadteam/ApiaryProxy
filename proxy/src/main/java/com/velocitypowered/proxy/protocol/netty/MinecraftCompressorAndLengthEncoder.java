@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,6 @@ public class MinecraftCompressorAndLengthEncoder extends MessageToByteEncoder<By
   static final int DEFAULT_COMPRESS_BOUND_HEADROOM = 16;
 
   private int threshold;
-
   private final VelocityCompressor compressor;
   private final int compressBoundHeadroom;
   private final boolean statsEnabled;
@@ -109,7 +108,8 @@ public class MinecraftCompressorAndLengthEncoder extends MessageToByteEncoder<By
     BandwidthContext.recordOutbound(ctx, out.writerIndex() - initialWriterIndex);
   }
 
-  private void handleCompressed(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws DataFormatException {
+  private void handleCompressed(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out)
+      throws DataFormatException {
     int uncompressed = msg.readableBytes();
 
     out.writeMedium(0); // Reserve the packet length
@@ -122,7 +122,6 @@ public class MinecraftCompressorAndLengthEncoder extends MessageToByteEncoder<By
     } finally {
       compatibleIn.release();
     }
-
     int compressedLength = out.writerIndex() - startCompressed;
     if (compressedLength >= 1 << 21) {
       throw new DataFormatException("The server sent a very large (over 2MiB compressed) packet.");

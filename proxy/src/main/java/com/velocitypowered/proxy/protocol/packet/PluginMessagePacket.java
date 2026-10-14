@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2021 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 package com.velocitypowered.proxy.protocol.packet;
 
+import static com.velocitypowered.proxy.protocol.util.NettyPreconditions.checkFrame;
 import static com.velocitypowered.proxy.protocol.util.PluginMessageUtil.transformLegacyToModernChannel;
 
 import com.velocitypowered.api.network.ProtocolVersion;
@@ -50,7 +51,6 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
     if (channel == null) {
       throw new IllegalStateException("Channel is not specified.");
     }
-
     return channel;
   }
 
@@ -85,12 +85,19 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_13)) {
       this.channel = transformLegacyToModernChannel(this.channel);
     }
-
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
+      // The frame limit also covers the channel name, so check the payload on its own too: a short
+      // channel name must not let a client send far more than the payload limit.
+      if (direction == Direction.SERVERBOUND) {
+        checkFrame(buf.readableBytes() <= MAX_PAYLOAD_SIZE_SERVERBOUND,
+            "Plugin message payload too big (got %s, maximum is %s)",
+            buf.readableBytes(), MAX_PAYLOAD_SIZE_SERVERBOUND);
+      }
       this.replace(buf.readRetainedSlice(buf.readableBytes()));
     } else {
       this.replace(ProtocolUtils.readRetainedByteBufSlice17(buf));
     }
+
   }
 
   @Override
@@ -109,12 +116,12 @@ public class PluginMessagePacket extends DeferredByteBufHolder implements Minecr
     } else {
       ProtocolUtils.writeString(buf, this.channel);
     }
-
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_8)) {
       buf.writeBytes(content());
     } else {
       ProtocolUtils.writeByteBuf17(content(), buf, true); // True for Forge support
     }
+
   }
 
   @Override

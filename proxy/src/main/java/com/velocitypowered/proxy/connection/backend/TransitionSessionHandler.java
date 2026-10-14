@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2019-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@ import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.connection.util.ConnectionMessages;
 import com.velocitypowered.proxy.connection.util.ConnectionRequestResults;
 import com.velocitypowered.proxy.connection.util.ConnectionRequestResults.Impl;
-import com.velocitypowered.proxy.network.Connections;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.StateRegistry;
 import com.velocitypowered.proxy.protocol.packet.DisconnectPacket;
@@ -41,12 +40,11 @@ import com.velocitypowered.proxy.protocol.packet.JoinGamePacket;
 import com.velocitypowered.proxy.protocol.packet.KeepAlivePacket;
 import com.velocitypowered.proxy.protocol.packet.PluginMessagePacket;
 import com.velocitypowered.proxy.server.VelocityRegisteredServer;
-import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,17 +56,16 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
   private static final Logger LOGGER = LogManager.getLogger(TransitionSessionHandler.class);
 
   private final VelocityServer server;
-
   private final VelocityServerConnection serverConn;
-
   private final CompletableFuture<Impl> resultFuture;
-
   private final BungeeCordMessageResponder bungeecordMessageResponder;
 
-  // Backend packets arriving while JoinGame is processed (async) are held and replayed after it, so
-  // the client never gets world data before JoinGame. Empty in the normal flow (autoReading off).
+  // Backend packets that reach this handler before the switch completes, decoded or not, are held
+  // and replayed after JoinGame: the client can only apply them once it has JoinGame, and dropping
+  // one loses one-shot state such as the world clock sync (PaperMC/Velocity#1873). Reading is
+  // paused while JoinGame is processed, so this is empty in the normal flow.
   private boolean joinGameProcessing;
-  private final Queue<MinecraftPacket> deferredPackets = new ArrayDeque<>();
+  private final Queue<Object> deferredPackets = new ArrayDeque<>();
 
   /**
    * Creates the new transition handler.
@@ -78,12 +75,13 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
    * @param resultFuture the result future
    */
   TransitionSessionHandler(VelocityServer server,
-                           VelocityServerConnection serverConn,
-                           CompletableFuture<Impl> resultFuture) {
+      VelocityServerConnection serverConn,
+      CompletableFuture<Impl> resultFuture) {
     this.server = server;
     this.serverConn = serverConn;
     this.resultFuture = resultFuture;
-    this.bungeecordMessageResponder = new BungeeCordMessageResponder(server, serverConn.getPlayer());
+    this.bungeecordMessageResponder = new BungeeCordMessageResponder(server,
+        serverConn.getPlayer());
   }
 
   @Override
@@ -93,7 +91,6 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
       serverConn.disconnect();
       return true;
     }
-
     return false;
   }
 
@@ -136,13 +133,15 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
           // Make sure we can still transition (player might have disconnected here).
           if (!serverConn.isActive()) {
             // Connection is obsolete.
+            releaseDeferredPackets();
             serverConn.disconnect();
             return;
           }
 
           // Change the client to use the ClientPlaySessionHandler if required.
           ClientPlaySessionHandler playHandler;
-          if (player.getConnection().getActiveSessionHandler() instanceof ClientPlaySessionHandler sessionHandler) {
+          if (player.getConnection()
+              .getActiveSessionHandler() instanceof ClientPlaySessionHandler sessionHandler) {
             playHandler = sessionHandler;
           } else {
             playHandler = new ClientPlaySessionHandler(server, player);
@@ -154,15 +153,6 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
           // Set the new play session handler for the server. We will have nothing more to do
           // with this connection once this task finishes up.
           smc.setActiveSessionHandler(StateRegistry.PLAY, new BackendPlaySessionHandler(server, serverConn));
-
-          // The login/configuration sequence is complete: swap the short login timeout that
-          // BackendChannelInitializer installed for the regular in-play read-timeout, so a healthy
-          // but momentarily idle backend isn't dropped (issue GemstoneGG#938).
-          final var backendPipeline = smc.getChannel().pipeline();
-          if (backendPipeline.context(Connections.READ_TIMEOUT) != null) {
-            backendPipeline.replace(Connections.READ_TIMEOUT, Connections.READ_TIMEOUT,
-                new ReadTimeoutHandler(server.getConfiguration().getReadTimeout(), TimeUnit.MILLISECONDS));
-          }
 
           // Now set the connected server.
           serverConn.getPlayer().setConnectedServer(serverConn);
@@ -193,7 +183,8 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
           }
 
           // We're done! :)
-          server.getEventManager().fireAndForget(new ServerPostConnectEvent(player, previousServer));
+          server.getEventManager().fireAndForget(new ServerPostConnectEvent(player,
+              previousServer));
           resultFuture.complete(ConnectionRequestResults.successful(serverConn.getServer()));
         }, smc.eventLoop()).exceptionally(exc -> {
           LOGGER.error("Unable to switch to new server {} for {}",
@@ -210,13 +201,15 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
 
   @Override
   public boolean handle(DisconnectPacket packet) {
-    MinecraftConnection connection = serverConn.ensureConnected();
+    final MinecraftConnection connection = serverConn.ensureConnected();
     serverConn.disconnect();
 
     // If we were in the middle of the Forge handshake, it is not safe to proceed. We must kick
     // the client.
-    if (connection.getType() == ConnectionTypes.LEGACY_FORGE && !serverConn.getPhase().consideredComplete()) {
-      resultFuture.complete(ConnectionRequestResults.forUnsafeDisconnect(packet, serverConn.getServer()));
+    if (connection.getType() == ConnectionTypes.LEGACY_FORGE
+        && !serverConn.getPhase().consideredComplete()) {
+      resultFuture.complete(ConnectionRequestResults.forUnsafeDisconnect(packet,
+          serverConn.getServer()));
     } else {
       resultFuture.complete(ConnectionRequestResults.forDisconnect(packet, serverConn.getServer()));
     }
@@ -247,10 +240,10 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
           existingConnection.setConnectionPhase(IN_TRANSITION);
 
           // Tell the player that we're leaving and we just aren't coming back.
-          existingConnection.getPhase().onDepartForNewServer(existingConnection, serverConn.getPlayer());
+          existingConnection.getPhase().onDepartForNewServer(existingConnection,
+              serverConn.getPlayer());
         }
       }
-
       return true;
     }
 
@@ -260,11 +253,12 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
 
   @Override
   public void handleGeneric(MinecraftPacket packet) {
-    // Hold packets during JoinGame processing to replay in order; otherwise drop (the default).
-    if (joinGameProcessing) {
-      ReferenceCountUtil.retain(packet);
-      deferredPackets.add(packet);
-    }
+    deferredPackets.add(ReferenceCountUtil.retain(packet));
+  }
+
+  @Override
+  public void handleUnknown(ByteBuf buf) {
+    deferredPackets.add(buf.retain());
   }
 
   private void flushDeferredPackets() {
@@ -274,7 +268,7 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
     }
 
     final MinecraftConnection clientConn = serverConn.getPlayer().getConnection();
-    MinecraftPacket packet;
+    Object packet;
     while ((packet = deferredPackets.poll()) != null) {
       clientConn.delayedWrite(packet);
     }
@@ -283,7 +277,7 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
 
   private void releaseDeferredPackets() {
     joinGameProcessing = false;
-    MinecraftPacket packet;
+    Object packet;
     while ((packet = deferredPackets.poll()) != null) {
       ReferenceCountUtil.release(packet);
     }

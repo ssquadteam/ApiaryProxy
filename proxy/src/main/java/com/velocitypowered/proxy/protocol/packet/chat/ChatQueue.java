@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2022-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,12 +21,12 @@ import com.velocitypowered.proxy.connection.MinecraftConnection;
 import com.velocitypowered.proxy.connection.backend.VelocityServerConnection;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
-import io.netty.channel.ChannelFuture;
 import java.time.Instant;
 import java.util.BitSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import net.kyori.adventure.text.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -39,13 +39,19 @@ public class ChatQueue implements AutoCloseable {
 
   private static final Logger LOGGER = LogManager.getLogger(ChatQueue.class);
 
+  // Caps the chat, command and acknowledgement packets a client may have waiting here. Each one
+  // waits for the one before it, so while an earlier one is held up (a plugin slow to finish its
+  // chat or command event) everything sent after it stays in memory. A player typing never comes
+  // close; the backend's own chat spam limit disconnects long before.
+  private static final int MAX_PENDING_TASKS =
+      Integer.getInteger("velocity.max-pending-chat-packets", 256);
+
   private final Object internalLock = new Object();
-
   private final ConnectedPlayer player;
-
   private final ChatState chatState = new ChatState();
-
   private CompletableFuture<Void> head = CompletableFuture.completedFuture(null);
+  private final AtomicInteger pendingTasks = new AtomicInteger();
+  private boolean overflowed;
 
   private volatile boolean closed;
 
@@ -59,9 +65,17 @@ public class ChatQueue implements AutoCloseable {
   }
 
   private void queueTask(Task task) {
+    queueTask(task, true);
+  }
+
+  private void queueTask(Task task, boolean sentByClient) {
     synchronized (internalLock) {
       if (closed) {
         throw new IllegalStateException("ChatQueue has already been closed");
+      }
+
+      if (overflowed) {
+        return;
       }
 
       MinecraftConnection smc = player.getCurrentServer()
@@ -72,17 +86,28 @@ public class ChatQueue implements AutoCloseable {
         return;
       }
 
+      if (sentByClient && pendingTasks.incrementAndGet() > MAX_PENDING_TASKS) {
+        pendingTasks.decrementAndGet();
+        overflowed = true;
+        LOGGER.warn("Disconnecting {}: chat packets waiting in its queue exceeded their limit "
+            + "({}).", player, MAX_PENDING_TASKS);
+        player.disconnect(Component.translatable("velocity.error.pending-chat-overflow"));
+        return;
+      }
+
       head = head.thenCompose(v -> {
         if (closed) {
           return CompletableFuture.completedFuture(null);
         }
-
         try {
           return task.update(chatState, smc).exceptionally(ignored -> null);
         } catch (Throwable ignored) {
           return CompletableFuture.completedFuture(null);
         }
       });
+      if (sentByClient) {
+        head = head.whenComplete((ignored, throwable) -> pendingTasks.decrementAndGet());
+      }
     }
   }
 
@@ -118,38 +143,40 @@ public class ChatQueue implements AutoCloseable {
     });
   }
 
+  /**
+   * Queues a packet the proxy itself sends in the player's name, such as spoofed chat input. It
+   * keeps its place in the order like any other, but does not count toward the limit on packets
+   * the client may have waiting, since the client did not send it.
+   *
+   * @param packetFunction a function that maps the prior {@link ChatState} into a new packet.
+   * @param <T>            the type of packet to send.
+   */
+  public <T extends MinecraftPacket> void queueProxyPacket(Function<ChatState, T> packetFunction) {
+    queueTask((chatState, smc) -> {
+      T packet = packetFunction.apply(chatState);
+      return writePacket(packet, smc);
+    }, false);
+  }
+
   public void handleAcknowledgement(int offset) {
     queueTask((chatState, smc) -> {
       int ackCountToForward = chatState.accumulateAckCount(offset);
       if (ackCountToForward > 0) {
         return writePacket(new ChatAcknowledgementPacket(ackCountToForward), smc);
       }
-
       return CompletableFuture.completedFuture(null);
     });
   }
 
   private <T extends MinecraftPacket> CompletableFuture<Void> writePacket(T packet, MinecraftConnection smc) {
-    CompletableFuture<Void> result = new CompletableFuture<>();
-    smc.eventLoop().execute(() -> {
-      try {
-        if (closed || smc.isClosed()) {
-          result.complete(null);
-          return;
-        }
-        ChannelFuture future = smc.write(packet);
-        if (future != null) {
-          // Advance the queue once the write completes; a failed write means the
-          // connection is already dying, so draining the queue regardless is fine.
-          future.addListener(f -> result.complete(null));
-        } else {
-          result.complete(null);
-        }
-      } catch (Throwable t) {
-        result.completeExceptionally(t);
+    // Netty sends a channel's writes in the order they are issued on its event loop, so the next
+    // packet only needs this one issued. Waiting for the flush held every queued chat message and
+    // command behind a backend that was slow to read.
+    return CompletableFuture.runAsync(() -> {
+      if (!closed && !smc.isClosed()) {
+        smc.write(packet);
       }
-    });
-    return result;
+    }, smc.eventLoop());
   }
 
   @Override
@@ -180,16 +207,12 @@ public class ChatQueue implements AutoCloseable {
    * <p>Note that this is effectively unused for 1.20.5+ clients, as commands without any signature do not send 'last seen'
    * updates.</p>
    */
-  public static final class ChatState {
-
+  public static class ChatState {
     private static final int MINIMUM_DELAYED_ACK_COUNT = LastSeenMessages.WINDOW_SIZE;
-
     private static final BitSet DUMMY_LAST_SEEN_MESSAGES = new BitSet();
 
     public volatile Instant lastTimestamp = Instant.EPOCH;
-
     private volatile BitSet lastSeenMessages = new BitSet();
-
     private final AtomicInteger delayedAckCount = new AtomicInteger();
 
     private ChatState() {
@@ -200,14 +223,12 @@ public class ChatQueue implements AutoCloseable {
       if (timestamp != null) {
         this.lastTimestamp = timestamp;
       }
-
       if (lastSeenMessages != null) {
         // We held back some acknowledged messages, so flush that out now that we have a known 'last seen' state again
         int delayedAckCount = this.delayedAckCount.getAndSet(0);
         this.lastSeenMessages = lastSeenMessages.getAcknowledged();
         return lastSeenMessages.offset(delayedAckCount);
       }
-
       return null;
     }
 
@@ -220,7 +241,6 @@ public class ChatQueue implements AutoCloseable {
         this.delayedAckCount.set(MINIMUM_DELAYED_ACK_COUNT);
         return ackCountToForward;
       }
-
       return 0;
     }
 

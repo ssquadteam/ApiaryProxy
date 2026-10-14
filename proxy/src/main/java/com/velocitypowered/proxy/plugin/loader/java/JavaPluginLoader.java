@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 package com.velocitypowered.proxy.plugin.loader.java;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -42,6 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Implements loading a Java plugin.
@@ -63,22 +66,18 @@ public class JavaPluginLoader implements PluginLoader {
     }
 
     SerializedPluginDescription pd = serialized.get();
-    if (!SerializedPluginDescription.ID_PATTERN.matcher(pd.getId()).matches()) {
-      throw new InvalidPluginException("Plugin ID '" + pd.getId() + "' is invalid.");
-    }
-
-    for (SerializedPluginDescription.Dependency dependency : pd.getDependencies()) {
-      if (!SerializedPluginDescription.ID_PATTERN.matcher(dependency.getId()).matches()) {
+    for (SerializedPluginDescription.Dependency dependency : pd.dependencies()) {
+      if (!SerializedPluginDescription.ID_PATTERN.matcher(dependency.id()).matches()) {
         throw new InvalidPluginException(
-            "Dependency ID '" + dependency.getId() + "' for plugin '" + pd.getId() + "' is invalid."
+            "Dependency ID '" + dependency.id() + "' for plugin '" + pd.id() + "' is invalid."
         );
       }
     }
 
-    for (String providedId : pd.getProvides()) {
+    for (String providedId : pd.provides()) {
       if (!SerializedPluginDescription.ID_PATTERN.matcher(providedId).matches()) {
         throw new InvalidPluginException(
-            "Provided ID '" + providedId + "' for plugin '" + pd.getId() + "' is invalid."
+            "Provided ID '" + providedId + "' for plugin '" + pd.id() + "' is invalid."
         );
       }
     }
@@ -93,7 +92,8 @@ public class JavaPluginLoader implements PluginLoader {
     }
 
     URL pluginJarUrl = candidate.getSource().orElseThrow(
-        () -> new InvalidPluginException("Description provided does not have a source path")).toUri().toURL();
+        () -> new InvalidPluginException("Description provided does not have a source path")
+    ).toUri().toURL();
     PluginClassLoader loader = new PluginClassLoader(new URL[]{pluginJarUrl});
     loader.addToClassloaders();
 
@@ -109,6 +109,7 @@ public class JavaPluginLoader implements PluginLoader {
     }
 
     Optional<Path> source = javaDescription.getSource();
+
     if (source.isEmpty()) {
       throw new IllegalArgumentException("No path in plugin description");
     }
@@ -121,7 +122,6 @@ public class JavaPluginLoader implements PluginLoader {
     if (!(container instanceof VelocityPluginContainer pluginContainer)) {
       throw new IllegalArgumentException("Container provided isn't of the Java plugin loader");
     }
-
     PluginDescription description = pluginContainer.getDescription();
     if (!(description instanceof JavaVelocityPluginDescription javaPluginDescription)) {
       throw new IllegalArgumentException("Description provided isn't of the Java plugin loader");
@@ -131,23 +131,71 @@ public class JavaPluginLoader implements PluginLoader {
     Object instance = injector.getInstance(javaPluginDescription.getMainClass());
 
     if (instance == null) {
-      throw new IllegalStateException("Got nothing from injector for plugin " + description.getId());
+      throw new IllegalStateException(
+          "Got nothing from injector for plugin " + description.getId());
     }
 
     pluginContainer.setInstance(instance);
   }
 
+  /**
+   * Reads a plugin's description, refusing one whose ID is missing or invalid, or that names no
+   * main class.
+   *
+   * <p>The description is a record, so Gson builds it through its constructor, which requires
+   * those same things; a file breaking one would otherwise fail inside Gson and reach the plugin's
+   * author as a constructor failure wrapped in Gson's stack trace. The file is checked as JSON
+   * first, so the refusal names what is wrong.
+   *
+   * @param reader the {@code velocity-plugin.json} contents
+   * @return the description, or {@code null} when the file is empty
+   * @throws InvalidPluginException if the ID is missing or invalid, or the main class is missing
+   */
+  private static @Nullable SerializedPluginDescription readDescription(Reader reader)
+      throws InvalidPluginException {
+    JsonObject json = VelocityServer.GENERAL_GSON.fromJson(reader, JsonObject.class);
+
+    if (json == null) {
+      return null;
+    }
+
+    JsonElement id = requirePresent(json, "id", "No plugin ID provided.");
+    requirePresent(json, "main", "No plugin main class provided.");
+
+    if (!id.isJsonPrimitive()
+        || !SerializedPluginDescription.ID_PATTERN.matcher(id.getAsString()).matches()) {
+      throw new InvalidPluginException("Plugin ID '" + readable(id) + "' is invalid.");
+    }
+
+    return VelocityServer.GENERAL_GSON.fromJson(json, SerializedPluginDescription.class);
+  }
+
+  private static JsonElement requirePresent(JsonObject json, String key, String message)
+      throws InvalidPluginException {
+    JsonElement value = json.get(key);
+
+    if (value == null || value.isJsonNull()) {
+      throw new InvalidPluginException(message);
+    }
+
+    return value;
+  }
+
+  private static String readable(JsonElement value) {
+    return value.isJsonPrimitive() ? value.getAsString() : value.toString();
+  }
+
   private Optional<SerializedPluginDescription> getSerializedPluginInfo(Path source)
       throws Exception {
     boolean foundBungeeBukkitPluginFile = false;
-    try (JarInputStream in = new JarInputStream(new BufferedInputStream(Files.newInputStream(source)))) {
+    try (JarInputStream in = new JarInputStream(
+        new BufferedInputStream(Files.newInputStream(source)))) {
       JarEntry entry;
       while ((entry = in.getNextJarEntry()) != null) {
         switch (entry.getName()) {
           case "velocity-plugin.json" -> {
             try (Reader pluginInfoReader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-              return Optional.of(VelocityServer.GENERAL_GSON.fromJson(pluginInfoReader,
-                  SerializedPluginDescription.class));
+              return Optional.ofNullable(readDescription(pluginInfoReader));
             }
           }
           case "paper-plugin.yml", "plugin.yml", "bungee.yml" -> foundBungeeBukkitPluginFile = true;
@@ -166,28 +214,32 @@ public class JavaPluginLoader implements PluginLoader {
     }
   }
 
-  private VelocityPluginDescription createCandidateDescription(SerializedPluginDescription description, Path source) {
+  private VelocityPluginDescription createCandidateDescription(
+      SerializedPluginDescription description,
+      Path source) {
     Set<PluginDependency> dependencies = new HashSet<>();
 
-    for (SerializedPluginDescription.Dependency dependency : description.getDependencies()) {
+    for (SerializedPluginDescription.Dependency dependency : description.dependencies()) {
       dependencies.add(toDependencyMeta(dependency));
     }
 
     return new JavaVelocityPluginDescriptionCandidate(
-        description.getId(),
-        description.getName(),
-        description.getVersion(),
-        description.getDescription(),
-        description.getUrl(),
-        description.getAuthors(),
+        description.id(),
+        description.name(),
+        description.version(),
+        description.description(),
+        description.url(),
+        description.authors(),
         dependencies,
-        description.getProvides(),
+        description.provides(),
         source,
-        description.getMain()
+        description.main()
     );
   }
 
-  private VelocityPluginDescription createDescription(JavaVelocityPluginDescriptionCandidate description, Class<?> mainClass) {
+  private VelocityPluginDescription createDescription(
+      JavaVelocityPluginDescriptionCandidate description,
+      Class<?> mainClass) {
     return new JavaVelocityPluginDescription(
         description.getId(),
         description.getName().orElse(null),
@@ -202,11 +254,12 @@ public class JavaPluginLoader implements PluginLoader {
     );
   }
 
-  private static PluginDependency toDependencyMeta(SerializedPluginDescription.Dependency dependency) {
+  private static PluginDependency toDependencyMeta(
+      SerializedPluginDescription.Dependency dependency) {
     return new PluginDependency(
-        dependency.getId(),
+        dependency.id(),
         null, // TODO Implement version matching in dependency annotation
-        dependency.isOptional()
+        dependency.optional()
     );
   }
 }

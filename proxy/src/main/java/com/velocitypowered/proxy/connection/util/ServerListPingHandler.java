@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import net.kyori.adventure.text.Component;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -47,6 +48,7 @@ import org.jspecify.annotations.Nullable;
 public class ServerListPingHandler {
 
   private final VelocityServer server;
+  private final BackendPings backendPings = new BackendPings();
 
   public ServerListPingHandler(VelocityServer server) {
     this.server = server;
@@ -163,10 +165,9 @@ public class ServerListPingHandler {
       }
 
       VelocityRegisteredServer vrs = rs.get();
-      pings.add(vrs.ping(connection.getConnection().eventLoop(), PingOptions.builder()
-          .version(responseProtocolVersion).virtualHost(virtualHostStr).build()));
+      pings.add(backendPings.ping(vrs, connection.getConnection().eventLoop(), PingOptions.builder()
+              .version(responseProtocolVersion).virtualHost(virtualHostStr).build()));
     }
-
     if (pings.isEmpty()) {
       return CompletableFuture.completedFuture(fallback);
     }
@@ -269,7 +270,7 @@ public class ServerListPingHandler {
     }
 
     @Override
-    public @Nullable String resolve(String name, Map<String, String> arguments) {
+    public @Nullable String resolve(@NonNull String name, @NonNull Map<String, String> arguments) {
       return switch (name) {
         case "protocol-min" -> ProtocolVersion.getVersionByName(
             server.getConfiguration().getMinimumVersion()).getVersionIntroducedIn();

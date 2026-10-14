@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2026 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -114,6 +114,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -158,50 +159,39 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       .registerTypeHierarchyAdapter(Favicon.class, FaviconSerializer.INSTANCE)
       .registerTypeHierarchyAdapter(GameProfile.class, GameProfileSerializer.INSTANCE)
       .create();
-
   private static final Gson PRE_1_16_PING_SERIALIZER = new GsonBuilder()
       .registerTypeHierarchyAdapter(
           Component.class,
           ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINECRAFT_1_15_2)
-              .serializer().getAdapter(Component.class)
+                  .serializer().getAdapter(Component.class)
       )
       .registerTypeHierarchyAdapter(Favicon.class, FaviconSerializer.INSTANCE)
       .create();
-
   private static final Gson PRE_1_20_3_PING_SERIALIZER = new GsonBuilder()
       .registerTypeHierarchyAdapter(
           Component.class,
           ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINECRAFT_1_20_2)
-              .serializer().getAdapter(Component.class)
+                  .serializer().getAdapter(Component.class)
       )
       .registerTypeHierarchyAdapter(Favicon.class, FaviconSerializer.INSTANCE)
       .create();
-
   private static final Gson MODERN_PING_SERIALIZER = new GsonBuilder()
       .registerTypeHierarchyAdapter(
           Component.class,
           ProtocolUtils.getJsonChatSerializer(ProtocolVersion.MINECRAFT_1_20_3)
-              .serializer().getAdapter(Component.class)
+                  .serializer().getAdapter(Component.class)
       )
       .registerTypeHierarchyAdapter(Favicon.class, FaviconSerializer.INSTANCE)
       .create();
 
   private final ConnectionManager cm;
-
   private final ProxyOptions options;
-
   private @MonotonicNonNull VelocityConfiguration configuration;
-
   private @MonotonicNonNull KeyPair serverKeyPair;
-
   private final ServerMap servers;
-
   private final VelocityCommandManager commandManager;
-
   private final AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
-
   private boolean shutdown = false;
-
   private final VelocityPluginManager pluginManager;
 
   private final PlayerRegistry playerRegistry = new PlayerRegistry(this);
@@ -212,19 +202,12 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   private final Set<BuiltinCommandDefinition> registeredBuiltinCommands = new HashSet<>();
 
   private final VelocityConsole console;
-
   private @MonotonicNonNull Ratelimiter<InetAddress> ipAttemptLimiter;
-
   private @MonotonicNonNull Ratelimiter<UUID> commandRateLimiter;
-
   private @MonotonicNonNull Ratelimiter<UUID> tabCompleteRateLimiter;
-
   private final VelocityEventManager eventManager;
-
   private final VelocityScheduler scheduler;
-
   private final VelocityChannelRegistrar channelRegistrar = new VelocityChannelRegistrar();
-
   private final ServerListPingHandler serverListPingHandler;
 
   /**
@@ -473,7 +456,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     // init console permissions after plugins are loaded
     console.setupPermissions();
 
-    Integer port = this.options.getPort();
+    final Integer port = this.options.getPort();
     if (port != null) {
       LOGGER.debug("Overriding bind port to {} from command line option", port);
       this.cm.bind(new InetSocketAddress(configuration.getBind().getHostString(), port));
@@ -481,7 +464,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       this.cm.bind(configuration.getBind());
     }
 
-    Boolean haproxy = this.options.isHaproxy();
+    final Boolean haproxy = this.options.isHaproxy();
     if (haproxy != null) {
       LOGGER.debug("Overriding HAProxy protocol to {} from command line option", haproxy);
       configuration.setProxyProtocol(haproxy);
@@ -491,7 +474,8 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       this.cm.queryBind(configuration.getBind().getHostString(), configuration.getQueryPort());
     }
 
-    String defaultPackage = new String(new byte[] {'o', 'r', 'g', '.', 'b', 's', 't', 'a', 't', 's' });
+    final String defaultPackage = new String(
+        new byte[] { 'o', 'r', 'g', '.', 'b', 's', 't', 'a', 't', 's' });
     if (!MetricsBase.class.getPackage().getName().startsWith(defaultPackage)) {
       Metrics.VelocityMetrics.startMetrics(this, configuration.getMetrics());
     } else {
@@ -603,11 +587,13 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       return false;
     }
 
+    final VelocityConfiguration oldConfiguration = this.configuration;
+
     unregisterCommands();
 
     this.configuration = newConfiguration;
 
-    reconcileServers(newConfiguration);
+    reconcileServers(oldConfiguration, newConfiguration);
 
     registerCommands();
 
@@ -616,17 +602,17 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     translationRegistryManager.registerTranslations();
 
     // If we have a new bind address, bind to it
-    if (!configuration.getBind().equals(newConfiguration.getBind())) {
+    if (!oldConfiguration.getBind().equals(newConfiguration.getBind())) {
       this.cm.bind(newConfiguration.getBind());
-      this.cm.close(configuration.getBind());
+      this.cm.close(oldConfiguration.getBind());
     }
 
-    boolean queryPortChanged = newConfiguration.getQueryPort() != configuration.getQueryPort();
-    boolean queryAlreadyEnabled = configuration.isQueryEnabled();
+    boolean queryPortChanged = newConfiguration.getQueryPort() != oldConfiguration.getQueryPort();
+    boolean queryAlreadyEnabled = oldConfiguration.isQueryEnabled();
     boolean queryEnabled = newConfiguration.isQueryEnabled();
     if (queryAlreadyEnabled && (!queryEnabled || queryPortChanged)) {
       this.cm.close(new InetSocketAddress(
-          configuration.getBind().getHostString(), configuration.getQueryPort()));
+          oldConfiguration.getBind().getHostString(), oldConfiguration.getQueryPort()));
     }
     if (queryEnabled && (!queryAlreadyEnabled || queryPortChanged)) {
       this.cm.queryBind(newConfiguration.getBind().getHostString(),
@@ -799,7 +785,8 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     return aliases.toArray(String[]::new);
   }
 
-  private void reconcileServers(VelocityConfiguration newConfiguration) {
+  private void reconcileServers(VelocityConfiguration oldConfiguration,
+      VelocityConfiguration newConfiguration) {
     List<ServerInfo> desired = new ArrayList<>();
     for (Map.Entry<String, BackendServerConfig> entry : newConfiguration.getBackendServers().entrySet()) {
       desired.add(new ServerInfo(entry.getKey(),
@@ -807,11 +794,18 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
           entry.getValue().forwardingMode()));
     }
 
-    // Servers registered now but absent from the new configuration: removed, renamed, or with a
-    // changed address/forwarding mode.
+    // Servers the old configuration registered that the new one no longer describes: removed,
+    // renamed, or with a changed address/forwarding mode. A server registered any other way (by a
+    // plugin, or with --add-server) is not the configuration's to remove.
+    Set<String> configured = new HashSet<>();
+    for (String name : oldConfiguration.getBackendServers().keySet()) {
+      configured.add(name.toLowerCase(Locale.ROOT));
+    }
+
     List<VelocityRegisteredServer> stale = new ArrayList<>();
     for (VelocityRegisteredServer registered : getAllServers()) {
-      if (!desired.contains(registered.getServerInfo())) {
+      if (configured.contains(registered.getServerInfo().getName().toLowerCase(Locale.ROOT))
+          && !desired.contains(registered.getServerInfo())) {
         stale.add(registered);
       }
     }
@@ -974,8 +968,8 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
 
       try {
         eventManager.fire(new ProxyPreShutdownEvent())
-            .toCompletableFuture()
-            .get(PRE_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS);
+                .toCompletableFuture()
+                .get(PRE_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS);
       } catch (TimeoutException ignored) {
         LOGGER.warn("Your plugins took over {} seconds during pre shutdown.", PRE_SHUTDOWN_TIMEOUT);
       } catch (ExecutionException ee) {
@@ -1054,8 +1048,9 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
         this.queueManager.teardown();
       }
 
-      // Disable Redis if we have it enabled
-      if (this.configuration.getRedis().isEnabled()) {
+      // Disable Redis if it was started. A reload can flip the setting either way without
+      // starting or stopping Redis, so the running instance decides, not the configuration.
+      if (this.redis != null) {
         this.redis.shutdown();
       }
 
@@ -1080,7 +1075,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   }
 
   /**
-   * Calls {@link #shutdown(boolean, Component)} with the default reason "Proxy shutting down.".
+   * Calls {@link #shutdown(boolean, Component)} with the default reason "Proxy shutting down".
    *
    * @param explicitExit whether the user explicitly shut down the proxy
    */
@@ -1105,7 +1100,8 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
 
     DynamicProxyFilterMode filter = getConfiguration().getDynamicProxyFilter();
     List<ProxyAddress> addresses = new ArrayList<>(getConfiguration().getProxyAddresses().stream().toList());
-    addresses.removeIf(address -> getProxyId().equalsIgnoreCase(address.proxyId()));
+    addresses.removeIf(address -> getProxyId().equalsIgnoreCase(address.proxyId())
+        || !redis.getProxyService().isAlive(address.proxyId()));
 
     if (addresses.isEmpty()) {
       return null;
@@ -1320,7 +1316,6 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
       throw new IllegalStateException(
           "No configuration"); // even though you'll never get the chance... heh, heh
     }
-
     return configuration.getBind();
   }
 
@@ -1346,11 +1341,9 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
         || version.noLessThan(ProtocolVersion.MINECRAFT_1_20_3)) {
       return MODERN_PING_SERIALIZER;
     }
-
     if (version.noLessThan(ProtocolVersion.MINECRAFT_1_16)) {
       return PRE_1_20_3_PING_SERIALIZER;
     }
-
     return PRE_1_16_PING_SERIALIZER;
   }
 
