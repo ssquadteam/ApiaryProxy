@@ -13,11 +13,11 @@ on:
       upstream_ref:
         description: "Velocity-CTD branch to merge"
         required: false
-        default: "libdeflate"
+        default: "dev/4.0.0"
 
 env:
   UPSTREAM_URL: https://github.com/GemstoneGG/Velocity-CTD.git
-  UPSTREAM_REF: ${{ github.event.inputs.upstream_ref || 'libdeflate' }}
+  UPSTREAM_REF: ${{ github.event.inputs.upstream_ref || 'dev/4.0.0' }}
   SYNC_BRANCH: upstream-sync
   ISSUE_LABEL: upstream-sync
   # Adding the upstream git remote makes gh guess the wrong repository, so pin it.
