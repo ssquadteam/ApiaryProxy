@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.velocitypowered.api.event.player.configuration.PlayerConfigurationEvent;
 import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.config.VelocityConfiguration;
 import com.velocitypowered.proxy.connection.MinecraftConnection;
 import com.velocitypowered.proxy.connection.backend.BackendConnectionPhase;
 import com.velocitypowered.proxy.connection.backend.VelocityServerConnection;
@@ -55,6 +56,7 @@ class ClientConfigSessionHandlerTest {
   @BeforeEach
   void setUp() {
     server = mock(VelocityServer.class);
+    when(server.getConfiguration()).thenReturn(mock(VelocityConfiguration.class));
     player = mock(ConnectedPlayer.class);
     handler = new ClientConfigSessionHandler(server, player);
   }

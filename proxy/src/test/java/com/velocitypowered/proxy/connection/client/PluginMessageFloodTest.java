@@ -62,9 +62,9 @@ class PluginMessageFloodTest {
 
   @Test
   void serverboundPayloadIsCappedOnItsOwn() {
-    assertDoesNotThrow(() -> new PluginMessagePacket().decode(wire(32767), Direction.SERVERBOUND,
+    assertDoesNotThrow(() -> new PluginMessagePacket().decode(wire(524288), Direction.SERVERBOUND,
         ProtocolVersion.MINECRAFT_1_21_4));
-    assertThrows(Exception.class, () -> new PluginMessagePacket().decode(wire(32768),
+    assertThrows(Exception.class, () -> new PluginMessagePacket().decode(wire(524289),
         Direction.SERVERBOUND, ProtocolVersion.MINECRAFT_1_21_4));
     assertDoesNotThrow(() -> new PluginMessagePacket().decode(wire(200_000), Direction.CLIENTBOUND,
         ProtocolVersion.MINECRAFT_1_21_4));
