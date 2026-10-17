@@ -231,6 +231,16 @@ public class VelocityCommandManager implements CommandManager {
   private boolean executeImmediately0(final CommandSource source, final ParseResults<CommandSource> parsed) {
     Preconditions.checkNotNull(source, "source");
 
+    if (parsed.getReader().getString().isEmpty()) {
+      // A bare slash names no command. The dispatcher looks a command up by the input before its
+      // first space, so an empty input would select one registered under an empty alias (a blank
+      // entry in a configured alias list) and run it silently; it goes to the server instead, as
+      // any other unknown command does.
+      eventManager.fireAndForget(
+          new PostCommandInvocationEvent(source, "", CommandResult.FORWARDED));
+      return false;
+    }
+
     CommandResult result = CommandResult.EXCEPTION;
     try {
       // The parse can fail if the requirement predicates throw

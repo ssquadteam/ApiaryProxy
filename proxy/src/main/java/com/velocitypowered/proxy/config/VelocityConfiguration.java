@@ -1267,22 +1267,8 @@ public final class VelocityConfiguration implements ProxyConfig {
       boolean logMinimumVersion = config.getOrElse("log-minimum-version", false);
       String minimumVersion = config.getOrElse("minimum-version", "1.7.2");
       String maximumVersion = config.getOrElse("maximum-version", UNBOUNDED);
-      CommentedConfig slashServersConfig = config.getOrElse("slash-servers", (CommentedConfig) null);
-      Map<String, List<String>> slashServers = new HashMap<>();
-
-      if (slashServersConfig != null) {
-        for (UnmodifiableConfig.Entry entry : slashServersConfig.entrySet()) {
-          if (entry.getValue() instanceof String) {
-            slashServers.put(entry.getKey(), ImmutableList.of(entry.getValue()));
-          } else if (entry.getValue() instanceof List) {
-            @SuppressWarnings("unchecked")
-            List<String> value = ImmutableList.copyOf((List<String>) entry.getValue());
-            slashServers.put(entry.getKey(), value);
-          } else {
-            LOGGER.warn("Invalid value of type {} in slash servers!", entry.getValue().getClass());
-          }
-        }
-      }
+      final Map<String, List<String>> slashServers =
+          parseSlashServers(config.getOrElse("slash-servers", (CommentedConfig) null));
 
       Map<String, List<ServerLink>> links = new HashMap<>();
       if (serverLinksConfig != null) {
@@ -1360,8 +1346,8 @@ public final class VelocityConfiguration implements ProxyConfig {
           enablePlayerAddressLogging,
           new Servers(serversConfig),
           new ForcedHosts(forcedHostsConfig),
-          parseAliasMap(commandAliasesConfig, "command-aliases"),
-          parseAliasMap(proxyCommandAliasesConfig, "proxy-command-aliases"),
+          parseCommandAliases(commandAliasesConfig),
+          parseProxyCommandAliases(proxyCommandAliasesConfig),
           new Commands(commandsConfig),
           new Advanced(advancedConfig),
           new Query(queryConfig),
@@ -1391,7 +1377,82 @@ public final class VelocityConfiguration implements ProxyConfig {
     }
   }
 
-  private static Map<String, List<String>> parseAliasMap(CommentedConfig config, String sectionName) {
+  static Map<String, List<String>> parseSlashServers(@Nullable CommentedConfig config) {
+    Map<String, List<String>> slashServers = new HashMap<>();
+
+    if (config == null) {
+      return slashServers;
+    }
+
+    for (UnmodifiableConfig.Entry entry : config.entrySet()) {
+      if (entry.getValue() instanceof String) {
+        putCommandLabels(slashServers, "slash-servers", entry.getKey(),
+            ImmutableList.of(entry.getValue()));
+      } else if (entry.getValue() instanceof List) {
+        @SuppressWarnings("unchecked")
+        List<String> value = ImmutableList.copyOf((List<String>) entry.getValue());
+        putCommandLabels(slashServers, "slash-servers", entry.getKey(), value);
+      } else {
+        LOGGER.warn("Invalid value of type {} in slash servers!", entry.getValue().getClass());
+      }
+    }
+
+    return slashServers;
+  }
+
+  static Map<String, List<String>> parseCommandAliases(@Nullable CommentedConfig config) {
+    Map<String, List<String>> aliases = new HashMap<>();
+
+    parseAliasMap(config, "command-aliases").forEach((command, labels) ->
+        putCommandLabels(aliases, "command-aliases", command, labels));
+
+    return ImmutableMap.copyOf(aliases);
+  }
+
+  static Map<String, List<String>> parseProxyCommandAliases(@Nullable CommentedConfig config) {
+    Map<String, List<String>> aliases = new HashMap<>();
+
+    parseAliasMap(config, "proxy-command-aliases").forEach((alias, commands) -> {
+      if (isCommandLabel(alias)) {
+        aliases.put(alias, commands);
+      } else {
+        LOGGER.warn("Ignoring the alias '{}' in [proxy-command-aliases]: a command name cannot be"
+            + " blank or contain whitespace", alias);
+      }
+    });
+
+    return ImmutableMap.copyOf(aliases);
+  }
+
+  static boolean isCommandLabel(String label) {
+    return !label.isBlank() && label.chars().noneMatch(Character::isWhitespace);
+  }
+
+  /**
+   * Files the labels configured under a key that can be typed as a command, warning about each one
+   * that cannot. A key whose labels are all unusable is left out rather than filed empty, which
+   * validation would refuse; a list configured empty is filed as it was.
+   */
+  private static void putCommandLabels(Map<String, List<String>> into, String section, String key,
+                                       List<String> labels) {
+    List<String> typable = new ArrayList<>(labels.size());
+
+    for (String label : labels) {
+      if (isCommandLabel(label)) {
+        typable.add(label);
+      } else {
+        LOGGER.warn("Ignoring '{}' under '{}' in [{}]: a command name cannot be blank or contain"
+            + " whitespace", label, key, section);
+      }
+    }
+
+    if (labels.isEmpty() || !typable.isEmpty()) {
+      into.put(key, List.copyOf(typable));
+    }
+  }
+
+  private static Map<String, List<String>> parseAliasMap(@Nullable CommentedConfig config,
+                                                         String sectionName) {
     if (config == null) {
       return ImmutableMap.of();
     }
